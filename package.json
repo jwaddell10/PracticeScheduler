@@ -10,10 +10,15 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@react-navigation/elements": "^2.4.3",
+    "@react-navigation/native-stack": "^7.3.14",
     "expo": "~53.0.10",
     "expo-status-bar": "~2.2.3",
     "react": "19.0.0",
-    "react-native": "0.79.3"
+    "react-native": "0.79.3",
+    "react-native-calendars": "^1.1312.1",
+    "react-native-safe-area-context": "5.4.0",
+    "react-native-screens": "~4.11.1"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

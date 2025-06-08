@@ -1,25 +1,13 @@
 import { StatusBar } from "expo-status-bar";
-import { Alert, Button, StyleSheet, Text, View } from "react-native";
+import { Pressable, Alert, StyleSheet, Text, View } from "react-native";
+import { Calendar, CalendarList, Agenda } from "react-native-calendars";
+import { createStaticNavigation, useNavigation } from "@react-navigation/native";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { Button } from '@react-navigation/elements';
+import Navigation from "./Navigation";
 
 export default function App() {
 	return (
-		<View style={styles.container}>
-			<Text>Jonathan is the Greatest Developer of All Time (GDOAT)</Text>
-			<Button
-				title="Press me"
-        color={"#f194ff"}
-				onPress={() => Alert.alert("Simple Button pressed")}
-			/>
-			<StatusBar style="auto" />
-		</View>
+		<Navigation />
 	);
 }
-
-const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		backgroundColor: "#fff",
-		alignItems: "center",
-		justifyContent: "center",
-	},
-});
