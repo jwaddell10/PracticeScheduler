@@ -11,17 +11,16 @@ export default function HomeScreen() {
 	const navigation = useNavigation();
 
 	return (
-		<View
-			style={{ flex: 1, alignItems: "center", justifyContent: "center" }}
-		>
-			<Text>Home Screen</Text>
+		<View>
+			<Text style={{textAlign: "left"}}>Hello, Coach</Text>
+			
 			<Calendar
 				onDayPress={(day) => {
 					console.log("selected day", day);
 				}}
 			/>
 			<Button onPress={() => navigation.navigate("Drills")}>
-				Schedule Drills
+				Schedule Practice
 			</Button>
 		</View>
 	);

@@ -9,6 +9,8 @@ import { Button } from '@react-navigation/elements';
 import HomeScreen from './components/Home';
 import DrillsForm from './components/DrillsForm';
 
+//home, calendar, drills
+
 const RootStack = createNativeStackNavigator({
   initialRouteName: 'Home',
   screenOptions: {

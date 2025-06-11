@@ -13,7 +13,8 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.jwaddell10.PracticeScheduler"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,6 +30,9 @@
       "eas": {
         "projectId": "7952f98e-4bdd-4d28-84ef-b4e9fe8951e0"
       }
-    }
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
   }
 }
