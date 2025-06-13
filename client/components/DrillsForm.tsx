@@ -1,8 +1,17 @@
 import { useState } from "react";
-import { Button, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+	Button,
+	ScrollView,
+	StyleSheet,
+	Text,
+	TouchableOpacity,
+	View,
+} from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import DropDownPicker from "react-native-dropdown-picker";
+import Dropdown from "react-native-input-select";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import DraggableFlatList from "react-native-draggable-flatlist";
 
 const DrillsForm = () => {
 	const drills = {
@@ -41,7 +50,7 @@ const DrillsForm = () => {
 
 	// Dropdown State
 	const [open, setOpen] = useState(false);
-	const [selectedDrill, setSelectedDrill] = useState(null);
+	const [selectedDrills, setSelectedDrills] = useState([]);
 	const [items, setItems] = useState(allDrills);
 
 	const onChange = (event: any, selectedDate: any) => {
@@ -50,14 +59,14 @@ const DrillsForm = () => {
 		setDate(currentDate);
 	};
 
-	const handleSubmit = () => {
-		console.log(date, 'date', selectedDrill, 'selected drill')
-	}
+	// const handleSubmit = () => {
+	// 	console.log(date, "date", selectedDrill, "selected drill");
+	// };
 
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
-				<View style={styles.scrollView}>
+				<GestureHandlerRootView style={styles.scrollView}>
 					<Text style={styles.label}>Select Date & Time</Text>
 					<DateTimePicker
 						testID="dateTimePicker"
@@ -65,39 +74,52 @@ const DrillsForm = () => {
 						mode="datetime"
 						onChange={onChange}
 					/>
-					<Text style={styles.label}>Select Drill</Text>
-					<DropDownPicker
-						open={open}
-						value={selectedDrill}
-						items={items}
-						setOpen={setOpen}
-						setValue={setSelectedDrill}
-						setItems={setItems}
-						placeholder="Search or select a drill"
-						searchable={true}
-						style={styles.dropdown}
-						dropDownContainerStyle={styles.dropdownContainer}
-						multiple={true}
+					<Text style={styles.label}>Drills</Text>
+					<DraggableFlatList
+						data={selectedDrills}
+						keyExtractor={(item, index) => item}
+						renderItem={({ item, drag, isActive }) => (
+							<TouchableOpacity
+								style={[
+									styles.draggableItem,
+									{
+										backgroundColor: isActive
+											? "#005BBB"
+											: "#007AFF",
+									},
+								]}
+								onLongPress={drag}
+							>
+								<Text style={{ color: "white" }}>{item}</Text>
+							</TouchableOpacity>
+						)}
+						onDragEnd={({ data }) => setSelectedDrills(data)}
 					/>
-
-					{selectedDrill && (
-						<View>
-							<Text style={styles.selectedText}>
-								Selected Drill:
-							</Text>
-							{selectedDrill.map((drill, index) => (
-								<Text key={index}>{drill}</Text>
-							))}
-						</View>
-					)}
-					<Button title="Submit" onPress={handleSubmit} />
-				</View>
+					<Dropdown
+						label="Menu"
+						placeholder="Select an option..."
+						options={allDrills}
+						selectedValue={selectedDrills}
+						onValueChange={(value) => {
+							setSelectedDrills(value);
+						}}
+						primaryColor={"green"}
+						isMultiple
+					/>
+					<Button title="Submit" />
+				</GestureHandlerRootView>
 			</SafeAreaView>
 		</SafeAreaProvider>
 	);
 };
 
 const styles = StyleSheet.create({
+	draggableItem: {
+		padding: 20,
+		backgroundColor: "#007AFF",
+		borderRadius: 8,
+		marginVertical: 4,
+	},
 	safeArea: {
 		flex: 1,
 		backgroundColor: "#fff",
