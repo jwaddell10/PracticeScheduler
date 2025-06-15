@@ -1,32 +1,34 @@
-import * as React from 'react';
-import { View, Text } from 'react-native';
-import {
-  createStaticNavigation,
-  useNavigation,
-} from '@react-navigation/native';
+import React from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { Button } from '@react-navigation/elements';
+
 import HomeScreen from './components/Home';
-import DrillsForm from './components/DrillsForm';
+import CreatePractice from './components/CreatePractice';
+import Drills from './components/Drills';
 
-//home, calendar, drills
+// Stack for Home
+const HomeStack = createNativeStackNavigator();
 
-const RootStack = createNativeStackNavigator({
-  initialRouteName: 'Home',
-  screenOptions: {
-    headerStyle: { backgroundColor: 'tomato' },
-  },
-  screens: {
-    Home: {
-      screen: HomeScreen,
-      options: {
-        title: 'Home',
-      },
-    },
-    Drills: DrillsForm,
-  },
-});
+function HomeStackScreen() {
+	return (
+		<HomeStack.Navigator>
+			<HomeStack.Screen name="Home" component={HomeScreen} />
+			<HomeStack.Screen name="Practice" component={CreatePractice} />
+		</HomeStack.Navigator>
+	);
+}
 
-const Navigation = createStaticNavigation(RootStack);
+// Bottom Tabs
+const Tab = createBottomTabNavigator();
 
-export default Navigation;
+export default function Navigation() {
+	return (
+		<NavigationContainer>
+			<Tab.Navigator screenOptions={{ headerShown: false}}>
+				<Tab.Screen name="HomeTab" component={HomeStackScreen} options={{ title: 'Home' }} />
+				<Tab.Screen name="DrillsTab" component={Drills} options={{ title: 'Drills' }} />
+			</Tab.Navigator>
+		</NavigationContainer>
+	);
+}

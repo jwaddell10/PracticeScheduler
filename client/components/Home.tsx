@@ -13,13 +13,12 @@ export default function HomeScreen() {
 	return (
 		<View>
 			<Text style={{textAlign: "left"}}>Hello, Coach</Text>
-			
 			<Calendar
 				onDayPress={(day) => {
 					console.log("selected day", day);
 				}}
 			/>
-			<Button onPress={() => navigation.navigate("Drills")}>
+			<Button onPress={() => navigation.navigate("Practice")}>
 				Schedule Practice
 			</Button>
 		</View>

@@ -12,36 +12,25 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Dropdown from "react-native-input-select";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
+import { volleyballDrillsList } from "../utils/volleyballDrillsData";
 
-const DrillsForm = () => {
-	const drills = {
-		Serving: [
-			"Target Serve Challenge",
-			"Wall Serve Accuracy",
-			"Consistent Float Serve Reps",
-		],
-		Passing: ["Wall Bumps", "Target Passing", "Move & Pass"],
-		Setting: ["Wall Sets", "Self-Set Max Reps", "High-Set Control"],
-		Defense: ["Dig or Die", "Cone Reaction Drill", "Scramble Save"],
-		Hitting: [
-			"Approach & Arm Swing",
-			"Block + Hit Combo",
-			"Cross-Court Kill",
-		],
-		Blocking: ["Shadow Blocking", "Read & Block", "Mirror Blocking"],
-		TeamPlay: [
-			"6v6 Game to 7 with Serve Receive Focus",
-			"Wash Drill",
-			"Free Ball Transition",
-		],
-	};
-
+const CreatePractice = () => {
 	// Flatten the drills into one array
-	const allDrills = Object.entries(drills).flatMap(([category, drillList]) =>
-		drillList.map((drill) => ({
-			label: `${category}: ${drill}`,
-			value: drill,
+	// Flatten drills into an array of objects with label and value
+	const allDrills = volleyballDrillsList.flatMap(({ subcategory, drills }) =>
+		drills.map((drill) => ({
+			label: `${subcategory}: ${drill.name}`,
+			value: drill.name,
 		}))
+	);
+
+	// If you want to display drills grouped by subcategory for debugging/logging:
+	const drillsToDisplay = volleyballDrillsList.map(
+		({ subcategory, drills }) => {
+			console.log(`Subcategory: ${subcategory}`);
+			drills.forEach((drill) => console.log(`- ${drill.name}`));
+			return null;
+		}
 	);
 
 	// Date Picker State
@@ -52,7 +41,6 @@ const DrillsForm = () => {
 	const [open, setOpen] = useState(false);
 	const [selectedDrills, setSelectedDrills] = useState([]);
 	const [items, setItems] = useState(allDrills);
-
 	const onChange = (event: any, selectedDate: any) => {
 		const currentDate = selectedDate;
 		setShow(false);
@@ -147,4 +135,4 @@ const styles = StyleSheet.create({
 	},
 });
 
-export default DrillsForm;
+export default CreatePractice;
