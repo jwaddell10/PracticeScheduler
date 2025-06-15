@@ -2,8 +2,11 @@ import React from "react";
 import { View, Text, StyleSheet, ScrollView, Button } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { volleyballDrillsList } from "../utils/volleyballDrillsData";
+import Navigation from "../Navigation";
+import { useNavigation } from "@react-navigation/native";
 
 export default function Drills() {
+	const navigation = useNavigation();
 	const teamDrills = volleyballDrillsList.filter(
 		(item) => item.category === "Team"
 	);
@@ -25,7 +28,14 @@ export default function Drills() {
 									style={styles.drillTitle}
 								>
 									{drill.name}
-									<Button title="details"></Button>
+									<Button
+										title="details"
+										onPress={() =>
+											navigation.navigate("DrillDetails")
+										}
+									>
+										Schedule Practice
+									</Button>
 								</Text>
 							))}
 						</View>
