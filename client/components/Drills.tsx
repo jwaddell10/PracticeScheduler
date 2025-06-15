@@ -10,6 +10,9 @@ export default function Drills() {
 	const teamDrills = volleyballDrillsList.filter(
 		(item) => item.category === "Team"
 	);
+	const individualDrills = volleyballDrillsList.filter(
+		(item) => item.category === "Individual"
+	);
 
 	return (
 		<SafeAreaProvider>
@@ -31,11 +34,48 @@ export default function Drills() {
 									<Button
 										title="details"
 										onPress={() =>
-											navigation.navigate("DrillDetails")
+											navigation.navigate(
+												"DrillDetails",
+												{
+													drill: drill, // pass the whole drill
+													category: section.category,
+													subcategory:
+														section.subcategory,
+												}
+											)
 										}
-									>
-										Schedule Practice
-									</Button>
+									/>
+								</Text>
+							))}
+						</View>
+					))}
+					<Text style={styles.header}>Individual Drills:</Text>
+
+					{individualDrills.map((section, index) => (
+						<View key={index} style={styles.section}>
+							<Text style={styles.subcategory}>
+								{section.subcategory}
+							</Text>
+							{section.drills.map((drill, drillIndex) => (
+								<Text
+									key={drillIndex}
+									style={styles.drillTitle}
+								>
+									{drill.name}
+									<Button
+										title="details"
+										onPress={() =>
+											navigation.navigate(
+												"DrillDetails",
+												{
+													drill: drill, // pass the whole drill
+													category: section.category,
+													subcategory:
+														section.subcategory,
+												}
+											)
+										}
+									/>
 								</Text>
 							))}
 						</View>
