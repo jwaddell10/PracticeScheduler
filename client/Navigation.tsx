@@ -7,6 +7,7 @@ import HomeScreen from './components/Home';
 import CreatePractice from './components/CreatePractice';
 import Drills from './components/Drills';
 import DrillDetails from './components/DrillDetails';
+import PracticeDetails from './components/PracticeDetails';
 
 // Stack for Home
 const HomeStack = createNativeStackNavigator();
@@ -16,6 +17,7 @@ function HomeStackScreen() {
 		<HomeStack.Navigator>
 			<HomeStack.Screen name="Home" component={HomeScreen} />
 			<HomeStack.Screen name="Practice" component={CreatePractice} />
+			<HomeStack.Screen name="PracticeDetails" component={PracticeDetails} />
 		</HomeStack.Navigator>
 	);
 }

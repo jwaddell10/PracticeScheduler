@@ -1,5 +1,12 @@
 import { useEffect, useState } from "react";
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import {
+	View,
+	Text,
+	FlatList,
+	StyleSheet,
+	TouchableOpacity,
+	Alert,
+} from "react-native";
 import { Button } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../supabase";
@@ -14,15 +21,25 @@ export default function HomeScreen() {
 
 		// Real-time subscription
 		const subscription = supabase
-			.channel('practice-changes')
-			.on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'Practice' }, (payload) => {
-				console.log('New practice:', payload.new);
-				setPractices((prev) => [payload.new, ...prev]);
-			})
-			.on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'Practice' }, (payload) => {
-				console.log('Practice deleted:', payload.old);
-				setPractices((prev) => prev.filter(item => item.id !== payload.old.id));
-			})
+			.channel("practice-changes")
+			.on(
+				"postgres_changes",
+				{ event: "INSERT", schema: "public", table: "Practice" },
+				(payload) => {
+					console.log("New practice:", payload.new);
+					setPractices((prev) => [payload.new, ...prev]);
+				}
+			)
+			.on(
+				"postgres_changes",
+				{ event: "DELETE", schema: "public", table: "Practice" },
+				(payload) => {
+					console.log("Practice deleted:", payload.old);
+					setPractices((prev) =>
+						prev.filter((item) => item.id !== payload.old.id)
+					);
+				}
+			)
 			.subscribe();
 
 		return () => {
@@ -36,7 +53,7 @@ export default function HomeScreen() {
 		if (error) {
 			console.error(error);
 		} else {
-			console.log(data, 'data');
+			console.log(data, "data");
 			setPractices(data);
 		}
 		setLoading(false);
@@ -44,12 +61,12 @@ export default function HomeScreen() {
 
 	// Delete practice by ID
 	const deletePractice = async (id) => {
-		const { error } = await supabase.from('Practice').delete().eq('id', id);
+		const { error } = await supabase.from("Practice").delete().eq("id", id);
 
 		if (error) {
-			console.error('Error deleting practice:', error);
+			console.error("Error deleting practice:", error);
 		} else {
-			console.log('Practice deleted');
+			console.log("Practice deleted");
 			// No need to manually remove from state — subscription handles it
 		}
 	};
@@ -60,25 +77,39 @@ export default function HomeScreen() {
 			"Are you sure you want to delete this practice?",
 			[
 				{ text: "Cancel", style: "cancel" },
-				{ text: "Delete", style: "destructive", onPress: () => deletePractice(id) },
+				{
+					text: "Delete",
+					style: "destructive",
+					onPress: () => deletePractice(id),
+				},
 			]
 		);
 	};
 
 	const renderPracticeItem = ({ item }) => (
-		<View style={styles.practiceItem}>
+		<TouchableOpacity
+			onPress={() =>
+				navigation.navigate("PracticeDetails", { practiceId: item.id })
+			}
+			style={styles.practiceItem}
+		>
 			<Text style={styles.practiceTitle}>Practice</Text>
 			<Text>Start: {new Date(item.startTime).toLocaleString()}</Text>
 			<Text>End: {new Date(item.endTime).toLocaleString()}</Text>
 			<Text>Drills:</Text>
 			{item.drills.map((drill, index) => (
-				<Text key={index} style={styles.drillItem}>- {drill}</Text>
+				<Text key={index} style={styles.drillItem}>
+					- {drill}
+				</Text>
 			))}
 
-			<TouchableOpacity style={styles.deleteButton} onPress={() => confirmDelete(item.id)}>
+			<TouchableOpacity
+				style={styles.deleteButton}
+				onPress={() => confirmDelete(item.id)}
+			>
 				<Text style={styles.deleteButtonText}>Delete</Text>
 			</TouchableOpacity>
-		</View>
+		</TouchableOpacity>
 	);
 
 	return (
