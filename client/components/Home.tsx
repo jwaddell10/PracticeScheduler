@@ -15,7 +15,6 @@ export default function HomeScreen() {
 	const navigation = useNavigation();
 	const [practices, setPractices] = useState([]);
 	const [loading, setLoading] = useState(true);
-
 	useEffect(() => {
 		fetchData();
 
@@ -49,7 +48,7 @@ export default function HomeScreen() {
 
 	async function fetchData() {
 		const { data, error } = await supabase.from("Practice").select("*");
-
+		console.log(data, 'data from fetch home')
 		if (error) {
 			console.error(error);
 		} else {

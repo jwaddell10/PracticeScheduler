@@ -1,84 +1,149 @@
-import React from "react";
-import { View, Text, StyleSheet, ScrollView, Button } from "react-native";
+import React, { useEffect, useState, useLayoutEffect } from "react";
+import {
+	View,
+	Text,
+	StyleSheet,
+	ScrollView,
+	Button,
+	ActivityIndicator,
+} from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import { volleyballDrillsList } from "../utils/volleyballDrillsData";
 import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { supabase } from "../supabase";
 
 export default function Drills() {
 	const navigation = useNavigation();
-	const teamDrills = volleyballDrillsList.filter(
-		(item) => item.category === "Team"
+	const [drills, setDrills] = useState([]);
+	const [loading, setLoading] = useState(true);
+
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerRight: () => (
+				<MaterialIcons
+					name="add"
+					size={28}
+					color="#007AFF"
+					style={{ marginRight: 16 }}
+					onPress={() => navigation.navigate("CreateDrill")}
+				/>
+			),
+		});
+	}, [navigation]);
+
+	useEffect(() => {
+		fetchDrills();
+	}, []);
+
+	const fetchDrills = async () => {
+		setLoading(true);
+		const { data, error } = await supabase
+			.from("Drill")
+			.select("*")
+			.order("name", { ascending: true });
+
+		if (error) {
+			console.error("Error fetching drills:", error);
+		} else {
+			setDrills(data);
+		}
+		setLoading(false);
+		console.log(drills,'drills')
+	};
+
+	// Group drills by type and category for display
+	const groupedDrills = drills.reduce(
+		(acc, drill) => {
+			const typeKey =
+				drill.type?.toLowerCase() === "team drill"
+					? "team"
+					: "individual";
+			if (!acc[typeKey][drill.category]) {
+				acc[typeKey][drill.category] = [];
+			}
+			acc[typeKey][drill.category].push(drill);
+			return acc;
+		},
+		{ team: {}, individual: {} }
 	);
-	const individualDrills = volleyballDrillsList.filter(
-		(item) => item.category === "Individual"
-	);
+
+	if (loading) {
+		return (
+			<SafeAreaProvider>
+				<SafeAreaView style={styles.safeArea}>
+					<ActivityIndicator size="large" />
+				</SafeAreaView>
+			</SafeAreaProvider>
+		);
+	}
 
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
 				<ScrollView contentContainerStyle={styles.scrollView}>
 					<Text style={styles.header}>Team Drills:</Text>
-
-					{teamDrills.map((section, index) => (
-						<View key={index} style={styles.section}>
-							<Text style={styles.subcategory}>
-								{section.subcategory}
-							</Text>
-							{section.drills.map((drill, drillIndex) => (
-								<Text
-									key={drillIndex}
-									style={styles.drillTitle}
-								>
-									{drill.name}
-									<Button
-										title="details"
-										onPress={() =>
-											navigation.navigate(
-												"DrillDetails",
-												{
-													drill: drill, // pass the whole drill
-													category: section.category,
-													subcategory:
-														section.subcategory,
-												}
-											)
-										}
-									/>
+					{Object.entries(groupedDrills.team).map(
+						([category, drills]) => (
+							<View key={category} style={styles.section}>
+								<Text style={styles.subcategory}>
+									{category}
 								</Text>
-							))}
-						</View>
-					))}
+								{drills.map((drill) => (
+									<View
+										key={drill.id}
+										style={styles.drillRow}
+									>
+										<Text style={styles.drillTitle}>
+											{drill.name}
+										</Text>
+										<Button
+											title="details"
+											onPress={() =>
+												navigation.navigate(
+													"DrillDetails",
+													{
+														drill,
+													}
+												)
+											}
+										/>
+									</View>
+								))}
+							</View>
+						)
+					)}
+
 					<Text style={styles.header}>Individual Drills:</Text>
-
-					{individualDrills.map((section, index) => (
-						<View key={index} style={styles.section}>
-							<Text style={styles.subcategory}>
-								{section.subcategory}
-							</Text>
-							{section.drills.map((drill, drillIndex) => (
-								<Text
-									key={drillIndex}
-									style={styles.drillTitle}
-								>
-									{drill.name}
-									<Button
-										title="details"
-										onPress={() =>
-											navigation.navigate(
-												"DrillDetails",
-												{
-													drill: drill, // pass the whole drill
-													category: section.category,
-													subcategory:
-														section.subcategory,
-												}
-											)
-										}
-									/>
+					{Object.entries(groupedDrills.individual).map(
+						([category, drills]) => (
+							<View key={category} style={styles.section}>
+								<Text style={styles.subcategory}>
+									{category}
 								</Text>
-							))}
-						</View>
-					))}
+								{drills.map((drill) => (
+									<View
+										key={drill.id}
+										style={styles.drillRow}
+									>
+										<Text style={styles.drillTitle}>
+											{drill.name}
+										</Text>
+										<Button
+											title="details"
+											onPress={() =>
+												navigation.navigate(
+													"DrillDetails",
+													{
+														drill,
+													}
+												)
+											}
+										/>
+									</View>
+								))}
+							</View>
+						)
+					)}
 				</ScrollView>
 			</SafeAreaView>
 		</SafeAreaProvider>
@@ -105,11 +170,17 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		fontWeight: "600",
 		marginBottom: 8,
+		textTransform: "capitalize",
 	},
 	drillTitle: {
 		fontSize: 16,
-		paddingVertical: 4,
+	},
+	drillRow: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 		borderBottomWidth: 1,
 		borderBottomColor: "#ddd",
+		paddingVertical: 8,
 	},
 });

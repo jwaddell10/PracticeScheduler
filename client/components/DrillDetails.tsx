@@ -10,7 +10,7 @@ export default function DrillDetails({ route }) {
 			<Text style={styles.subcategory}>Subcategory: {subcategory}</Text>
 			<Text style={styles.name}>Name: {drill.name}</Text>
 			<Text style={styles.description}>
-				Description: {drill.description}
+				Description: {drill.notes}
 			</Text>
 			<Text style={styles.duration}>
 				Duration: {drill.duration} minutes

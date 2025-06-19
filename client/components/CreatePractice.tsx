@@ -4,8 +4,13 @@ import {
 	ScrollView,
 	StyleSheet,
 	Text,
+	TextInput,
 	TouchableOpacity,
 	View,
+	KeyboardAvoidingView,
+	Platform,
+	TouchableWithoutFeedback,
+	Keyboard,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -18,8 +23,7 @@ import { useNavigation } from "@react-navigation/native";
 
 const CreatePractice = () => {
 	const navigation = useNavigation();
-	// Flatten the drills into one array
-	// Flatten drills into an array of objects with label and value
+
 	const allDrills = volleyballDrillsList.flatMap(({ subcategory, drills }) =>
 		drills.map((drill) => ({
 			label: `${subcategory}: ${drill.name}`,
@@ -27,24 +31,12 @@ const CreatePractice = () => {
 		}))
 	);
 
-	// If you want to display drills grouped by subcategory for debugging/logging:
-	// const drillsToDisplay = volleyballDrillsList.map(
-	// 	({ subcategory, drills }) => {
-	// 		console.log(`Subcategory: ${subcategory}`);
-	// 		drills.forEach((drill) => console.log(`- ${drill.name}`));
-	// 		return null;
-	// 	}
-	// );
-
-	// Date Picker State
 	const [startDate, setStartDate] = useState(new Date());
 	const [endDate, setEndDate] = useState(new Date());
-	const [show, setShow] = useState(false);
 
-	// Dropdown State
-	const [open, setOpen] = useState(false);
-	const [selectedDrills, setSelectedDrills] = useState([]);
-	const [items, setItems] = useState(allDrills);
+	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
+	const [notes, setNotes] = useState("");
+
 	const onChange =
 		(type: string) => (event: any, selectedDate: SetStateAction<Date>) => {
 			if (selectedDate) {
@@ -55,13 +47,25 @@ const CreatePractice = () => {
 				}
 			}
 		};
-	async function insertData(startDate, endDate, drills) {
+
+	function toLocalISOString(date: Date) {
+		const tzoffset = date.getTimezoneOffset() * 60000; // offset in ms
+		return new Date(date.getTime() - tzoffset).toISOString().slice(0, -1);
+	}
+
+	async function insertData(
+		startDate: Date,
+		endDate: Date,
+		drills: string[],
+		notes: string
+	) {
 		const { data, error } = await supabase.from("Practice").insert([
 			{
-				startTime: startDate.toISOString(), // Store dates as ISO strings (standard format)
-				endTime: endDate.toISOString(),
+				startTime: toLocalISOString(startDate), // local ISO without timezone
+				endTime: toLocalISOString(endDate),
 				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
-				drills: drills, // Make sure your drills column can store an array, or convert to JSON/text
+				drills: drills,
+				notes: notes || null,
 			},
 		]);
 
@@ -71,65 +75,101 @@ const CreatePractice = () => {
 			console.log("Data inserted successfully:", data);
 		}
 	}
+
 	const handleSubmit = async () => {
-		console.log(startDate, endDate, selectedDrills, "dates and drills");
-		await insertData(startDate, endDate, selectedDrills);
-		navigation.goBack(); // 👈 This will close the screen
+		console.log(
+			startDate,
+			endDate,
+			selectedDrills,
+			notes,
+			"dates, drills, notes"
+		);
+		await insertData(startDate, endDate, selectedDrills, notes);
+		navigation.goBack();
 	};
 
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
-				<GestureHandlerRootView style={styles.scrollView}>
-					<Text style={styles.label}>Start</Text>
-					<DateTimePicker
-						testID="startDateTimePicker"
-						value={startDate}
-						mode="datetime"
-						onChange={onChange("start")}
-					/>
-					<Text style={styles.label}>End</Text>
-
-					<DateTimePicker
-						testID="endDateTimePicker"
-						value={endDate}
-						mode="datetime"
-						onChange={onChange("end")}
-					/>
-
-					<Text style={styles.label}>Drills</Text>
-					<DraggableFlatList
-						data={selectedDrills}
-						keyExtractor={(item, index) => item}
-						renderItem={({ item, drag, isActive }) => (
-							<TouchableOpacity
-								style={[
-									styles.draggableItem,
-									{
-										backgroundColor: isActive
-											? "#005BBB"
-											: "#007AFF",
-									},
-								]}
-								onLongPress={drag}
+				<GestureHandlerRootView style={{ flex: 1 }}>
+					<KeyboardAvoidingView
+						style={{ flex: 1 }}
+						behavior={Platform.OS === "ios" ? "padding" : undefined}
+						keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
+					>
+						<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+							<ScrollView
+								contentContainerStyle={styles.scrollView}
+								keyboardShouldPersistTaps="handled"
 							>
-								<Text style={{ color: "white" }}>{item}</Text>
-							</TouchableOpacity>
-						)}
-						onDragEnd={({ data }) => setSelectedDrills(data)}
-					/>
-					<Dropdown
-						label="Menu"
-						placeholder="Select an option..."
-						options={allDrills}
-						selectedValue={selectedDrills}
-						onValueChange={(value) => {
-							setSelectedDrills(value);
-						}}
-						primaryColor={"green"}
-						isMultiple
-					/>
-					<Button title="Submit" onPress={handleSubmit} />
+								<Text style={styles.label}>Start</Text>
+								<DateTimePicker
+									testID="startDateTimePicker"
+									value={startDate}
+									mode="datetime"
+									onChange={onChange("start")}
+								/>
+
+								<Text style={styles.label}>End</Text>
+								<DateTimePicker
+									testID="endDateTimePicker"
+									value={endDate}
+									mode="datetime"
+									onChange={onChange("end")}
+								/>
+
+								<Text style={styles.label}>Drills</Text>
+								<DraggableFlatList
+									data={selectedDrills}
+									keyExtractor={(item, index) => item}
+									renderItem={({ item, drag, isActive }) => (
+										<TouchableOpacity
+											style={[
+												styles.draggableItem,
+												{
+													backgroundColor: isActive
+														? "#005BBB"
+														: "#007AFF",
+												},
+											]}
+											onLongPress={drag}
+										>
+											<Text style={{ color: "white" }}>
+												{item}
+											</Text>
+										</TouchableOpacity>
+									)}
+									onDragEnd={({ data }) =>
+										setSelectedDrills(data)
+									}
+								/>
+
+								<Dropdown
+									label="Menu"
+									placeholder="Select an option..."
+									options={allDrills}
+									selectedValue={selectedDrills}
+									onValueChange={(value) =>
+										setSelectedDrills(value)
+									}
+									primaryColor={"green"}
+									isMultiple
+								/>
+
+								<Text style={styles.label}>Notes</Text>
+								<TextInput
+									style={styles.notesInput}
+									value={notes}
+									onChangeText={setNotes}
+									placeholder="Add notes about this practice..."
+									multiline
+									numberOfLines={4}
+								/>
+
+								<Button title="Submit" onPress={handleSubmit} />
+							</ScrollView>
+						</TouchableWithoutFeedback>
+					</KeyboardAvoidingView>
 				</GestureHandlerRootView>
 			</SafeAreaView>
 		</SafeAreaProvider>
@@ -157,16 +197,15 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		marginVertical: 8,
 	},
-	dropdown: {
+	notesInput: {
+		borderWidth: 1,
 		borderColor: "#ccc",
 		borderRadius: 8,
-	},
-	dropdownContainer: {
-		borderColor: "#ccc",
-	},
-	selectedText: {
-		marginTop: 16,
+		padding: 12,
 		fontSize: 16,
+		marginBottom: 16,
+		textAlignVertical: "top",
+		backgroundColor: "#fff",
 	},
 });
 
