@@ -16,7 +16,6 @@ export default function Drills() {
 	const navigation = useNavigation();
 	const [drills, setDrills] = useState([]);
 	const [loading, setLoading] = useState(true);
-
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			headerRight: () => (
@@ -41,7 +40,7 @@ export default function Drills() {
 			.from("Drill")
 			.select("*")
 			.order("name", { ascending: true });
-
+		console.log(data, 'data?')
 		if (error) {
 			console.error("Error fetching drills:", error);
 		} else {

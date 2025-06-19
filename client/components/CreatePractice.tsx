@@ -1,4 +1,4 @@
-import { SetStateAction, useState } from "react";
+import { SetStateAction, useEffect, useState } from "react";
 import {
 	Button,
 	ScrollView,
@@ -11,31 +11,47 @@ import {
 	Platform,
 	TouchableWithoutFeedback,
 	Keyboard,
+	ActivityIndicator,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Dropdown from "react-native-input-select";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
-import { volleyballDrillsList } from "../utils/volleyballDrillsData";
 import { supabase } from "../supabase";
 import { useNavigation } from "@react-navigation/native";
 
 const CreatePractice = () => {
 	const navigation = useNavigation();
 
-	const allDrills = volleyballDrillsList.flatMap(({ subcategory, drills }) =>
-		drills.map((drill) => ({
-			label: `${subcategory}: ${drill.name}`,
-			value: drill.name,
-		}))
-	);
+	const [drills, setDrills] = useState([]);
+	const [loadingDrills, setLoadingDrills] = useState(true);
 
 	const [startDate, setStartDate] = useState(new Date());
 	const [endDate, setEndDate] = useState(new Date());
 
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [notes, setNotes] = useState("");
+
+	useEffect(() => {
+		fetchDrills();
+	}, []);
+
+	const fetchDrills = async () => {
+		const { data, error } = await supabase.from("Drill").select("*");
+		console.log(data, 'data')
+		if (error) {
+			console.error("Error fetching drills:", error);
+		} else {
+			const formattedDrills = data.map((drill) => ({
+				label: `${drill.type}, ${drill.category}: ${drill.name}`,
+				value: drill.name,
+			}));
+			setDrills(formattedDrills);
+		}
+
+		setLoadingDrills(false);
+	};
 
 	const onChange =
 		(type: string) => (event: any, selectedDate: SetStateAction<Date>) => {
@@ -61,7 +77,7 @@ const CreatePractice = () => {
 	) {
 		const { data, error } = await supabase.from("Practice").insert([
 			{
-				startTime: toLocalISOString(startDate), // local ISO without timezone
+				startTime: toLocalISOString(startDate),
 				endTime: toLocalISOString(endDate),
 				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
 				drills: drills,
@@ -119,42 +135,48 @@ const CreatePractice = () => {
 								/>
 
 								<Text style={styles.label}>Drills</Text>
-								<DraggableFlatList
-									data={selectedDrills}
-									keyExtractor={(item, index) => item}
-									renderItem={({ item, drag, isActive }) => (
-										<TouchableOpacity
-											style={[
-												styles.draggableItem,
-												{
-													backgroundColor: isActive
-														? "#005BBB"
-														: "#007AFF",
-												},
-											]}
-											onLongPress={drag}
-										>
-											<Text style={{ color: "white" }}>
-												{item}
-											</Text>
-										</TouchableOpacity>
-									)}
-									onDragEnd={({ data }) =>
-										setSelectedDrills(data)
-									}
-								/>
+								{loadingDrills ? (
+									<ActivityIndicator size="large" color="#007AFF" />
+								) : (
+									<>
+										<DraggableFlatList
+											data={selectedDrills}
+											keyExtractor={(item, index) => item}
+											renderItem={({ item, drag, isActive }) => (
+												<TouchableOpacity
+													style={[
+														styles.draggableItem,
+														{
+															backgroundColor: isActive
+																? "#005BBB"
+																: "#007AFF",
+														},
+													]}
+													onLongPress={drag}
+												>
+													<Text style={{ color: "white" }}>
+														{item}
+													</Text>
+												</TouchableOpacity>
+											)}
+											onDragEnd={({ data }) =>
+												setSelectedDrills(data)
+											}
+										/>
 
-								<Dropdown
-									label="Menu"
-									placeholder="Select an option..."
-									options={allDrills}
-									selectedValue={selectedDrills}
-									onValueChange={(value) =>
-										setSelectedDrills(value)
-									}
-									primaryColor={"green"}
-									isMultiple
-								/>
+										<Dropdown
+											label="Menu"
+											placeholder="Select an option..."
+											options={drills}
+											selectedValue={selectedDrills}
+											onValueChange={(value) =>
+												setSelectedDrills(value)
+											}
+											primaryColor={"green"}
+											isMultiple
+										/>
+									</>
+								)}
 
 								<Text style={styles.label}>Notes</Text>
 								<TextInput
