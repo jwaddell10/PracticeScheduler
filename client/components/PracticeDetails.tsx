@@ -29,13 +29,15 @@ export default function PracticeDetails({ route }) {
 	const [showStartPicker, setShowStartPicker] = useState(false);
 	const [showEndPicker, setShowEndPicker] = useState(false);
 
-	// New state to store drills for drag & drop
+	// Drills state for drag & drop
 	const [drills, setDrills] = useState([]);
 
 	useEffect(() => {
 		fetchPracticeDetails();
 	}, []);
 
+	const toggleStartPicker = () => setShowStartPicker((prev) => !prev);
+	const toggleEndPicker = () => setShowEndPicker((prev) => !prev);
 	const fetchPracticeDetails = async () => {
 		const { data, error } = await supabase
 			.from("Practice")
@@ -91,16 +93,16 @@ export default function PracticeDetails({ route }) {
 
 	if (loading) {
 		return (
-			<View style={styles.container}>
-				<ActivityIndicator size="large" />
+			<View style={styles.containerCentered}>
+				<ActivityIndicator size="large" color="#007AFF" />
 			</View>
 		);
 	}
 
 	if (!practice) {
 		return (
-			<View style={styles.container}>
-				<Text>Practice not found.</Text>
+			<View style={styles.containerCentered}>
+				<Text style={styles.emptyText}>Practice not found.</Text>
 			</View>
 		);
 	}
@@ -109,26 +111,32 @@ export default function PracticeDetails({ route }) {
 		<TouchableOpacity
 			style={[
 				styles.drillItem,
-				{ backgroundColor: isActive ? "#005BBB" : "#e0e0e0" },
+				{ backgroundColor: isActive ? "#005BBB" : "#F1F3F6" },
 			]}
 			onLongPress={drag}
+			activeOpacity={0.8}
 		>
-			<Text>{item}</Text>
+			<Text style={styles.drillText}>{item}</Text>
+			<MaterialIcons name="drag-handle" size={20} color="#666" />
 		</TouchableOpacity>
 	);
 
 	return (
-		<GestureHandlerRootView>
+		<GestureHandlerRootView style={{ flex: 1 }}>
 			<View style={styles.container}>
 				<Text style={styles.title}>Practice Details</Text>
 
 				<Text style={styles.label}>Start Time</Text>
-				<Text
-					style={styles.dateText}
-					onPress={() => setShowStartPicker(true)}
+				<TouchableOpacity
+					onPress={toggleStartPicker}
+					style={styles.dateTouchable}
+					activeOpacity={0.7}
 				>
-					{startDate.toLocaleString()}
-				</Text>
+					<Text style={styles.dateText}>
+						{startDate.toLocaleString()}
+					</Text>
+					<MaterialIcons name="edit" size={18} color="#007AFF" />
+				</TouchableOpacity>
 				{showStartPicker && (
 					<DateTimePicker
 						value={startDate}
@@ -139,12 +147,16 @@ export default function PracticeDetails({ route }) {
 				)}
 
 				<Text style={styles.label}>End Time</Text>
-				<Text
-					style={styles.dateText}
-					onPress={() => setShowEndPicker(true)}
+				<TouchableOpacity
+					onPress={toggleEndPicker}
+					style={styles.dateTouchable}
+					activeOpacity={0.7}
 				>
-					{endDate.toLocaleString()}
-				</Text>
+					<Text style={styles.dateText}>
+						{endDate.toLocaleString()}
+					</Text>
+					<MaterialIcons name="edit" size={18} color="#007AFF" />
+				</TouchableOpacity>
 				{showEndPicker && (
 					<DateTimePicker
 						value={endDate}
@@ -158,6 +170,7 @@ export default function PracticeDetails({ route }) {
 					<Text style={styles.label}>Notes</Text>
 					<TouchableOpacity
 						onPress={() => setIsEditingNotes(!isEditingNotes)}
+						activeOpacity={0.7}
 					>
 						<MaterialIcons
 							name={isEditingNotes ? "close" : "edit"}
@@ -178,9 +191,10 @@ export default function PracticeDetails({ route }) {
 					onChangeText={setNotes}
 					editable={isEditingNotes}
 					placeholder="Add notes about this practice..."
+					placeholderTextColor="#aaa"
 				/>
 
-				<Text style={[styles.label, { marginTop: 16 }]}>
+				<Text style={[styles.label, { marginTop: 24 }]}>
 					Drills (drag to reorder)
 				</Text>
 				<DraggableFlatList
@@ -188,15 +202,24 @@ export default function PracticeDetails({ route }) {
 					onDragEnd={({ data }) => setDrills(data)}
 					keyExtractor={(item, index) => `${item}-${index}`}
 					renderItem={renderDrill}
-					containerStyle={{ maxHeight: 250 }}
+					containerStyle={styles.drillListContainer}
+					scrollEnabled={false}
 				/>
 
 				{isEditingNotes && (
-					<Button
-						title={saving ? "Saving..." : "Save Changes"}
+					<TouchableOpacity
+						style={[
+							styles.saveButton,
+							saving && styles.saveButtonDisabled,
+						]}
 						onPress={saveChanges}
 						disabled={saving}
-					/>
+						activeOpacity={0.8}
+					>
+						<Text style={styles.saveButtonText}>
+							{saving ? "Saving..." : "Save Changes"}
+						</Text>
+					</TouchableOpacity>
 				)}
 			</View>
 		</GestureHandlerRootView>
@@ -206,26 +229,43 @@ export default function PracticeDetails({ route }) {
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		padding: 16,
+		padding: 20,
 		backgroundColor: "#fff",
 	},
+	containerCentered: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		backgroundColor: "#fff",
+	},
+	emptyText: {
+		fontSize: 18,
+		color: "#666",
+	},
 	title: {
-		fontSize: 24,
-		fontWeight: "bold",
-		marginBottom: 16,
+		fontSize: 26,
+		fontWeight: "700",
+		marginBottom: 24,
+		color: "#222",
 	},
 	label: {
-		fontWeight: "bold",
-		marginTop: 12,
-		marginBottom: 4,
+		fontWeight: "600",
 		fontSize: 16,
+		marginBottom: 8,
+		color: "#444",
 	},
-	dateText: {
-		paddingVertical: 8,
-		fontSize: 16,
-		color: "#007AFF",
+	dateTouchable: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
 		borderBottomWidth: 1,
 		borderColor: "#ccc",
+		paddingVertical: 10,
+		marginBottom: 16,
+	},
+	dateText: {
+		fontSize: 16,
+		color: "#007AFF",
 	},
 	notesHeader: {
 		flexDirection: "row",
@@ -235,18 +275,57 @@ const styles = StyleSheet.create({
 	notesInput: {
 		borderWidth: 1,
 		borderColor: "#ccc",
-		borderRadius: 8,
-		padding: 8,
-		textAlignVertical: "top",
+		borderRadius: 10,
+		padding: 12,
 		fontSize: 16,
+		backgroundColor: "#FAFAFA",
+		textAlignVertical: "top",
+		color: "#222",
 	},
 	notesInputDisabled: {
-		backgroundColor: "#f0f0f0",
-		color: "#888",
+		backgroundColor: "#F5F5F5",
+		color: "#999",
+	},
+	drillListContainer: {
+		maxHeight: 280,
 	},
 	drillItem: {
-		padding: 12,
-		marginVertical: 4,
-		borderRadius: 6,
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingVertical: 14,
+		paddingHorizontal: 20,
+		marginVertical: 6,
+		backgroundColor: "#F1F3F6",
+		borderRadius: 12,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 2,
+	},
+	drillText: {
+		fontSize: 16,
+		color: "#333",
+	},
+	saveButton: {
+		marginTop: 30,
+		backgroundColor: "#007AFF",
+		paddingVertical: 16,
+		borderRadius: 12,
+		alignItems: "center",
+		shadowColor: "#007AFF",
+		shadowOffset: { width: 0, height: 5 },
+		shadowOpacity: 0.4,
+		shadowRadius: 6,
+		elevation: 5,
+	},
+	saveButtonDisabled: {
+		backgroundColor: "#7AB8FF",
+	},
+	saveButtonText: {
+		color: "#fff",
+		fontWeight: "700",
+		fontSize: 18,
 	},
 });

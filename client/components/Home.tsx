@@ -1,177 +1,225 @@
 import { useEffect, useState } from "react";
 import {
-	View,
-	Text,
-	FlatList,
-	StyleSheet,
-	TouchableOpacity,
-	Alert,
+  View,
+  Text,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
 } from "react-native";
-import { Button } from "@react-navigation/elements";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../supabase";
 
 export default function HomeScreen() {
-	const navigation = useNavigation();
-	const [practices, setPractices] = useState([]);
-	const [loading, setLoading] = useState(true);
-	useEffect(() => {
-		fetchData();
+  const navigation = useNavigation();
+  const [practices, setPractices] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-		// Real-time subscription
-		const subscription = supabase
-			.channel("practice-changes")
-			.on(
-				"postgres_changes",
-				{ event: "INSERT", schema: "public", table: "Practice" },
-				(payload) => {
-					console.log("New practice:", payload.new);
-					setPractices((prev) => [payload.new, ...prev]);
-				}
-			)
-			.on(
-				"postgres_changes",
-				{ event: "DELETE", schema: "public", table: "Practice" },
-				(payload) => {
-					console.log("Practice deleted:", payload.old);
-					setPractices((prev) =>
-						prev.filter((item) => item.id !== payload.old.id)
-					);
-				}
-			)
-			.subscribe();
+  useEffect(() => {
+    fetchData();
 
-		return () => {
-			supabase.removeChannel(subscription);
-		};
-	}, []);
+    // Real-time subscription
+    const subscription = supabase
+      .channel("practice-changes")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "Practice" },
+        (payload) => {
+          console.log("New practice:", payload.new);
+          setPractices((prev) => [payload.new, ...prev]);
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "Practice" },
+        (payload) => {
+          console.log("Practice deleted:", payload.old);
+          setPractices((prev) =>
+            prev.filter((item) => item.id !== payload.old.id)
+          );
+        }
+      )
+      .subscribe();
 
-	async function fetchData() {
-		const { data, error } = await supabase.from("Practice").select("*");
-		console.log(data, 'data from fetch home')
-		if (error) {
-			console.error(error);
-		} else {
-			console.log(data, "data");
-			setPractices(data);
-		}
-		setLoading(false);
-	}
+    return () => {
+      supabase.removeChannel(subscription);
+    };
+  }, []);
 
-	// Delete practice by ID
-	const deletePractice = async (id) => {
-		const { error } = await supabase.from("Practice").delete().eq("id", id);
+  async function fetchData() {
+    const { data, error } = await supabase.from("Practice").select("*");
+    if (error) {
+      console.error(error);
+    } else {
+      setPractices(data);
+    }
+    setLoading(false);
+  }
 
-		if (error) {
-			console.error("Error deleting practice:", error);
-		} else {
-			console.log("Practice deleted");
-			// No need to manually remove from state — subscription handles it
-		}
-	};
+  // Delete practice by ID
+  const deletePractice = async (id) => {
+    const { error } = await supabase.from("Practice").delete().eq("id", id);
 
-	const confirmDelete = (id) => {
-		Alert.alert(
-			"Delete Practice",
-			"Are you sure you want to delete this practice?",
-			[
-				{ text: "Cancel", style: "cancel" },
-				{
-					text: "Delete",
-					style: "destructive",
-					onPress: () => deletePractice(id),
-				},
-			]
-		);
-	};
+    if (error) {
+      console.error("Error deleting practice:", error);
+    } else {
+      console.log("Practice deleted");
+      // No need to manually remove from state — subscription handles it
+    }
+  };
 
-	const renderPracticeItem = ({ item }) => (
-		<TouchableOpacity
-			onPress={() =>
-				navigation.navigate("PracticeDetails", { practiceId: item.id })
-			}
-			style={styles.practiceItem}
-		>
-			<Text style={styles.practiceTitle}>Practice</Text>
-			<Text>Start: {new Date(item.startTime).toLocaleString()}</Text>
-			<Text>End: {new Date(item.endTime).toLocaleString()}</Text>
-			<Text>Drills:</Text>
-			{item.drills.map((drill, index) => (
-				<Text key={index} style={styles.drillItem}>
-					- {drill}
-				</Text>
-			))}
+  const confirmDelete = (id) => {
+    Alert.alert(
+      "Delete Practice",
+      "Are you sure you want to delete this practice?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => deletePractice(id),
+        },
+      ]
+    );
+  };
 
-			<TouchableOpacity
-				style={styles.deleteButton}
-				onPress={() => confirmDelete(item.id)}
-			>
-				<Text style={styles.deleteButtonText}>Delete</Text>
-			</TouchableOpacity>
-		</TouchableOpacity>
-	);
+  const renderPracticeItem = ({ item }) => (
+    <TouchableOpacity
+      onPress={() =>
+        navigation.navigate("PracticeDetails", { practiceId: item.id })
+      }
+      style={styles.practiceItem}
+    >
+      <Text style={styles.practiceTitle}>Practice</Text>
+      <Text style={styles.dateText}>
+        Start: {new Date(item.startTime).toLocaleString()}
+      </Text>
+      <Text style={styles.dateText}>
+        End: {new Date(item.endTime).toLocaleString()}
+      </Text>
+      <Text style={styles.drillsLabel}>Drills:</Text>
+      {item.drills.map((drill, index) => (
+        <Text key={index} style={styles.drillItem}>
+          • {drill}
+        </Text>
+      ))}
 
-	return (
-		<View style={styles.container}>
-			<Text style={styles.header}>Hello, Coach</Text>
+      <TouchableOpacity
+        style={styles.deleteButton}
+        onPress={() => confirmDelete(item.id)}
+      >
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </TouchableOpacity>
+  );
 
-			{loading ? (
-				<Text>Loading...</Text>
-			) : practices.length === 0 ? (
-				<Text>No practices scheduled yet.</Text>
-			) : (
-				<FlatList
-					data={practices}
-					keyExtractor={(item) => item.id}
-					renderItem={renderPracticeItem}
-					contentContainerStyle={styles.listContainer}
-				/>
-			)}
+  return (
+    <View style={styles.container}>
+      <Text style={styles.header}>Hello, Coach</Text>
 
-			<Button onPress={() => navigation.navigate("Practice")}>
-				Schedule Practice
-			</Button>
-		</View>
-	);
+      {loading ? (
+        <Text>Loading...</Text>
+      ) : practices.length === 0 ? (
+        <Text>No practices scheduled yet.</Text>
+      ) : (
+        <FlatList
+          data={practices}
+          keyExtractor={(item) => item.id}
+          renderItem={renderPracticeItem}
+          contentContainerStyle={styles.listContainer}
+        />
+      )}
+
+      <TouchableOpacity
+        style={styles.scheduleButton}
+        onPress={() => navigation.navigate("Practice")}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.scheduleButtonText}>Schedule Practice</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-	container: {
-		padding: 16,
-		flex: 1,
-		backgroundColor: "#fff",
-	},
-	header: {
-		fontSize: 24,
-		fontWeight: "bold",
-		marginBottom: 16,
-	},
-	listContainer: {
-		paddingBottom: 16,
-	},
-	practiceItem: {
-		backgroundColor: "#f0f0f0",
-		padding: 12,
-		borderRadius: 8,
-		marginBottom: 12,
-	},
-	practiceTitle: {
-		fontWeight: "bold",
-		fontSize: 18,
-		marginBottom: 4,
-	},
-	drillItem: {
-		marginLeft: 8,
-	},
-	deleteButton: {
-		marginTop: 8,
-		backgroundColor: "#FF3B30",
-		padding: 8,
-		borderRadius: 4,
-		alignSelf: "flex-start",
-	},
-	deleteButtonText: {
-		color: "white",
-		fontWeight: "bold",
-	},
+  container: {
+    flex: 1,
+    backgroundColor: "#FAFAFA",
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  header: {
+    fontSize: 28,
+    fontWeight: "700",
+    marginBottom: 24,
+    color: "#222",
+  },
+  listContainer: {
+    paddingBottom: 24,
+  },
+  practiceItem: {
+    backgroundColor: "#FFFFFF",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3, // Android shadow
+  },
+  practiceTitle: {
+    fontWeight: "700",
+    fontSize: 20,
+    marginBottom: 8,
+    color: "#007AFF",
+  },
+  dateText: {
+    fontSize: 14,
+    color: "#444",
+    marginBottom: 4,
+  },
+  drillsLabel: {
+    marginTop: 12,
+    fontWeight: "600",
+    fontSize: 16,
+    color: "#333",
+    marginBottom: 6,
+  },
+  drillItem: {
+    marginLeft: 12,
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 2,
+  },
+  deleteButton: {
+    marginTop: 12,
+    backgroundColor: "#FF3B30",
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignSelf: "flex-start",
+    shadowColor: "#FF3B30",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.4,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  deleteButtonText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 16,
+  },
+  scheduleButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+    marginBottom: 32,
+  },
+  scheduleButtonText: {
+    color: "white",
+    fontWeight: "700",
+    fontSize: 18,
+  },
 });

@@ -4,13 +4,13 @@ import {
 	Text,
 	TextInput,
 	StyleSheet,
-	Button,
 	Alert,
 	Platform,
 	KeyboardAvoidingView,
 	ScrollView,
 	TouchableWithoutFeedback,
 	Keyboard,
+	TouchableOpacity,
 } from "react-native";
 import Dropdown from "react-native-input-select";
 import { supabase } from "../supabase";
@@ -32,12 +32,11 @@ export default function CreateDrill() {
 	const [name, setName] = useState("");
 	const [type, setType] = useState(null);
 	const [category, setCategory] = useState(null);
-	const [duration, setDuration] = useState(""); // new duration state (string to control input)
+	const [duration, setDuration] = useState(""); // string to control input
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
 
 	const handleSubmit = async () => {
-		// Validate duration as positive number if entered
 		const durationNum = Number(duration);
 		if (!name || !type || !category) {
 			Alert.alert("Validation", "Please fill in all required fields.");
@@ -79,7 +78,7 @@ export default function CreateDrill() {
 		<KeyboardAvoidingView
 			style={{ flex: 1, backgroundColor: "#fff" }}
 			behavior={Platform.OS === "ios" ? "padding" : undefined}
-			keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0} // Adjust if you have a header
+			keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
 		>
 			<ScrollView
 				contentContainerStyle={styles.container}
@@ -136,11 +135,17 @@ export default function CreateDrill() {
 							numberOfLines={4}
 						/>
 
-						<Button
-							title={saving ? "Saving..." : "Create Drill"}
-							onPress={handleSubmit}
-							disabled={saving}
-						/>
+						<View style={styles.buttonContainer}>
+							<TouchableOpacity
+								style={styles.button}
+								onPress={handleSubmit}
+								disabled={saving}
+							>
+								<Text style={styles.buttonText}>
+									{saving ? "Saving..." : "Create Drill"}
+								</Text>
+							</TouchableOpacity>
+						</View>
 					</View>
 				</TouchableWithoutFeedback>
 			</ScrollView>
@@ -150,28 +155,68 @@ export default function CreateDrill() {
 
 const styles = StyleSheet.create({
 	container: {
-		padding: 16,
+		padding: 24,
+		backgroundColor: "#fff",
+		flexGrow: 1,
 	},
+
 	label: {
-		fontWeight: "bold",
-		marginTop: 16,
+		fontWeight: "700",
+		fontSize: 17,
+		marginTop: 24,
 		marginBottom: 8,
-		fontSize: 16,
+		color: "#222",
 	},
+
 	input: {
 		borderWidth: 1,
 		borderColor: "#ccc",
-		borderRadius: 8,
-		padding: Platform.OS === "ios" ? 12 : 8,
-		fontSize: 16,
+		borderRadius: 12,
+		paddingVertical: Platform.OS === "ios" ? 16 : 12,
+		paddingHorizontal: 18,
+		fontSize: 17,
+		backgroundColor: "#fafafa",
+		shadowColor: "#000",
+		shadowOpacity: 0.05,
+		shadowRadius: 4,
+		shadowOffset: { width: 0, height: 3 },
 	},
+
 	notesInput: {
-		height: 100,
+		height: 120,
 		textAlignVertical: "top",
+		backgroundColor: "#fafafa",
 	},
+
 	dropdown: {
 		borderWidth: 1,
 		borderColor: "#ccc",
-		borderRadius: 8,
+		borderRadius: 12,
+		backgroundColor: "#fafafa",
+		paddingHorizontal: 16,
+		paddingVertical: 10,
+		marginBottom: 12,
+		shadowColor: "#000",
+		shadowOpacity: 0.05,
+		shadowRadius: 4,
+		shadowOffset: { width: 0, height: 3 },
+	},
+
+	buttonContainer: {
+		marginTop: 36,
+		backgroundColor: "#007AFF",
+		borderRadius: 12,
+		overflow: "hidden",
+	},
+
+	button: {
+		paddingVertical: 16,
+		alignItems: "center",
+	},
+
+	buttonText: {
+		color: "white",
+		fontSize: 18,
+		fontWeight: "700",
 	},
 });

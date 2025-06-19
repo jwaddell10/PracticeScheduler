@@ -6,44 +6,70 @@ export default function DrillDetails({ route }) {
 
 	return (
 		<View style={styles.container}>
-			<Text style={styles.category}>Category: {category}</Text>
-			<Text style={styles.subcategory}>Subcategory: {subcategory}</Text>
-			<Text style={styles.name}>Name: {drill.name}</Text>
-			<Text style={styles.description}>
-				Description: {drill.notes}
-			</Text>
-			<Text style={styles.duration}>
-				Duration: {drill.duration} minutes
-			</Text>
+			<View style={styles.card}>
+				<Text style={styles.category}>{category?.toUpperCase() ?? ""}</Text>
+				<Text style={styles.subcategory}>{subcategory}</Text>
+
+				<Text style={styles.name}>{drill.name}</Text>
+
+				<Text style={styles.description}>{drill.notes}</Text>
+
+				<Text style={styles.duration}>Duration: {drill.duration} min</Text>
+			</View>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
-		padding: 16,
+		flex: 1,
+		padding: 20,
+		backgroundColor: "#f8f9fa",
 	},
+	card: {
+		backgroundColor: "white",
+		borderRadius: 12,
+		padding: 20,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 3 },
+		shadowOpacity: 0.1,
+		shadowRadius: 8,
+		elevation: 5,
+	},
+
 	category: {
-		fontSize: 18,
-		fontWeight: "bold",
-		marginBottom: 8,
+		fontSize: 14,
+		fontWeight: "700",
+		color: "#4CAF50",
+		letterSpacing: 1,
+		marginBottom: 4,
 	},
+
 	subcategory: {
 		fontSize: 16,
 		fontWeight: "600",
-		marginBottom: 8,
+		color: "#333",
+		marginBottom: 12,
 	},
+
 	name: {
-		fontSize: 20,
+		fontSize: 24,
 		fontWeight: "bold",
-		marginBottom: 8,
+		color: "#222",
+		marginBottom: 16,
 	},
+
 	description: {
 		fontSize: 16,
-		marginBottom: 8,
+		lineHeight: 24,
+		color: "#555",
+		marginBottom: 20,
 	},
+
 	duration: {
-		fontSize: 16,
-		color: "gray",
+		fontSize: 14,
+		color: "#777",
+		fontStyle: "italic",
+		textAlign: "right",
 	},
 });
