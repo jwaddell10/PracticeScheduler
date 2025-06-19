@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { SetStateAction, useState } from "react";
 import {
 	Button,
 	ScrollView,
@@ -13,8 +13,11 @@ import Dropdown from "react-native-input-select";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { volleyballDrillsList } from "../utils/volleyballDrillsData";
+import { supabase } from "../supabase";
+import { useNavigation } from "@react-navigation/native";
 
 const CreatePractice = () => {
+	const navigation = useNavigation();
 	// Flatten the drills into one array
 	// Flatten drills into an array of objects with label and value
 	const allDrills = volleyballDrillsList.flatMap(({ subcategory, drills }) =>
@@ -25,43 +28,75 @@ const CreatePractice = () => {
 	);
 
 	// If you want to display drills grouped by subcategory for debugging/logging:
-	const drillsToDisplay = volleyballDrillsList.map(
-		({ subcategory, drills }) => {
-			console.log(`Subcategory: ${subcategory}`);
-			drills.forEach((drill) => console.log(`- ${drill.name}`));
-			return null;
-		}
-	);
+	// const drillsToDisplay = volleyballDrillsList.map(
+	// 	({ subcategory, drills }) => {
+	// 		console.log(`Subcategory: ${subcategory}`);
+	// 		drills.forEach((drill) => console.log(`- ${drill.name}`));
+	// 		return null;
+	// 	}
+	// );
 
 	// Date Picker State
-	const [date, setDate] = useState(new Date());
+	const [startDate, setStartDate] = useState(new Date());
+	const [endDate, setEndDate] = useState(new Date());
 	const [show, setShow] = useState(false);
 
 	// Dropdown State
 	const [open, setOpen] = useState(false);
 	const [selectedDrills, setSelectedDrills] = useState([]);
 	const [items, setItems] = useState(allDrills);
-	const onChange = (event: any, selectedDate: any) => {
-		const currentDate = selectedDate;
-		setShow(false);
-		setDate(currentDate);
-	};
+	const onChange =
+		(type: string) => (event: any, selectedDate: SetStateAction<Date>) => {
+			if (selectedDate) {
+				if (type === "start") {
+					setStartDate(selectedDate);
+				} else {
+					setEndDate(selectedDate);
+				}
+			}
+		};
+	async function insertData(startDate, endDate, drills) {
+		const { data, error } = await supabase.from("Practice").insert([
+			{
+				startTime: startDate.toISOString(), // Store dates as ISO strings (standard format)
+				endTime: endDate.toISOString(),
+				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
+				drills: drills, // Make sure your drills column can store an array, or convert to JSON/text
+			},
+		]);
 
-	// const handleSubmit = () => {
-	// 	console.log(date, "date", selectedDrill, "selected drill");
-	// };
+		if (error) {
+			console.error("Error inserting data:", error);
+		} else {
+			console.log("Data inserted successfully:", data);
+		}
+	}
+	const handleSubmit = async () => {
+		console.log(startDate, endDate, selectedDrills, "dates and drills");
+		await insertData(startDate, endDate, selectedDrills);
+		navigation.goBack(); // 👈 This will close the screen
+	};
 
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
 				<GestureHandlerRootView style={styles.scrollView}>
-					<Text style={styles.label}>Select Date & Time</Text>
+					<Text style={styles.label}>Start</Text>
 					<DateTimePicker
-						testID="dateTimePicker"
-						value={date}
+						testID="startDateTimePicker"
+						value={startDate}
 						mode="datetime"
-						onChange={onChange}
+						onChange={onChange("start")}
 					/>
+					<Text style={styles.label}>End</Text>
+
+					<DateTimePicker
+						testID="endDateTimePicker"
+						value={endDate}
+						mode="datetime"
+						onChange={onChange("end")}
+					/>
+
 					<Text style={styles.label}>Drills</Text>
 					<DraggableFlatList
 						data={selectedDrills}
@@ -94,7 +129,7 @@ const CreatePractice = () => {
 						primaryColor={"green"}
 						isMultiple
 					/>
-					<Button title="Submit" />
+					<Button title="Submit" onPress={handleSubmit} />
 				</GestureHandlerRootView>
 			</SafeAreaView>
 		</SafeAreaProvider>

@@ -2,7 +2,6 @@ import React from "react";
 import { View, Text, StyleSheet, ScrollView, Button } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { volleyballDrillsList } from "../utils/volleyballDrillsData";
-import Navigation from "../Navigation";
 import { useNavigation } from "@react-navigation/native";
 
 export default function Drills() {
