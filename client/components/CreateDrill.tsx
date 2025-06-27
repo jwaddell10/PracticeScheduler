@@ -13,7 +13,7 @@ import {
 	TouchableOpacity,
 } from "react-native";
 import Dropdown from "react-native-input-select";
-import { supabase } from "../supabase";
+import { supabase } from "../../server/src/supabase";
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -37,41 +37,41 @@ export default function CreateDrill() {
 	const [saving, setSaving] = useState(false);
 
 	const handleSubmit = async () => {
-		const durationNum = Number(duration);
-		if (!name || !type || !category) {
-			Alert.alert("Validation", "Please fill in all required fields.");
-			return;
-		}
-		if (duration && (isNaN(durationNum) || durationNum <= 0)) {
-			Alert.alert("Validation", "Duration must be a positive number.");
-			return;
-		}
+		// const durationNum = Number(duration);
+		// if (!name || !type || !category) {
+		// 	Alert.alert("Validation", "Please fill in all required fields.");
+		// 	return;
+		// }
+		// if (duration && (isNaN(durationNum) || durationNum <= 0)) {
+		// 	Alert.alert("Validation", "Duration must be a positive number.");
+		// 	return;
+		// }
 
-		setSaving(true);
+		// setSaving(true);
 
-		const { data, error } = await supabase.from("Drill").insert([
-			{
-				name,
-				type,
-				category,
-				duration: duration ? durationNum : null,
-				notes: notes || null,
-			},
-		]);
+		// const { data, error } = await supabase.from("Drill").insert([
+		// 	{
+		// 		name,
+		// 		type,
+		// 		category,
+		// 		duration: duration ? durationNum : null,
+		// 		notes: notes || null,
+		// 	},
+		// ]);
 
-		setSaving(false);
+		// setSaving(false);
 
-		if (error) {
-			console.error("Error inserting drill:", error);
-			Alert.alert("Error", "Failed to create drill.");
-		} else {
-			Alert.alert("Success", "Drill created!");
-			setName("");
-			setType(null);
-			setCategory(null);
-			setDuration("");
-			setNotes("");
-		}
+		// if (error) {
+		// 	console.error("Error inserting drill:", error);
+		// 	Alert.alert("Error", "Failed to create drill.");
+		// } else {
+		// 	Alert.alert("Success", "Drill created!");
+		// 	setName("");
+		// 	setType(null);
+		// 	setCategory(null);
+		// 	setDuration("");
+		// 	setNotes("");
+		// }
 	};
 
 	return (

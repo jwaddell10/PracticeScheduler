@@ -1,0 +1,42 @@
+{
+	"name": "practicescheduler",
+	"version": "1.0.0",
+	"description": "TypeScript Express backend for React Native app",
+	"main": "app.ts",
+	"scripts": {
+		"build": "tsc",
+		"start": "node src/app.ts",
+		"clean": "rimraf dist",
+		"prebuild": "npm run clean",
+		"postbuild": "echo 'Build completed successfully'",
+		"type-check": "tsc --noEmit",
+		"lint": "eslint src/**/*.ts",
+		"lint:fix": "eslint src/**/*.ts --fix"
+	},
+	"dependencies": {
+		"@supabase/supabase-js": "^2.39.0",
+		"cors": "^2.8.5",
+		"dotenv": "^16.3.1",
+		"express": "^4.18.2",
+		"express-async-handler": "^1.2.0"
+	},
+	"devDependencies": {
+		"@types/cors": "^2.8.14",
+		"@types/express": "^4.17.23",
+		"@types/node": "^20.8.0",
+		"nodemon": "^3.0.1",
+		"rimraf": "^5.0.5",
+		"ts-node": "^10.9.1",
+		"typescript": "^5.2.2"
+	},
+	"keywords": [
+		"express",
+		"typescript",
+		"backend",
+		"react-native",
+		"supabase"
+	],
+	"author": "Your Name",
+	"license": "ISC",
+	"type": "commonjs"
+}

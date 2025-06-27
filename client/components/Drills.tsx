@@ -10,7 +10,7 @@ import {
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { supabase } from "../supabase";
+import { supabase } from "../../server/src/supabase";
 
 export default function Drills() {
 	const navigation = useNavigation();
@@ -37,16 +37,23 @@ export default function Drills() {
 
 	const fetchDrills = async () => {
 		setLoading(true);
-		const { data, error } = await supabase
-			.from("Drill")
-			.select("*")
-			.order("name", { ascending: true });
-		if (error) {
-			console.error("Error fetching drills:", error);
-		} else {
-			setDrills(data);
+		try {
+			const response = await fetch(`${process.env.EXPO_SERVER_API}/drills`)
+			const data = await response.json();
+			console.log(data, 'data')
+		} catch (error) {
+			console.log(error, 'err')
 		}
-		setLoading(false);
+		// const { data, error } = await supabase
+		// 	.from("Drill")
+		// 	.select("*")
+		// 	.order("name", { ascending: true });
+		// if (error) {
+		// 	console.error("Error fetching drills:", error);
+		// } else {
+		// 	setDrills(data);
+		// }
+		// setLoading(false);
 	};
 
 	const groupedDrills = drills.reduce(

@@ -17,7 +17,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Dropdown from "react-native-input-select";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
-import { supabase } from "../supabase";
+// import { supabase } from "../../server/supabase";
 import { useNavigation } from "@react-navigation/native";
 
 const CreatePractice = () => {
@@ -37,17 +37,24 @@ const CreatePractice = () => {
 	}, []);
 
 	const fetchDrills = async () => {
-		const { data, error } = await supabase.from("Drill").select("*");
-		if (error) {
-			console.error("Error fetching drills:", error);
-		} else {
-			const formattedDrills = data.map((drill) => ({
-				label: `${drill.type}, ${drill.category}: ${drill.name}`,
-				value: drill.name,
-			}));
-			setDrills(formattedDrills);
+		try {
+			const response = await fetch(`${process.env.EXPO_SERVER_API}/practice`)
+			const data = await response.json();
+			console.log(data, 'data from fetch')
+		} catch (error) {
+			console.log(error, 'err')
 		}
-		setLoadingDrills(false);
+		// const { data, error } = await supabase.from("Drill").select("*");
+		// if (error) {
+		// 	console.error("Error fetching drills:", error);
+		// } else {
+		// 	const formattedDrills = data.map((drill) => ({
+		// 		label: `${drill.type}, ${drill.category}: ${drill.name}`,
+		// 		value: drill.name,
+		// 	}));
+		// 	setDrills(formattedDrills);
+		// }
+		// setLoadingDrills(false);
 	};
 
 	const onChange =

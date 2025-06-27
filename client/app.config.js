@@ -31,7 +31,7 @@ export default () => ({
       eas: {
         projectId: "7952f98e-4bdd-4d28-84ef-b4e9fe8951e0"
       },
-      SUPABASE_KEY: process.env.SUPABASE_KEY,
+      SUPABASE_KEY: "process.env.SUPABASE_NEW_KEY",
       SUPABASE_URL: process.env.SUPABASE_URL
     },
     plugins: ["expo-secure-store"]

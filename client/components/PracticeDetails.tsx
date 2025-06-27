@@ -10,7 +10,7 @@ import {
 	TouchableOpacity,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { supabase } from "../supabase";
+import { supabase } from "../../server/src/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -39,23 +39,23 @@ export default function PracticeDetails({ route }) {
 	const toggleStartPicker = () => setShowStartPicker((prev) => !prev);
 	const toggleEndPicker = () => setShowEndPicker((prev) => !prev);
 	const fetchPracticeDetails = async () => {
-		const { data, error } = await supabase
-			.from("Practice")
-			.select("*")
-			.eq("id", practiceId)
-			.single();
+		// const { data, error } = await supabase
+		// 	.from("Practice")
+		// 	.select("*")
+		// 	.eq("id", practiceId)
+		// 	.single();
 
-		if (error) {
-			console.error("Error fetching practice:", error);
-			Alert.alert("Error", "Could not load practice details.");
-		} else {
-			setPractice(data);
-			setStartDate(new Date(data.startTime));
-			setEndDate(new Date(data.endTime));
-			setNotes(data.notes || "");
-			setDrills(data.drills || []);
-		}
-		setLoading(false);
+		// if (error) {
+		// 	console.error("Error fetching practice:", error);
+		// 	Alert.alert("Error", "Could not load practice details.");
+		// } else {
+		// 	setPractice(data);
+		// 	setStartDate(new Date(data.startTime));
+		// 	setEndDate(new Date(data.endTime));
+		// 	setNotes(data.notes || "");
+		// 	setDrills(data.drills || []);
+		// }
+		// setLoading(false);
 	};
 
 	const onChangeStart = (event, selectedDate) => {
@@ -70,25 +70,32 @@ export default function PracticeDetails({ route }) {
 
 	const saveChanges = async () => {
 		setSaving(true);
-		const { error } = await supabase
-			.from("Practice")
-			.update({
-				startTime: startDate.toISOString(),
-				endTime: endDate.toISOString(),
-				notes,
-				drills, // save updated drills order here
-			})
-			.eq("id", practiceId);
-
-		setSaving(false);
-
-		if (error) {
-			console.error("Error updating practice:", error);
-			Alert.alert("Error", "Failed to update practice.");
-		} else {
-			Alert.alert("Success", "Practice updated!");
-			setIsEditingNotes(false);
+		try {
+			const response = await fetch(`${process.env.EXPO_SERVER_API}/practice`)
+			const data = await response.json();
+			console.log(data, 'data pract details')
+		} catch (error) {
+			console.log(error, 'err')
 		}
+		// const { error } = await supabase
+		// 	.from("Practice")
+		// 	.update({
+		// 		startTime: startDate.toISOString(),
+		// 		endTime: endDate.toISOString(),
+		// 		notes,
+		// 		drills, // save updated drills order here
+		// 	})
+		// 	.eq("id", practiceId);
+
+		// setSaving(false);
+
+		// if (error) {
+		// 	console.error("Error updating practice:", error);
+		// 	Alert.alert("Error", "Failed to update practice.");
+		// } else {
+		// 	Alert.alert("Success", "Practice updated!");
+		// 	setIsEditingNotes(false);
+		// }
 	};
 
 	if (loading) {
