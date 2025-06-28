@@ -4,7 +4,8 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 // var indexRouter = require("./routes/index");
 // var userRouter = require("./routes/user");
-const practiceRouter = require("./routes/practice");
+const practiceRouter = require("./routes/practice.ts");
+const homeRouter = require("./routes/home.ts");
 // const postRouter = require("./routes/post")
 // const profileRouter = require("./routes/profile")
 // const commentRouter = require("./routes/comment")
@@ -29,6 +30,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // })
 // app.use("/")
 // app.use("/user", userRouter);
+app.use("/", homeRouter);
 app.use("/practice", practiceRouter);
 // API routes
 // app.use('/api', apiRoutes)
