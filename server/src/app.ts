@@ -29,13 +29,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }))
 // })
 
 // Basic routes
-// app.get('/', (req: Request, res: Response) => {
-//   res.json()
-// })
+app.get('/', (req: Request, res: Response) => {
+  res.json()
+})
 
 // app.use("/")
 // app.use("/user", userRouter);
-app.use("/", homeRouter)
+app.use("/home", homeRouter)
 app.use("/practice", practiceRouter);
 // API routes
 // app.use('/api', apiRoutes)

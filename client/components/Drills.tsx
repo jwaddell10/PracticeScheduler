@@ -11,6 +11,7 @@ import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { supabase } from "../../server/src/supabase";
+import Constants from "expo-constants";
 
 export default function Drills() {
 	const navigation = useNavigation();
@@ -38,11 +39,13 @@ export default function Drills() {
 	const fetchDrills = async () => {
 		setLoading(true);
 		try {
-			const response = await fetch(`${process.env.EXPO_SERVER_API}/drills`)
+			const response = await fetch(
+				`${Constants.expoConfig?.extra?.serverApi}/drills`
+			);
 			const data = await response.json();
-			console.log(data, 'data')
+			console.log(data, "data");
 		} catch (error) {
-			console.log(error, 'err')
+			console.log(error, "err");
 		}
 		// const { data, error } = await supabase
 		// 	.from("Drill")
@@ -110,20 +113,28 @@ export default function Drills() {
 			<SafeAreaView style={styles.safeArea}>
 				<ScrollView contentContainerStyle={styles.scrollView}>
 					<Text style={styles.header}>Team Drills</Text>
-					{Object.entries(groupedDrills.team).map(([category, drills]) => (
-						<View key={category} style={styles.section}>
-							<Text style={styles.categoryTitle}>{category}</Text>
-							{drills.map(renderDrillRow)}
-						</View>
-					))}
+					{Object.entries(groupedDrills.team).map(
+						([category, drills]) => (
+							<View key={category} style={styles.section}>
+								<Text style={styles.categoryTitle}>
+									{category}
+								</Text>
+								{drills.map(renderDrillRow)}
+							</View>
+						)
+					)}
 
 					<Text style={styles.header}>Individual Drills</Text>
-					{Object.entries(groupedDrills.individual).map(([category, drills]) => (
-						<View key={category} style={styles.section}>
-							<Text style={styles.categoryTitle}>{category}</Text>
-							{drills.map(renderDrillRow)}
-						</View>
-					))}
+					{Object.entries(groupedDrills.individual).map(
+						([category, drills]) => (
+							<View key={category} style={styles.section}>
+								<Text style={styles.categoryTitle}>
+									{category}
+								</Text>
+								{drills.map(renderDrillRow)}
+							</View>
+						)
+					)}
 				</ScrollView>
 			</SafeAreaView>
 		</SafeAreaProvider>

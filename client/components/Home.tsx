@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../../server/src/supabase";
+import Constants from "expo-constants";
 
 export default function HomeScreen() {
 	const navigation = useNavigation();
@@ -48,19 +49,24 @@ export default function HomeScreen() {
 
 	async function fetchData() {
 		try {
-			const response = await fetch(`${process.env.EXPO_SERVER_API}/`);
+			const serverApi = Constants.expoConfig?.extra?.serverApi;
+
+			if (!serverApi) {
+				console.warn("Server API URL is not defined in constants.");
+				return;
+			}
+
+			const response = await fetch(`http://localhost:3000/home`);
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
+
 			const data = await response.json();
 			console.log(data, "data");
 		} catch (error) {
-			console.log(error, "err");
+			console.error(error, "error home");
+			Alert.alert("Error", "Failed to fetch data from server.");
 		}
-		// const { data, error } = await supabase.from("Practice").select("*");
-		// if (error) {
-		// 	console.error(error);
-		// } else {
-		// 	setPractices(data);
-		// }
-		// setLoading(false);
 	}
 
 	// Delete practice by ID

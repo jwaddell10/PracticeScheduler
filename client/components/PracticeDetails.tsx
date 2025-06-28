@@ -14,6 +14,7 @@ import { supabase } from "../../server/src/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import Constants from "expo-constants";
 
 export default function PracticeDetails({ route }) {
 	const { practiceId } = route.params;
@@ -71,7 +72,7 @@ export default function PracticeDetails({ route }) {
 	const saveChanges = async () => {
 		setSaving(true);
 		try {
-			const response = await fetch(`${process.env.EXPO_SERVER_API}/practice`)
+			const response = await fetch(`${Constants.expoConfig?.extra?.serverApi}/practice`)
 			const data = await response.json();
 			console.log(data, 'data pract details')
 		} catch (error) {

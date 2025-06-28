@@ -19,6 +19,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
 // import { supabase } from "../../server/supabase";
 import { useNavigation } from "@react-navigation/native";
+import Constants from "expo-constants"
 
 const CreatePractice = () => {
 	const navigation = useNavigation();
@@ -38,11 +39,11 @@ const CreatePractice = () => {
 
 	const fetchDrills = async () => {
 		try {
-			const response = await fetch(`${process.env.EXPO_SERVER_API}/practice`)
+			const response = await fetch(`${Constants.expoConfig?.extra?.serverApi}/practice`)
 			const data = await response.json();
 			console.log(data, 'data from fetch')
 		} catch (error) {
-			console.log(error, 'err')
+			console.log(error, 'error practice')
 		}
 		// const { data, error } = await supabase.from("Drill").select("*");
 		// if (error) {
