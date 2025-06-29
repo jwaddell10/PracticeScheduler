@@ -40,10 +40,10 @@ export default function Drills() {
 		setLoading(true);
 		try {
 			const response = await fetch(
-				`${Constants.expoConfig?.extra?.serverApi}/drills`
+				`http://${Constants.expoConfig?.extra?.localIP}:8081/drills`
 			);
 			const data = await response.json();
-			console.log(data, "data");
+			console.log(data, "data drills");
 		} catch (error) {
 			console.log(error, "err");
 		}

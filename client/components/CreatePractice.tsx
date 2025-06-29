@@ -39,7 +39,7 @@ const CreatePractice = () => {
 
 	const fetchDrills = async () => {
 		try {
-			const response = await fetch(`${Constants.expoConfig?.extra?.serverApi}/practice`)
+			const response = await fetch(`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`)
 			const data = await response.json();
 			console.log(data, 'data from fetch')
 		} catch (error) {

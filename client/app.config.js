@@ -36,7 +36,8 @@ export default () => ({
       SUPABASE_KEY: process.env.SUPABASE_NEW_KEY,
       SUPABASE_URL: process.env.SUPABASE_URL,
       serverApi: process.env.EXPO_SERVER_API,
-      localIP: process.env.EXPO_LOCAL_IP
+      localIP: process.env.EXPO_LOCAL_IP,
+      PORT: process.env.EXPO_PORT,
     },
     plugins: ["expo-secure-store"]
   }
