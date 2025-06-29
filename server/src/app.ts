@@ -31,7 +31,7 @@ const options = {
 };
 
 // Start HTTPS Server
-https.createServer(options, app).listen(PORT, "192.168.0.17", () => {
+https.createServer(options, app).listen(PORT, `${process.env.LOCAL_IP}` || "0.0.0.0", () => {
 	console.log(`✅ HTTPS server running at https://localhost:${PORT}`);
 	console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
 });

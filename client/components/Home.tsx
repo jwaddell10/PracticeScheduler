@@ -50,13 +50,14 @@ export default function HomeScreen() {
 	async function fetchData() {
 		try {
 			const serverApi = Constants.expoConfig?.extra?.serverApi;
+			const localIP = Constants.expoConfig?.extra?.localIP;
 
 			if (!serverApi) {
 				console.warn("Server API URL is not defined in constants.");
 				return;
 			}
 
-			const response = await fetch(`http://192.168.0.17:3000/home`);
+			const response = await fetch(`http://${localIP}:3000/home`);
 			console.log(response, "response");
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
