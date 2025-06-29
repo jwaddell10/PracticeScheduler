@@ -56,7 +56,8 @@ export default function HomeScreen() {
 				return;
 			}
 
-			const response = await fetch(`http://localhost:3000/home`);
+			const response = await fetch(`http://192.168.0.17:3000/home`);
+			console.log(response, "response");
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}

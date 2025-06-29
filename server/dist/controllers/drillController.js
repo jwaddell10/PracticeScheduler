@@ -11,6 +11,6 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 const expressAsyncHandler = require("express-async-handler");
 // import { Request, Response, NextFunction } from "express";
 // import db from "../db/queries";
-exports.createPractice = expressAsyncHandler((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    console.log("createPractice runs");
+exports.fetchDrills = expressAsyncHandler((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("drill practice runs runs");
 }));

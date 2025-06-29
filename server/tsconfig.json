@@ -12,7 +12,7 @@
     "strict": true,                                      /* Enable all strict type-checking options. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "files": [
-    "./src/types/types.d.ts"
-  ]
+  // "files": [
+  //   "./src/types/types.d.ts"
+  // ]
 }
