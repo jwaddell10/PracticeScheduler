@@ -59,13 +59,13 @@ export default function HomeScreen() {
 			}
 
 			const response = await fetch(`http://${localIP}:${PORT}/home`);
-			console.log(response, "response");
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 
 			const data = await response.json();
-			console.log(data, "data");
+			console.log(data, 'data from home')
+			setPractices(data)
 		} catch (error) {
 			console.error(error, "error home");
 			Alert.alert("Error", "Failed to fetch data from server.");
@@ -79,7 +79,7 @@ export default function HomeScreen() {
 				`${process.env.EXPO_SERVER_API}/delete`
 			);
 			const data = await response.json();
-			console.log(data, "data");
+			// console.log(data, "data");
 		} catch (error) {
 			console.log(error, "err");
 		}

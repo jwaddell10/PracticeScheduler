@@ -74,7 +74,7 @@ export default function PracticeDetails({ route }) {
 		try {
 			const response = await fetch(`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`)
 			const data = await response.json();
-			console.log(data, 'data pract details')
+			// console.log(data, 'data pract details')
 		} catch (error) {
 			console.log(error, 'err')
 		}

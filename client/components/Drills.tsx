@@ -43,7 +43,7 @@ export default function Drills() {
 				`http://${Constants.expoConfig?.extra?.localIP}:8081/drills`
 			);
 			const data = await response.json();
-			console.log(data, "data drills");
+			// console.log(data, "data drills");
 		} catch (error) {
 			console.log(error, "err");
 		}

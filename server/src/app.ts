@@ -6,14 +6,13 @@ const fs = require("node:fs");
 
 const practiceRouter = require("./routes/practice.ts");
 const homeRouter = require("./routes/home.ts");
-
-dotenv.config();
+require('dotenv').config();
 
 const app = express();
-const PORT = parseInt(process.env.PORT || "3000", 10);
+// const PORT = parseInt(process.env.PORT || "3000", 10);
 
 // Middleware
-app.use(cors());
+app.use(cors("*"));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
@@ -25,16 +24,22 @@ app.use("/home", homeRouter);
 app.use("/practice", practiceRouter);
 
 // SSL Options
-const options = {
-	key: fs.readFileSync("./keyFile.key"),
-	cert: fs.readFileSync("./certFile.crt"),
-};
 
-// Start HTTPS Server
-https.createServer(options, app).listen(PORT, `${process.env.LOCAL_IP}` || "0.0.0.0", () => {
-	console.log(`✅ HTTPS server running at https://localhost:${PORT}`);
-	console.log(`🌍 Environment: ${process.env.NODE_ENV || "development"}`);
+const PORT = process.env.PORT;
+const HOST = process.env.LOCAL_IP;
+
+app.listen(PORT, HOST, () => {
+  console.log(`Server is running on http://${HOST}:${PORT}`);
 });
 
-// Do not call app.listen()
+// Start HTTPS Server
+// const options = {
+//   key: fs.readFileSync('./localhost+1-key.pem'),
+//   cert: fs.readFileSync('./localhost+1.pem')
+// };
+
+// https.createServer(options, app).listen(PORT, `${process.env.LOCAL_IP}`, () => {
+//   console.log(`HTTPS server running at https://192.168.0.17:${PORT}`);
+// });
+
 module.exports = app;

@@ -1,7 +1,11 @@
-import { createClient } from '@supabase/supabase-js'
-// import Constants from 'expo-constants';
+const { createClient } = require('@supabase/supabase-js');
+require('dotenv').config();
 
-const supabaseUrl = "https://nugqfaokqrotfakpjqnk.supabase.co"
-const supabaseKey = process.env.EXPO_SUPABASE_NEW_KEY || ""
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_KEY!;
 
-export const supabase = createClient(supabaseUrl, supabaseKey)
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error("Missing Supabase environment variables.");
+}
+
+exports.supabase = createClient(supabaseUrl, supabaseKey);
