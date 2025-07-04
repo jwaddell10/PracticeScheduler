@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import {
 	View,
 	Text,
+	ScrollView,
 	FlatList,
 	StyleSheet,
 	TouchableOpacity,
@@ -10,6 +11,9 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import { supabase } from "../../server/src/supabase";
 import Constants from "expo-constants";
+import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
+import theme from "./styles/theme";
+// import { ScrollView } from "react-native-gesture-handler";
 
 export default function HomeScreen() {
 	const navigation = useNavigation();
@@ -18,6 +22,7 @@ export default function HomeScreen() {
 
 	useEffect(() => {
 		fetchData();
+		console.log(practices, 'practices')
 
 		// // Real-time subscription
 		// const subscription = supabase
@@ -64,8 +69,8 @@ export default function HomeScreen() {
 			}
 
 			const data = await response.json();
-			console.log(data, 'data from home')
 			setPractices(data)
+			setLoading(false)
 		} catch (error) {
 			console.error(error, "error home");
 			Alert.alert("Error", "Failed to fetch data from server.");
@@ -79,6 +84,7 @@ export default function HomeScreen() {
 				`${process.env.EXPO_SERVER_API}/delete`
 			);
 			const data = await response.json();
+			setPractices(data)
 			// console.log(data, "data");
 		} catch (error) {
 			console.log(error, "err");
@@ -140,8 +146,9 @@ export default function HomeScreen() {
 	);
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.header}>Hello, Coach</Text>
+		<ScrollView style={styles.container}>
+			<Text style={styles.header}>Welcome, Coach</Text>
+			<UpgradeToPremiumBanner />
 
 			{loading ? (
 				<Text>Loading...</Text>
@@ -163,14 +170,14 @@ export default function HomeScreen() {
 			>
 				<Text style={styles.scheduleButtonText}>Schedule Practice</Text>
 			</TouchableOpacity>
-		</View>
+		</ScrollView>
 	);
 }
 
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,
-		backgroundColor: "#FAFAFA",
+		backgroundColor: theme.colors.background,
 		paddingHorizontal: 20,
 		paddingTop: 24,
 	},
@@ -178,54 +185,54 @@ const styles = StyleSheet.create({
 		fontSize: 28,
 		fontWeight: "700",
 		marginBottom: 24,
-		color: "#222",
+		color: theme.colors.textPrimary,
 	},
 	listContainer: {
 		paddingBottom: 24,
 	},
 	practiceItem: {
-		backgroundColor: "#FFFFFF",
-		padding: 16,
-		borderRadius: 12,
+		backgroundColor: theme.colors.primary,
+		padding: theme.padding,
+		borderRadius: theme.roundness,
 		marginBottom: 16,
 		shadowColor: "#000",
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.1,
 		shadowRadius: 6,
-		elevation: 3, // Android shadow
+		elevation: 3,
 	},
 	practiceTitle: {
 		fontWeight: "700",
 		fontSize: 20,
 		marginBottom: 8,
-		color: "#007AFF",
+		color: theme.colors.accent,
 	},
 	dateText: {
 		fontSize: 14,
-		color: "#444",
+		color: theme.colors.textMuted,
 		marginBottom: 4,
 	},
 	drillsLabel: {
 		marginTop: 12,
 		fontWeight: "600",
 		fontSize: 16,
-		color: "#333",
+		color: theme.colors.textPrimary,
 		marginBottom: 6,
 	},
 	drillItem: {
 		marginLeft: 12,
 		fontSize: 14,
-		color: "#555",
+		color: theme.colors.textMuted,
 		marginBottom: 2,
 	},
 	deleteButton: {
 		marginTop: 12,
-		backgroundColor: "#FF3B30",
+		backgroundColor: theme.colors.error,
 		paddingVertical: 10,
 		paddingHorizontal: 16,
 		borderRadius: 8,
 		alignSelf: "flex-start",
-		shadowColor: "#FF3B30",
+		shadowColor: theme.colors.error,
 		shadowOffset: { width: 0, height: 3 },
 		shadowOpacity: 0.4,
 		shadowRadius: 5,
@@ -237,15 +244,16 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 	},
 	scheduleButton: {
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.secondary,
 		paddingVertical: 16,
-		borderRadius: 12,
+		borderRadius: theme.roundness,
 		alignItems: "center",
 		marginBottom: 32,
 	},
 	scheduleButtonText: {
-		color: "white",
+		color: theme.colors.textPrimary,
 		fontWeight: "700",
 		fontSize: 18,
 	},
 });
+

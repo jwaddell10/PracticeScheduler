@@ -9,6 +9,7 @@ import Drills from "./components/Drills";
 import DrillDetails from "./components/DrillDetails";
 import PracticeDetails from "./components/PracticeDetails";
 import CreateDrill from "./components/CreateDrill";
+import PremiumScreen from "./components/PremiumFeaturesScreen";
 
 // Stack for Home
 const HomeStack = createNativeStackNavigator();
@@ -22,6 +23,7 @@ function HomeStackScreen() {
 				name="PracticeDetails"
 				component={PracticeDetails}
 			/>
+			<HomeStack.Screen name="Premium" component={PremiumScreen} />
 		</HomeStack.Navigator>
 	);
 }
