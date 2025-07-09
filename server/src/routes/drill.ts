@@ -1,7 +1,7 @@
 const express = require('express');
-const router = express();
+const router = express.Router();
 const drillController = require("../controllers/drillController.ts")
 
-router.post("/", drillController.fetchPractices);
+router.get("/", drillController.fetchDrills);
 
 module.exports = router;

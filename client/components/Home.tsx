@@ -9,11 +9,9 @@ import {
 	Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { supabase } from "../../server/src/supabase";
 import Constants from "expo-constants";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import theme from "./styles/theme";
-// import { ScrollView } from "react-native-gesture-handler";
 
 export default function HomeScreen() {
 	const navigation = useNavigation();
@@ -22,7 +20,7 @@ export default function HomeScreen() {
 
 	useEffect(() => {
 		fetchData();
-		console.log(practices, 'practices')
+		console.log(practices, "practices");
 
 		// // Real-time subscription
 		// const subscription = supabase
@@ -54,23 +52,17 @@ export default function HomeScreen() {
 
 	async function fetchData() {
 		try {
-			const serverApi = Constants.expoConfig?.extra?.serverApi;
 			const localIP = Constants.expoConfig?.extra?.localIP;
 
 			const PORT = Constants.expoConfig?.extra?.PORT;
-			if (!serverApi) {
-				console.warn("Server API URL is not defined in constants.");
-				return;
-			}
-
 			const response = await fetch(`http://${localIP}:${PORT}/home`);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 
 			const data = await response.json();
-			setPractices(data)
-			setLoading(false)
+			setPractices(data);
+			setLoading(false);
 		} catch (error) {
 			console.error(error, "error home");
 			Alert.alert("Error", "Failed to fetch data from server.");
@@ -80,24 +72,30 @@ export default function HomeScreen() {
 	// Delete practice by ID
 	const deletePractice = async (id) => {
 		try {
+			const localIP = Constants.expoConfig?.extra?.localIP;
+
+			const PORT = Constants.expoConfig?.extra?.PORT;
 			const response = await fetch(
-				`${process.env.EXPO_SERVER_API}/delete`
+				`http://${localIP}:${PORT}/home/${id}/delete`,
+				{
+					method: "DELETE",
+					headers: {
+						"Content-type": "application/json",
+					},
+				}
 			);
+
+			if (!response.ok) {
+				throw new Error(`HTTP error! status: ${response.status}`);
+			}
 			const data = await response.json();
-			setPractices(data)
-			// console.log(data, "data");
+			console.log(data, "data");
+			if (data.message === "Practice deleted") {
+				await fetchData(); // ✅ Refetch updated practices
+			}
 		} catch (error) {
 			console.log(error, "err");
 		}
-
-		// const { error } = await supabase.from("Practice").delete().eq("id", id);
-
-		// if (error) {
-		// 	console.error("Error deleting practice:", error);
-		// } else {
-		// 	console.log("Practice deleted");
-		// 	// No need to manually remove from state — subscription handles it
-		// }
 	};
 
 	const confirmDelete = (id) => {
@@ -148,7 +146,7 @@ export default function HomeScreen() {
 	return (
 		<ScrollView style={styles.container}>
 			<Text style={styles.header}>Welcome, Coach</Text>
-			<UpgradeToPremiumBanner />
+			{/* <UpgradeToPremiumBanner /> */}
 
 			{loading ? (
 				<Text>Loading...</Text>
@@ -256,4 +254,3 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 	},
 });
-

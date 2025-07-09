@@ -10,7 +10,6 @@ import {
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { supabase } from "../../server/src/supabase";
 import Constants from "expo-constants";
 
 export default function Drills() {
@@ -37,13 +36,19 @@ export default function Drills() {
 	}, []);
 
 	const fetchDrills = async () => {
+		const localIP = Constants.expoConfig?.extra?.localIP;
+		const PORT = Constants.expoConfig?.extra?.PORT;
+		console.log(`http://${localIP}:${PORT}/drill`);
+
 		setLoading(true);
 		try {
-			const response = await fetch(
-				`http://${Constants.expoConfig?.extra?.localIP}:8081/drills`
-			);
+			const response = await fetch(`http://${localIP}:${PORT}/drill`);
+			if (!response.ok) {
+				throw new Error(`HTTP Status error! ${response.status}`);
+			}
 			const data = await response.json();
-			// console.log(data, "data drills");
+			setDrills(data);
+			setLoading(false);
 		} catch (error) {
 			console.log(error, "err");
 		}
@@ -62,17 +67,20 @@ export default function Drills() {
 	const groupedDrills = drills.reduce(
 		(acc, drill) => {
 			const typeKey =
-				drill.type?.toLowerCase() === "team drill"
-					? "team"
-					: "individual";
-			if (!acc[typeKey][drill.category]) {
-				acc[typeKey][drill.category] = [];
+				drill.type?.toLowerCase() === "team" ? "team" : "individual";
+			const categoryKey =
+				drill.category?.toLowerCase() || "uncategorized";
+
+			if (!acc[typeKey][categoryKey]) {
+				acc[typeKey][categoryKey] = [];
 			}
-			acc[typeKey][drill.category].push(drill);
+			acc[typeKey][categoryKey].push(drill);
 			return acc;
 		},
 		{ team: {}, individual: {} }
 	);
+
+	console.log("Grouped drills:", groupedDrills);
 
 	if (loading) {
 		return (
@@ -117,8 +125,11 @@ export default function Drills() {
 						([category, drills]) => (
 							<View key={category} style={styles.section}>
 								<Text style={styles.categoryTitle}>
-									{category}
+									{category.replace(/\b\w/g, (c) =>
+										c.toUpperCase()
+									)}
 								</Text>
+
 								{drills.map(renderDrillRow)}
 							</View>
 						)
@@ -129,8 +140,11 @@ export default function Drills() {
 						([category, drills]) => (
 							<View key={category} style={styles.section}>
 								<Text style={styles.categoryTitle}>
-									{category}
+									{category.replace(/\b\w/g, (c) =>
+										c.toUpperCase()
+									)}
 								</Text>
+
 								{drills.map(renderDrillRow)}
 							</View>
 						)

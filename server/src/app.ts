@@ -6,6 +6,7 @@ const fs = require("node:fs");
 
 const practiceRouter = require("./routes/practice.ts");
 const homeRouter = require("./routes/home.ts");
+const drillRouter = require("./routes/drill.ts")
 require('dotenv').config();
 
 const app = express();
@@ -22,6 +23,7 @@ app.get("/", (req, res) => {
 });
 app.use("/home", homeRouter);
 app.use("/practice", practiceRouter);
+app.use("/drill", drillRouter)
 
 // SSL Options
 
