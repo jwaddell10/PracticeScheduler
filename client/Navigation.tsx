@@ -10,8 +10,6 @@ import DrillDetails from "./components/DrillDetails";
 import PracticeDetails from "./components/PracticeDetails";
 import CreateDrill from "./components/CreateDrill";
 import PremiumScreen from "./components/PremiumFeaturesScreen";
-import Auth from "./components/Auth";
-import Account from "./components/Account";
 
 // Stack for Home
 const HomeStack = createNativeStackNavigator();
@@ -42,51 +40,23 @@ function DrillStackScreen() {
 	);
 }
 
-// const AuthStack = createNativeStackNavigator();
-
-// function AuthStackScreen() {
-// 	return (
-// 		<AuthStack.Navigator>
-// 			{/* <DrillStack.Screen name="Drills" component={Drills} />
-// 			<DrillStack.Screen name="DrillDetails" component={DrillDetails} />
-// 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} /> */}
-// 		</AuthStack.Navigator>
-// 	);
-// }
-
 // Bottom Tabs
 const Tab = createBottomTabNavigator();
 
-export default function Navigation({ session }) {
+export default function Navigation() {
 	return (
 		<NavigationContainer>
 			<Tab.Navigator screenOptions={{ headerShown: false }}>
-				{session ? (
-					<>
-						<Tab.Screen
-							name="HomeTab"
-							component={HomeStackScreen}
-							options={{ title: "Home" }}
-						/>
-						<Tab.Screen
-							name="DrillsTab"
-							component={DrillStackScreen}
-							options={{ title: "Drills" }}
-						/>
-						<Tab.Screen
-							name="AccountTab"
-							options={{ title: "Profile" }}
-						>
-							{() => <Account session={session} />}
-						</Tab.Screen>
-					</>
-				) : (
-					<Tab.Screen
-						name="ProfileTab"
-						component={Auth}
-						options={{ title: "Profile" }}
-					/>
-				)}
+				<Tab.Screen
+					name="HomeTab"
+					component={HomeStackScreen}
+					options={{ title: "Home" }}
+				/>
+				<Tab.Screen
+					name="DrillsTab"
+					component={DrillStackScreen}
+					options={{ title: "Drills" }}
+				/>
 			</Tab.Navigator>
 		</NavigationContainer>
 	);

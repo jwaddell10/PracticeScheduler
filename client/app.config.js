@@ -3,7 +3,6 @@ import 'dotenv/config';
 
 export default () => ({
   expo: {
-    scheme: "com.supabase://**",
     name: "PracticeScheduler",
     slug: "PracticeScheduler",
     version: "1.0.0",

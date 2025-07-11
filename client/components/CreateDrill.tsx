@@ -13,9 +13,7 @@ import {
 	TouchableOpacity,
 } from "react-native";
 import Dropdown from "react-native-input-select";
-import Constants from "expo-constants";
-import * as ImagePicker from "expo-image-picker";
-import { Image } from "react-native";
+import { supabase } from "../../server/src/supabase";
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -31,87 +29,49 @@ const drillCategories = [
 ];
 
 export default function CreateDrill() {
-	const localIP = Constants.expoConfig?.extra?.localIP;
-	const PORT = Constants.expoConfig?.extra?.PORT;
 	const [name, setName] = useState("");
 	const [type, setType] = useState(null);
 	const [category, setCategory] = useState(null);
+	const [duration, setDuration] = useState(""); // string to control input
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
-	const [image, setImage] = useState(null);
 
-	const pickImage = async () => {
-		const { status } =
-			await ImagePicker.requestMediaLibraryPermissionsAsync();
-		if (status !== "granted") {
-			Alert.alert(
-				"Permission denied",
-				"Camera roll permissions are required."
-			);
-			return;
-		}
+	const handleSubmit = async () => {
+		// const durationNum = Number(duration);
+		// if (!name || !type || !category) {
+		// 	Alert.alert("Validation", "Please fill in all required fields.");
+		// 	return;
+		// }
+		// if (duration && (isNaN(durationNum) || durationNum <= 0)) {
+		// 	Alert.alert("Validation", "Duration must be a positive number.");
+		// 	return;
+		// }
 
-		let result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ImagePicker.MediaType.Images,
-			allowsEditing: false,
-			quality: 0.6,
-			base64: true,
-		});
+		// setSaving(true);
 
-		if (!result.canceled) {
-			setImage(result.assets[0]);
-		}
-	};
+		// const { data, error } = await supabase.from("Drill").insert([
+		// 	{
+		// 		name,
+		// 		type,
+		// 		category,
+		// 		duration: duration ? durationNum : null,
+		// 		notes: notes || null,
+		// 	},
+		// ]);
 
-	const createDrill = async () => {
-		if (!name || !type || !category) {
-			Alert.alert(
-				"Missing Fields",
-				"Please fill in all required fields."
-			);
-			return;
-		}
+		// setSaving(false);
 
-		setSaving(true);
-
-		try {
-			const response = await fetch(
-				`http://${localIP}:${PORT}/drill/create`,
-				{
-					method: "POST",
-					headers: {
-						"Content-Type": "application/json",
-					},
-					body: JSON.stringify({
-						name,
-						type,
-						category,
-						notes,
-						image: image?.base64 || null, // optionally include base64
-					}),
-				}
-			);
-
-			if (!response.ok) {
-				throw new Error(
-					`"Failed to create drill.", ${response.status}`
-				);
-			}
-
-			const data = await response.json();
-			Alert.alert("Success", "Drill created successfully!");
-
-			// Clear form
-			setName("");
-			setType(null);
-			setCategory(null);
-			setNotes("");
-		} catch (error) {
-			console.error(error);
-			Alert.alert("Error", "There was an issue creating the drill.");
-		} finally {
-			setSaving(false);
-		}
+		// if (error) {
+		// 	console.error("Error inserting drill:", error);
+		// 	Alert.alert("Error", "Failed to create drill.");
+		// } else {
+		// 	Alert.alert("Success", "Drill created!");
+		// 	setName("");
+		// 	setType(null);
+		// 	setCategory(null);
+		// 	setDuration("");
+		// 	setNotes("");
+		// }
 	};
 
 	return (
@@ -157,13 +117,13 @@ export default function CreateDrill() {
 						/>
 
 						<Text style={styles.label}>Duration (minutes)</Text>
-						{/* <TextInput
+						<TextInput
 							style={styles.input}
 							placeholder="Enter duration in minutes"
 							value={duration}
 							onChangeText={setDuration}
 							keyboardType="numeric"
-						/> */}
+						/>
 
 						<Text style={styles.label}>Notes</Text>
 						<TextInput
@@ -178,7 +138,7 @@ export default function CreateDrill() {
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity
 								style={styles.button}
-								onPress={createDrill}
+								onPress={handleSubmit}
 								disabled={saving}
 							>
 								<Text style={styles.buttonText}>
@@ -186,32 +146,6 @@ export default function CreateDrill() {
 								</Text>
 							</TouchableOpacity>
 						</View>
-						<Text style={styles.label}>
-							Drill Screenshot (optional)
-						</Text>
-						<TouchableOpacity
-							onPress={pickImage}
-							style={styles.imagePicker}
-						>
-							<Text
-								style={{ color: "#007AFF", fontWeight: "600" }}
-							>
-								{image ? "Change Image" : "Select Image"}
-							</Text>
-						</TouchableOpacity>
-
-						{image && (
-							<Image
-								source={{ uri: image.uri }}
-								style={{
-									width: "100%",
-									height: 200,
-									marginTop: 12,
-									borderRadius: 12,
-								}}
-								resizeMode="cover"
-							/>
-						)}
 					</View>
 				</TouchableWithoutFeedback>
 			</ScrollView>

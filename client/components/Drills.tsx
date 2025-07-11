@@ -52,6 +52,16 @@ export default function Drills() {
 		} catch (error) {
 			console.log(error, "err");
 		}
+		// const { data, error } = await supabase
+		// 	.from("Drill")
+		// 	.select("*")
+		// 	.order("name", { ascending: true });
+		// if (error) {
+		// 	console.error("Error fetching drills:", error);
+		// } else {
+		// 	setDrills(data);
+		// }
+		// setLoading(false);
 	};
 
 	const groupedDrills = drills.reduce(
@@ -108,13 +118,6 @@ export default function Drills() {
 
 	return (
 		<SafeAreaProvider>
-			<TouchableOpacity
-				style={styles.fab}
-				onPress={() => navigation.navigate("CreateDrill")}
-				activeOpacity={0.7}
-			>
-				<MaterialIcons name="add" size={28} color="white" />
-			</TouchableOpacity>
 			<SafeAreaView style={styles.safeArea}>
 				<ScrollView contentContainerStyle={styles.scrollView}>
 					<Text style={styles.header}>Team Drills</Text>
@@ -208,22 +211,5 @@ const styles = StyleSheet.create({
 	},
 	arrowIcon: {
 		marginLeft: 12,
-	},
-	fab: {
-		position: "absolute",
-		bottom: 30,
-		right: 20,
-		backgroundColor: "#007AFF",
-		width: 60,
-		height: 60,
-		borderRadius: 30,
-		alignItems: "center",
-		justifyContent: "center",
-		shadowColor: "#000",
-		shadowOpacity: 0.2,
-		shadowRadius: 5,
-		shadowOffset: { width: 0, height: 2 },
-		elevation: 5,
-		zIndex: 10,
 	},
 });
