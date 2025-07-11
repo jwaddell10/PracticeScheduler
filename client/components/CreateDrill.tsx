@@ -46,9 +46,7 @@ export default function CreateDrill() {
 		// 	Alert.alert("Validation", "Duration must be a positive number.");
 		// 	return;
 		// }
-
 		// setSaving(true);
-
 		// const { data, error } = await supabase.from("Drill").insert([
 		// 	{
 		// 		name,
@@ -58,9 +56,7 @@ export default function CreateDrill() {
 		// 		notes: notes || null,
 		// 	},
 		// ]);
-
 		// setSaving(false);
-
 		// if (error) {
 		// 	console.error("Error inserting drill:", error);
 		// 	Alert.alert("Error", "Failed to create drill.");
