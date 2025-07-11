@@ -8,10 +8,10 @@ exports.fetchPractices = expressAsyncHandler(async (req, res, next) => {
 		console.error("Supabase error:", error);
 		return res.status(500).json({ error: error.message });
 	}
-
 	//   console.log('Data from Supabase:', data);
 	res.status(200).json(data);
 });
+
 exports.deletePractice = expressAsyncHandler(async (req, res, next) => {
 	const { id } = req.params;
 
