@@ -10,7 +10,7 @@ import {
 	TouchableOpacity,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { supabase } from "../../server/src/supabase";
+// import { supabase } from "../../server/src/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";

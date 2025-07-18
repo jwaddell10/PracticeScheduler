@@ -12,6 +12,8 @@ import CreateDrill from "./components/CreateDrill";
 import PremiumScreen from "./components/PremiumFeaturesScreen";
 import Auth from "./components/Auth";
 import Account from "./components/Account";
+import { useSession } from "./context/SessionContext";
+
 
 // Stack for Home
 const HomeStack = createNativeStackNavigator();
@@ -57,7 +59,9 @@ function DrillStackScreen() {
 // Bottom Tabs
 const Tab = createBottomTabNavigator();
 
-export default function Navigation({ session }) {
+export default function Navigation() {
+	const session = useSession();
+
 	return (
 		<NavigationContainer>
 			<Tab.Navigator screenOptions={{ headerShown: false }}>
@@ -72,7 +76,7 @@ export default function Navigation({ session }) {
 							name="DrillsTab"
 							component={DrillStackScreen}
 							options={{ title: "Drills" }}
-						/>
+						></Tab.Screen>
 						<Tab.Screen
 							name="AccountTab"
 							options={{ title: "Profile" }}

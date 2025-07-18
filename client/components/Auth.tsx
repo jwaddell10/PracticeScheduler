@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Alert, StyleSheet, View, AppState } from "react-native";
-import { supabase } from "../lib/supabase";
+import { supabase } from "../lib/supabase.ts";
 import { Button, Input } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
 

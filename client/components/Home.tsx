@@ -20,7 +20,6 @@ export default function HomeScreen() {
 
 	useEffect(() => {
 		fetchData();
-		console.log(practices, "practices");
 
 		// // Real-time subscription
 		// const subscription = supabase

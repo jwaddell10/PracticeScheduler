@@ -38,8 +38,6 @@ export default function Drills() {
 	const fetchDrills = async () => {
 		const localIP = Constants.expoConfig?.extra?.localIP;
 		const PORT = Constants.expoConfig?.extra?.PORT;
-		console.log(`http://${localIP}:${PORT}/drill`);
-
 		setLoading(true);
 		try {
 			const response = await fetch(`http://${localIP}:${PORT}/drill`);
@@ -52,16 +50,6 @@ export default function Drills() {
 		} catch (error) {
 			console.log(error, "err");
 		}
-		// const { data, error } = await supabase
-		// 	.from("Drill")
-		// 	.select("*")
-		// 	.order("name", { ascending: true });
-		// if (error) {
-		// 	console.error("Error fetching drills:", error);
-		// } else {
-		// 	setDrills(data);
-		// }
-		// setLoading(false);
 	};
 
 	const groupedDrills = drills.reduce(
@@ -79,18 +67,6 @@ export default function Drills() {
 		},
 		{ team: {}, individual: {} }
 	);
-
-	console.log("Grouped drills:", groupedDrills);
-
-	if (loading) {
-		return (
-			<SafeAreaProvider>
-				<SafeAreaView style={styles.safeArea}>
-					<ActivityIndicator size="large" color="#007AFF" />
-				</SafeAreaView>
-			</SafeAreaProvider>
-		);
-	}
 
 	const renderDrillRow = (drill) => (
 		<TouchableOpacity
@@ -116,40 +92,58 @@ export default function Drills() {
 		</TouchableOpacity>
 	);
 
+	if (loading) {
+		return (
+			<SafeAreaProvider>
+				<SafeAreaView style={styles.safeArea}>
+					<ActivityIndicator size="large" color="#007AFF" />
+				</SafeAreaView>
+			</SafeAreaProvider>
+		);
+	}
+
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
-				<ScrollView contentContainerStyle={styles.scrollView}>
-					<Text style={styles.header}>Team Drills</Text>
-					{Object.entries(groupedDrills.team).map(
-						([category, drills]) => (
-							<View key={category} style={styles.section}>
-								<Text style={styles.categoryTitle}>
-									{category.replace(/\b\w/g, (c) =>
-										c.toUpperCase()
-									)}
-								</Text>
+				<View style={styles.container}>
+					<ScrollView contentContainerStyle={styles.scrollView}>
+						<Text style={styles.header}>Team Drills</Text>
+						{Object.entries(groupedDrills.team).map(
+							([category, drills]) => (
+								<View key={category} style={styles.section}>
+									<Text style={styles.categoryTitle}>
+										{category.replace(/\b\w/g, (c) =>
+											c.toUpperCase()
+										)}
+									</Text>
+									{drills.map(renderDrillRow)}
+								</View>
+							)
+						)}
 
-								{drills.map(renderDrillRow)}
-							</View>
-						)
-					)}
+						<Text style={styles.header}>Individual Drills</Text>
+						{Object.entries(groupedDrills.individual).map(
+							([category, drills]) => (
+								<View key={category} style={styles.section}>
+									<Text style={styles.categoryTitle}>
+										{category.replace(/\b\w/g, (c) =>
+											c.toUpperCase()
+										)}
+									</Text>
+									{drills.map(renderDrillRow)}
+								</View>
+							)
+						)}
+					</ScrollView>
 
-					<Text style={styles.header}>Individual Drills</Text>
-					{Object.entries(groupedDrills.individual).map(
-						([category, drills]) => (
-							<View key={category} style={styles.section}>
-								<Text style={styles.categoryTitle}>
-									{category.replace(/\b\w/g, (c) =>
-										c.toUpperCase()
-									)}
-								</Text>
-
-								{drills.map(renderDrillRow)}
-							</View>
-						)
-					)}
-				</ScrollView>
+					<TouchableOpacity
+						onPress={() => navigation.navigate("CreateDrill")}
+						style={styles.fab}
+						activeOpacity={0.8}
+					>
+						<MaterialIcons name="add" size={28} color="#fff" />
+					</TouchableOpacity>
+				</View>
 			</SafeAreaView>
 		</SafeAreaProvider>
 	);
@@ -160,9 +154,13 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "#f8f9fa",
 	},
+	container: {
+		flex: 1,
+		position: "relative",
+	},
 	scrollView: {
 		padding: 16,
-		paddingBottom: 32,
+		paddingBottom: 100,
 	},
 	header: {
 		fontSize: 26,
@@ -211,5 +209,22 @@ const styles = StyleSheet.create({
 	},
 	arrowIcon: {
 		marginLeft: 12,
+	},
+	fab: {
+		position: "absolute",
+		bottom: 24,
+		right: 24,
+		width: 56,
+		height: 56,
+		borderRadius: 28,
+		backgroundColor: "#007AFF",
+		alignItems: "center",
+		justifyContent: "center",
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.3,
+		shadowRadius: 4,
+		elevation: 5,
+		zIndex: 10,
 	},
 });

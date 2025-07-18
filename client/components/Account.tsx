@@ -58,7 +58,6 @@ export default function Account({ session }: { session: Session | null }) {
 			const updates = {
 				id: session?.user.id,
 			};
-			console.log(updates, "updates");
 
 			const { error } = await supabase.from("User").upsert(updates);
 

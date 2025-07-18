@@ -20,6 +20,7 @@ import DraggableFlatList from "react-native-draggable-flatlist";
 // import { supabase } from "../../server/supabase";
 import { useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants"
+import { supabase } from "../lib/supabase";
 
 const CreatePractice = () => {
 	const navigation = useNavigation();

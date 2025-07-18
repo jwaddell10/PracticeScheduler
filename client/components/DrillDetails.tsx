@@ -7,7 +7,7 @@ export default function DrillDetails({ route }) {
 	return (
 		<View style={styles.container}>
 			<View style={styles.card}>
-				<Text style={styles.category}>{category?.toUpperCase() ?? ""}</Text>
+				<Text style={styles.category}>{category?.toUpperCase()}</Text>
 				<Text style={styles.subcategory}>{subcategory}</Text>
 
 				<Text style={styles.name}>{drill.name}</Text>

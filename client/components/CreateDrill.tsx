@@ -11,9 +11,19 @@ import {
 	TouchableWithoutFeedback,
 	Keyboard,
 	TouchableOpacity,
+	Image,
 } from "react-native";
 import Dropdown from "react-native-input-select";
-import { supabase } from "../../server/src/supabase";
+import * as ImagePicker from "expo-image-picker";
+import Constants from "expo-constants";
+import { createClient } from "@supabase/supabase-js";
+import { useSession } from "../context/SessionContext";
+import { decode } from "base64-arraybuffer";
+import * as FileSystem from 'expo-file-system';
+
+const supabaseUrl = Constants.expoConfig?.extra?.SUPABASE_URL;
+const supabaseAnonKey = Constants.expoConfig?.extra?.SUPABASE_KEY;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -28,46 +38,135 @@ const drillCategories = [
 	{ label: "Blocking", value: "blocking" },
 ];
 
+const drillDifficulties = [
+	{ label: "Beginner", value: "beginner" },
+	{ label: "Intermediate", value: "intermediate" },
+	{ label: "Advanced", value: "advanced" },
+];
+
 export default function CreateDrill() {
+	const session = useSession();
+
 	const [name, setName] = useState("");
 	const [type, setType] = useState(null);
 	const [category, setCategory] = useState(null);
-	const [duration, setDuration] = useState(""); // string to control input
+	const [difficulty, setDifficulty] = useState(null);
+	const [duration, setDuration] = useState("");
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
+	const [imageUri, setImageUri] = useState(null);
+	const pickImage = async () => {
+		const { status } =
+			await ImagePicker.requestMediaLibraryPermissionsAsync();
+		if (status !== "granted") {
+			Alert.alert(
+				"Permission denied",
+				"Please allow media access to upload images."
+			);
+			return;
+		}
+		const result = await ImagePicker.launchImageLibraryAsync({
+			mediaTypes: ImagePicker.MediaType,
+			aspect: [4, 3],
+			quality: 1,
+		});
+		if (!result.canceled) {
+			setImageUri(result.assets[0].uri);
+		}
+	};
+
+	const uploadImageAsync = async (uri: string): Promise<string> => {
+		try {
+			if (!session?.user) {
+				throw new Error("Unable to get authenticated user.");
+			}
+
+			const userId = session.user.id;
+			const fileName = `${Date.now()}_${uri.substring(
+				uri.lastIndexOf("/") + 1
+			)}`;
+			const filePath = `${userId}/${fileName}`;
+
+			// Read file as base64 string (without "data:image/..." prefix)
+			const base64 = await FileSystem.readAsStringAsync(uri, {
+				encoding: FileSystem.EncodingType.Base64,
+			});
+
+			// Decode base64 string to ArrayBuffer
+			const arrayBuffer = decode(base64);
+
+			// Upload to Supabase Storage as ArrayBuffer
+			const { data, error } = await supabase.storage
+				.from("drill-images")
+				.upload(filePath, arrayBuffer, {
+					contentType: "image/jpeg", // adjust if you want dynamic contentType
+				});
+			if (error) {
+				console.error("Upload error here:", error.message);
+				throw error;
+			}
+
+			// Get public URL
+			const { data: publicData } = supabase.storage
+				.from("drill-images")
+				.getPublicUrl(filePath);
+
+			return publicData.publicUrl;
+		} catch (err) {
+			console.error("Upload failed:", err);
+			throw err;
+		}
+	};
 
 	const handleSubmit = async () => {
-		// const durationNum = Number(duration);
-		// if (!name || !type || !category) {
-		// 	Alert.alert("Validation", "Please fill in all required fields.");
-		// 	return;
-		// }
-		// if (duration && (isNaN(durationNum) || durationNum <= 0)) {
-		// 	Alert.alert("Validation", "Duration must be a positive number.");
-		// 	return;
-		// }
+		if (!name || !type || !category || !difficulty) {
+			Alert.alert("Validation error", "Please fill in required fields");
+			return;
+		}
+		console.log(imageUri, 'imageuri')
 		// setSaving(true);
-		// const { data, error } = await supabase.from("Drill").insert([
-		// 	{
-		// 		name,
-		// 		type,
-		// 		category,
-		// 		duration: duration ? durationNum : null,
-		// 		notes: notes || null,
-		// 	},
-		// ]);
-		// setSaving(false);
-		// if (error) {
-		// 	console.error("Error inserting drill:", error);
-		// 	Alert.alert("Error", "Failed to create drill.");
-		// } else {
-		// 	Alert.alert("Success", "Drill created!");
-		// 	setName("");
-		// 	setType(null);
-		// 	setCategory(null);
-		// 	setDuration("");
-		// 	setNotes("");
-		// }
+
+		try {
+			let imageUrl = null;
+			if (imageUri) {
+				imageUrl = await uploadImageAsync(imageUri);
+			}
+
+			const localIP = Constants.expoConfig?.extra?.localIP;
+			const PORT = Constants.expoConfig?.extra?.PORT;
+
+			const res = await fetch(`http://${localIP}:${PORT}/drill/create`, {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					name,
+					type,
+					category,
+					difficulty,
+					duration: Number(duration),
+					notes,
+					imageUri,
+				}),
+			});
+			if (!res.ok) {
+				throw new Error(`Failed to create drill: ${res.status}`);
+			}
+
+			Alert.alert("Success", "Drill created successfully!");
+			setName("");
+			setType(null);
+			setCategory(null);
+			setDifficulty(null);
+			setDuration("");
+			setNotes("");
+			setImageUri(null);
+		} catch (error) {
+			Alert.alert("Error", error.message);
+		} finally {
+			setSaving(false);
+		}
 	};
 
 	return (
@@ -101,13 +200,24 @@ export default function CreateDrill() {
 							containerStyle={styles.dropdown}
 						/>
 
-						<Text style={styles.label}>Category *</Text>
+						<Text style={styles.label}>Skill Focus *</Text>
 						<Dropdown
-							label="Select Category"
+							label="Select Skill Focus"
 							placeholder="Choose category"
 							options={drillCategories}
 							selectedValue={category}
 							onValueChange={setCategory}
+							primaryColor="#007AFF"
+							containerStyle={styles.dropdown}
+						/>
+
+						<Text style={styles.label}>Difficulty *</Text>
+						<Dropdown
+							label="Select Difficulty"
+							placeholder="Choose difficulty"
+							options={drillDifficulties}
+							selectedValue={difficulty}
+							onValueChange={setDifficulty}
 							primaryColor="#007AFF"
 							containerStyle={styles.dropdown}
 						/>
@@ -130,6 +240,26 @@ export default function CreateDrill() {
 							multiline
 							numberOfLines={4}
 						/>
+
+						<Text style={styles.label}>
+							Upload Image (optional)
+						</Text>
+						<TouchableOpacity
+							style={styles.imageUploadButton}
+							onPress={pickImage}
+						>
+							<Text style={styles.imageUploadButtonText}>
+								{imageUri ? "Change Image" : "Pick an Image"}
+							</Text>
+						</TouchableOpacity>
+
+						{imageUri && (
+							<Image
+								source={{ uri: imageUri }}
+								style={styles.previewImage}
+								resizeMode="cover"
+							/>
+						)}
 
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity
@@ -155,7 +285,6 @@ const styles = StyleSheet.create({
 		backgroundColor: "#fff",
 		flexGrow: 1,
 	},
-
 	label: {
 		fontWeight: "700",
 		fontSize: 17,
@@ -163,7 +292,6 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		color: "#222",
 	},
-
 	input: {
 		borderWidth: 1,
 		borderColor: "#ccc",
@@ -177,13 +305,11 @@ const styles = StyleSheet.create({
 		shadowRadius: 4,
 		shadowOffset: { width: 0, height: 3 },
 	},
-
 	notesInput: {
 		height: 120,
 		textAlignVertical: "top",
 		backgroundColor: "#fafafa",
 	},
-
 	dropdown: {
 		borderWidth: 1,
 		borderColor: "#ccc",
@@ -197,19 +323,35 @@ const styles = StyleSheet.create({
 		shadowRadius: 4,
 		shadowOffset: { width: 0, height: 3 },
 	},
-
+	imageUploadButton: {
+		backgroundColor: "#E5F0FF",
+		paddingVertical: 14,
+		paddingHorizontal: 20,
+		borderRadius: 10,
+		marginTop: 10,
+		alignItems: "center",
+	},
+	imageUploadButtonText: {
+		color: "#007AFF",
+		fontSize: 16,
+		fontWeight: "600",
+	},
+	previewImage: {
+		width: "100%",
+		height: 200,
+		marginTop: 16,
+		borderRadius: 12,
+	},
 	buttonContainer: {
 		marginTop: 36,
 		backgroundColor: "#007AFF",
 		borderRadius: 12,
 		overflow: "hidden",
 	},
-
 	button: {
 		paddingVertical: 16,
 		alignItems: "center",
 	},
-
 	buttonText: {
 		color: "white",
 		fontSize: 18,
