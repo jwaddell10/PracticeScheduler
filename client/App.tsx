@@ -6,7 +6,6 @@ import { SessionContext } from "./context/SessionContext";
 
 export default function App() {
 	const [session, setSession] = useState<Session | null>(null);
-
 	useEffect(() => {
 		// Initial session check
 		supabase.auth.getSession().then(({ data: { session } }) => {

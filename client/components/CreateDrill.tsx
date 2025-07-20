@@ -19,7 +19,7 @@ import Constants from "expo-constants";
 import { createClient } from "@supabase/supabase-js";
 import { useSession } from "../context/SessionContext";
 import { decode } from "base64-arraybuffer";
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from "expo-file-system";
 
 const supabaseUrl = Constants.expoConfig?.extra?.SUPABASE_URL;
 const supabaseAnonKey = Constants.expoConfig?.extra?.SUPABASE_KEY;
@@ -46,12 +46,11 @@ const drillDifficulties = [
 
 export default function CreateDrill() {
 	const session = useSession();
-
 	const [name, setName] = useState("");
 	const [type, setType] = useState(null);
-	const [category, setCategory] = useState(null);
+	const [skillFocus, setSkillFocus] = useState(null);
 	const [difficulty, setDifficulty] = useState(null);
-	const [duration, setDuration] = useState("");
+	// const [duration, setDuration] = useState("");
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
 	const [imageUri, setImageUri] = useState(null);
@@ -119,19 +118,21 @@ export default function CreateDrill() {
 	};
 
 	const handleSubmit = async () => {
-		if (!name || !type || !category || !difficulty) {
+		if (!name || !type || !skillFocus || !difficulty) {
 			Alert.alert("Validation error", "Please fill in required fields");
 			return;
 		}
-		console.log(imageUri, 'imageuri')
+		console.log(imageUri, "imageuri");
 		// setSaving(true);
+		// const accessToken = session?.access_token;
+		// console.log(accessToken, "access token");
 
 		try {
 			let imageUrl = null;
 			if (imageUri) {
 				imageUrl = await uploadImageAsync(imageUri);
 			}
-
+		
 			const localIP = Constants.expoConfig?.extra?.localIP;
 			const PORT = Constants.expoConfig?.extra?.PORT;
 
@@ -139,15 +140,16 @@ export default function CreateDrill() {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
+					Authorization: `Bearer ${session?.access_token}`,
 				},
 				body: JSON.stringify({
 					name,
 					type,
-					category,
+					skillFocus,
 					difficulty,
-					duration: Number(duration),
+					// duration: Number(duration),
 					notes,
-					imageUri,
+					imageUrl,
 				}),
 			});
 			if (!res.ok) {
@@ -157,9 +159,9 @@ export default function CreateDrill() {
 			Alert.alert("Success", "Drill created successfully!");
 			setName("");
 			setType(null);
-			setCategory(null);
+			setSkillFocus(null);
 			setDifficulty(null);
-			setDuration("");
+			// setDuration("");
 			setNotes("");
 			setImageUri(null);
 		} catch (error) {
@@ -203,10 +205,10 @@ export default function CreateDrill() {
 						<Text style={styles.label}>Skill Focus *</Text>
 						<Dropdown
 							label="Select Skill Focus"
-							placeholder="Choose category"
+							placeholder="Choose skill focus"
 							options={drillCategories}
-							selectedValue={category}
-							onValueChange={setCategory}
+							selectedValue={skillFocus}
+							onValueChange={setSkillFocus}
 							primaryColor="#007AFF"
 							containerStyle={styles.dropdown}
 						/>
@@ -222,14 +224,14 @@ export default function CreateDrill() {
 							containerStyle={styles.dropdown}
 						/>
 
-						<Text style={styles.label}>Duration (minutes)</Text>
+						{/* <Text style={styles.label}>Duration (minutes)</Text>
 						<TextInput
 							style={styles.input}
 							placeholder="Enter duration in minutes"
 							value={duration}
 							onChangeText={setDuration}
 							keyboardType="numeric"
-						/>
+						/> */}
 
 						<Text style={styles.label}>Notes</Text>
 						<TextInput

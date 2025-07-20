@@ -1,11 +1,17 @@
-const { createClient } = require('@supabase/supabase-js');
-require('dotenv').config();
+const { createClient } = require("@supabase/supabase-js");
+require("dotenv").config();
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_KEY!;
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_KEY; // Changed this!
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error("Missing Supabase environment variables.");
+if (!supabaseUrl || !supabaseServiceKey) {
+	throw new Error("Missing Supabase environment variables.");
 }
 
-exports.supabase = createClient(supabaseUrl, supabaseKey);
+// Use service role key for server-side operations
+exports.supabase = createClient(supabaseUrl, supabaseServiceKey, {
+	auth: {
+		autoRefreshToken: false,
+		persistSession: false,
+	},
+});

@@ -1,20 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Alert, StyleSheet, View, AppState } from "react-native";
 import { supabase } from "../lib/supabase.ts";
 import { Button, Input } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
-
-// Tells Supabase Auth to continuously refresh the session automatically if
-// the app is in the foreground. When this is added, you will continue to receive
-// `onAuthStateChange` events with the `TOKEN_REFRESHED` or `SIGNED_OUT` event
-// if the user's session is terminated. This should only be registered once.
-AppState.addEventListener("change", (state) => {
-	if (state === "active") {
-		supabase.auth.startAutoRefresh();
-	} else {
-		supabase.auth.stopAutoRefresh();
-	}
-});
 
 export default function Auth() {
 	const navigation = useNavigation();
@@ -22,15 +10,36 @@ export default function Auth() {
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
 
+	// Tells Supabase Auth to continuously refresh the session automatically if
+	// the app is in the foreground. When this is added, you will continue to receive
+	// `onAuthStateChange` events with the `TOKEN_REFRESHED` or `SIGNED_OUT` event
+	// if the user's session is terminated. This should only be registered once.
+	useEffect(() => {
+		const subscription = AppState.addEventListener("change", (state) => {
+			if (state === "active") {
+				supabase.auth.startAutoRefresh();
+			} else {
+				supabase.auth.stopAutoRefresh();
+			}
+		});
+
+		return () => subscription?.remove();
+	}, []);
+
 	async function signInWithEmail() {
 		setLoading(true);
 		const { error } = await supabase.auth.signInWithPassword({
 			email: email,
 			password: password,
 		});
-		if (error) Alert.alert(error.message);
+		
+		if (error) {
+			Alert.alert(error.message);
+		} else {
+			// Only navigate on successful login
+			navigation.replace("Home");
+		}
 		setLoading(false);
-		navigation.replaceParams("Home");
 	}
 
 	async function signUpWithEmail() {
