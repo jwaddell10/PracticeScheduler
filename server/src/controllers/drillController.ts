@@ -23,7 +23,7 @@ exports.createDrill = expressAsyncHandler(async (req, res) => {
             difficulty,
             notes,
             imageUrl: imageUrl,
-            // user_id: userId, // Use the userId from the authenticated user
+            user_id: req.user,
         },
     ]);
 

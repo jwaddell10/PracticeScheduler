@@ -1,4 +1,4 @@
-const supabase = require("../supabase.ts");
+const { supabase } = require("../supabase.ts");
 
 // // const { createClient } = require("@supabase/supabase-js");
 // // const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -33,8 +33,8 @@ const authenticateUser = async (req, res, next) => {
 				details: error?.message,
 			});
 		}
-
-		req.user = data.user; // make user available to route handlers
+        console.log(data, 'data get uesr')
+		req.user = data.role; // make user available to route handlers
 		next();
 	} catch (err) {
 		console.error("Auth error:", err);
