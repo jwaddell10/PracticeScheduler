@@ -13,26 +13,26 @@ exports.fetchDrills = expressAsyncHandler(async (req, res) => {
 
 exports.createDrill = expressAsyncHandler(async (req, res) => {
 	console.log(req.body, 'req body create drill')
-    // const { name, type, skillFocus, difficulty, notes, imageUrl } = req.body;
+    const { name, type, skillFocus, difficulty, notes, imageUrl } = req.body;
 
-    // const { data, error } = await supabase.from("Drill").insert([
-    //     {
-    //         name,
-    //         type,
-    //         skillFocus,
-    //         difficulty,
-    //         notes,
-    //         imageUrl: imageUrl,
-    //         // user_id: userId, // Use the userId from the authenticated user
-    //     },
-    // ]);
+    const { data, error } = await supabase.from("Drill").insert([
+        {
+            name,
+            type,
+            skillFocus,
+            difficulty,
+            notes,
+            imageUrl: imageUrl,
+            // user_id: userId, // Use the userId from the authenticated user
+        },
+    ]);
 
-    // // console.log('Insert data:', data);
+    // console.log('Insert data:', data);
     
-    // if (error) {
-    //     console.error("Supabase insert error:", error.message);
-    //     return res.status(500).json({ error: error.message });
-    // }
+    if (error) {
+        console.error("Supabase insert error:", error.message);
+        return res.status(500).json({ error: error.message });
+    }
 
-    // res.status(201).json(data);
+    res.status(201).json(data);
 });
