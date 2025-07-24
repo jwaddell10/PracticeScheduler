@@ -2,16 +2,30 @@ const { createClient } = require("@supabase/supabase-js");
 require("dotenv").config();
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_KEY; // Changed this!
+const supabaseAnonKey = process.env.SUPABASE_KEY; // Use anon key, not service role, for user-authenticated calls
 
-if (!supabaseUrl || !supabaseServiceKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
 	throw new Error("Missing Supabase environment variables.");
 }
 
-// Use service role key for server-side operations
-exports.supabase = createClient(supabaseUrl, supabaseServiceKey, {
+const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 	auth: {
 		autoRefreshToken: false,
 		persistSession: false,
 	},
 });
+
+const createSupabaseClientWithAuth = (token) =>
+	createClient(supabaseUrl, supabaseAnonKey, {
+		global: {
+			headers: {
+				Authorization: `Bearer ${token}`,
+			},
+		},
+		auth: {
+			autoRefreshToken: false,
+			persistSession: false,
+		},
+	});
+
+module.exports = { supabase, createSupabaseClientWithAuth };

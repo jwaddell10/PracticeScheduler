@@ -13,28 +13,24 @@ const { supabase } = require("../supabase.ts");
 
 // // middleware/authMiddleware.js
 
+
 const authenticateUser = async (req, res, next) => {
 	const authHeader = req.headers.authorization;
-
 	if (!authHeader || !authHeader.startsWith("Bearer ")) {
-		return res
-			.status(401)
-			.json({ error: "Missing or malformed auth header" });
+		return res.status(401).json({ error: "Missing or malformed auth header" });
 	}
 
 	const token = authHeader.split(" ")[1];
 
 	try {
-		const { data, error } = await supabase.auth.getUser(token);
-		if (error || !data?.user) {
-			console.error("Auth verification failed:", error);
-			return res.status(401).json({
-				error: "Invalid or expired token",
-				details: error?.message,
-			});
+		const { data: { user }, error } = await supabase.auth.getUser(token);
+
+		if (error || !user) {
+			return res.status(401).json({ error: "Invalid or expired token" });
 		}
-        console.log(data, 'data get uesr')
-		req.user = data.role; // make user available to route handlers
+
+		req.user = user;
+		req.token = token;
 		next();
 	} catch (err) {
 		console.error("Auth error:", err);
@@ -43,3 +39,4 @@ const authenticateUser = async (req, res, next) => {
 };
 
 module.exports = authenticateUser;
+
