@@ -6,18 +6,57 @@ import {
 	Image,
 	ScrollView,
 	ActivityIndicator,
+	TouchableOpacity,
+	Modal,
+	Dimensions,
 } from "react-native";
 
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
+
 export default function DrillDetails({ route }) {
-	const { drill, category, subcategory } = route.params;
+	const { drill } = route.params;
 	const [imageLoading, setImageLoading] = useState(true);
 	const [imageError, setImageError] = useState(false);
+	const [modalVisible, setModalVisible] = useState(false);
+	const [modalImageLoading, setModalImageLoading] = useState(true);
 
 	console.log(drill, "drill");
 
 	// Helper function to capitalize first letter
 	const capitalize = (str) => {
 		return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+	};
+
+	// Helper function to parse and format array data
+	const formatArrayData = (data) => {
+		if (!data) return "Not specified";
+
+		try {
+			// If it's a JSON string, parse it
+			const parsed = JSON.parse(data);
+			if (Array.isArray(parsed)) {
+				return parsed.map((item) => capitalize(item)).join(", ");
+			}
+			return capitalize(data);
+		} catch (error) {
+			// If parsing fails, treat as regular string
+			return capitalize(data);
+		}
+	};
+
+	// Helper function to get first difficulty for color
+	const getFirstDifficulty = (difficultyData) => {
+		if (!difficultyData) return "";
+
+		try {
+			const parsed = JSON.parse(difficultyData);
+			if (Array.isArray(parsed) && parsed.length > 0) {
+				return parsed[0];
+			}
+			return difficultyData;
+		} catch (error) {
+			return difficultyData;
+		}
 	};
 
 	// Helper function to get difficulty color
@@ -34,23 +73,29 @@ export default function DrillDetails({ route }) {
 		}
 	};
 
+	const handleImagePress = () => {
+		setModalVisible(true);
+		setModalImageLoading(true);
+	};
+
+	const closeModal = () => {
+		setModalVisible(false);
+		setModalImageLoading(true);
+	};
+
 	return (
 		<ScrollView style={styles.container}>
 			<View style={styles.card}>
-				{/* Category and Subcategory */}
-				<Text style={styles.category}>
-					{category?.toUpperCase() || "DRILL"}
-				</Text>
-				{subcategory && (
-					<Text style={styles.subcategory}>{subcategory}</Text>
-				)}
-
 				{/* Drill Name */}
 				<Text style={styles.name}>{drill.name}</Text>
 
 				{/* Drill Image */}
 				{drill.imageUrl && (
-					<View style={styles.imageContainer}>
+					<TouchableOpacity
+						style={styles.imageContainer}
+						onPress={handleImagePress}
+						activeOpacity={0.8}
+					>
 						{imageLoading && (
 							<View style={styles.imageLoadingContainer}>
 								<ActivityIndicator
@@ -84,7 +129,14 @@ export default function DrillDetails({ route }) {
 								</Text>
 							</View>
 						)}
-					</View>
+						{!imageLoading && !imageError && (
+							<View style={styles.imageOverlay}>
+								<Text style={styles.tapToViewText}>
+									Tap to view full image
+								</Text>
+							</View>
+						)}
+					</TouchableOpacity>
 				)}
 
 				{/* Drill Details */}
@@ -92,27 +144,21 @@ export default function DrillDetails({ route }) {
 					<View style={styles.detailRow}>
 						<Text style={styles.detailLabel}>Skill Focus:</Text>
 						<Text style={styles.detailValue}>
-							{capitalize(drill.skillFocus)}
+							{formatArrayData(drill.skillFocus)}
 						</Text>
 					</View>
 
 					<View style={styles.detailRow}>
 						<Text style={styles.detailLabel}>Type:</Text>
 						<Text style={styles.detailValue}>
-							{capitalize(drill.type)}
+							{formatArrayData(drill.type)}
 						</Text>
 					</View>
 
 					<View style={styles.detailRow}>
 						<Text style={styles.detailLabel}>Difficulty:</Text>
-						<Text
-							style={[
-								styles.detailValue,
-								styles.difficulty,
-								{ color: getDifficultyColor(drill.difficulty) },
-							]}
-						>
-							{capitalize(drill.difficulty)}
+						<Text style={[styles.detailValue]}>
+							{formatArrayData(drill.difficulty)}
 						</Text>
 					</View>
 
@@ -138,6 +184,49 @@ export default function DrillDetails({ route }) {
 					</Text>
 				)}
 			</View>
+
+			{/* Full Screen Image Modal */}
+			<Modal
+				visible={modalVisible}
+				transparent={true}
+				animationType="fade"
+				onRequestClose={closeModal}
+			>
+				<View style={styles.modalContainer}>
+					<TouchableOpacity
+						style={styles.modalOverlay}
+						onPress={closeModal}
+						activeOpacity={1}
+					>
+						<View style={styles.modalContent}>
+							{modalImageLoading && (
+								<View style={styles.modalLoadingContainer}>
+									<ActivityIndicator
+										size="large"
+										color="#4CAF50"
+									/>
+									<Text style={styles.modalLoadingText}>
+										Loading full image...
+									</Text>
+								</View>
+							)}
+							<Image
+								source={{ uri: drill.imageUrl }}
+								style={styles.fullScreenImage}
+								resizeMode="contain"
+								onLoad={() => setModalImageLoading(false)}
+								onError={() => setModalImageLoading(false)}
+							/>
+							<TouchableOpacity
+								style={styles.closeButton}
+								onPress={closeModal}
+							>
+								<Text style={styles.closeButtonText}>✕</Text>
+							</TouchableOpacity>
+						</View>
+					</TouchableOpacity>
+				</View>
+			</Modal>
 		</ScrollView>
 	);
 }
@@ -219,13 +308,26 @@ const styles = StyleSheet.create({
 		color: "#999",
 		fontStyle: "italic",
 	},
+	imageOverlay: {
+		position: "absolute",
+		bottom: 0,
+		left: 0,
+		right: 0,
+		backgroundColor: "rgba(0, 0, 0, 0.6)",
+		paddingVertical: 8,
+		paddingHorizontal: 12,
+	},
+	tapToViewText: {
+		color: "white",
+		fontSize: 12,
+		textAlign: "center",
+		fontWeight: "500",
+	},
 	detailsContainer: {
 		marginBottom: 20,
 	},
 	detailRow: {
 		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
 		paddingVertical: 8,
 		borderBottomWidth: 1,
 		borderBottomColor: "#f0f0f0",
@@ -234,16 +336,15 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		fontWeight: "600",
 		color: "#666",
+		minWidth: 100,
+		marginRight: 12,
 	},
 	detailValue: {
 		fontSize: 16,
 		color: "#333",
 		fontWeight: "500",
-	},
-	difficulty: {
-		fontWeight: "700",
-		textTransform: "uppercase",
-		letterSpacing: 0.5,
+		flex: 1,
+		flexShrink: 1,
 	},
 	sectionTitle: {
 		fontSize: 18,
@@ -263,5 +364,55 @@ const styles = StyleSheet.create({
 		fontStyle: "italic",
 		textAlign: "center",
 		marginTop: 20,
+	},
+	// Modal styles
+	modalContainer: {
+		flex: 1,
+	},
+	modalOverlay: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.9)",
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	modalContent: {
+		width: screenWidth,
+		height: screenHeight,
+		justifyContent: "center",
+		alignItems: "center",
+		position: "relative",
+	},
+	fullScreenImage: {
+		width: screenWidth - 40,
+		height: screenHeight - 100,
+		maxWidth: screenWidth - 40,
+		maxHeight: screenHeight - 100,
+	},
+	modalLoadingContainer: {
+		position: "absolute",
+		justifyContent: "center",
+		alignItems: "center",
+		zIndex: 1,
+	},
+	modalLoadingText: {
+		color: "white",
+		marginTop: 10,
+		fontSize: 16,
+	},
+	closeButton: {
+		position: "absolute",
+		top: 50,
+		right: 20,
+		backgroundColor: "rgba(255, 255, 255, 0.2)",
+		borderRadius: 20,
+		width: 40,
+		height: 40,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	closeButtonText: {
+		color: "white",
+		fontSize: 20,
+		fontWeight: "bold",
 	},
 });

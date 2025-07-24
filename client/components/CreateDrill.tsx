@@ -13,7 +13,6 @@ import {
 	TouchableOpacity,
 	Image,
 } from "react-native";
-import Dropdown from "react-native-input-select";
 import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
 import { createClient } from "@supabase/supabase-js";
@@ -47,13 +46,64 @@ const drillDifficulties = [
 export default function CreateDrill() {
 	const session = useSession();
 	const [name, setName] = useState("");
-	const [type, setType] = useState(null);
-	const [skillFocus, setSkillFocus] = useState(null);
-	const [difficulty, setDifficulty] = useState(null);
-	// const [duration, setDuration] = useState("");
+	const [type, setType] = useState([]);
+	const [skillFocus, setSkillFocus] = useState([]);
+	const [difficulty, setDifficulty] = useState([]);
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
 	const [imageUri, setImageUri] = useState(null);
+
+	// Button selection component
+	const SelectionButtons = ({
+		title,
+		options,
+		selectedValues,
+		onSelect,
+		required = false,
+	}) => (
+		<View style={styles.selectionContainer}>
+			<Text style={styles.label}>
+				{title} {"(select all that apply)"}
+			</Text>
+			<View style={styles.buttonRow}>
+				{options.map((option) => {
+					const isSelected = selectedValues.includes(option.value);
+					return (
+						<TouchableOpacity
+							key={option.value}
+							style={[
+								styles.selectionButton,
+								isSelected && styles.selectedButton,
+							]}
+							onPress={() => {
+								if (isSelected) {
+									// Remove from selection
+									onSelect(
+										selectedValues.filter(
+											(val) => val !== option.value
+										)
+									);
+								} else {
+									// Add to selection
+									onSelect([...selectedValues, option.value]);
+								}
+							}}
+						>
+							<Text
+								style={[
+									styles.selectionButtonText,
+									isSelected && styles.selectedButtonText,
+								]}
+							>
+								{option.label}
+							</Text>
+						</TouchableOpacity>
+					);
+				})}
+			</View>
+		</View>
+	);
+
 	const pickImage = async () => {
 		const { status } =
 			await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -118,21 +168,23 @@ export default function CreateDrill() {
 	};
 
 	const handleSubmit = async () => {
-		if (!name || !type || !skillFocus || !difficulty) {
+		if (
+			!name ||
+			type.length === 0 ||
+			skillFocus.length === 0 ||
+			difficulty.length === 0
+		) {
 			Alert.alert("Validation error", "Please fill in required fields");
 			return;
 		}
-		console.log(imageUri, "imageuri");
-		// setSaving(true);
-		// const accessToken = session?.access_token;
-		// console.log(accessToken, "access token");
+		setSaving(true);
 
 		try {
 			let imageUrl = null;
 			if (imageUri) {
 				imageUrl = await uploadImageAsync(imageUri);
 			}
-		
+
 			const localIP = Constants.expoConfig?.extra?.localIP;
 			const PORT = Constants.expoConfig?.extra?.PORT;
 
@@ -147,7 +199,6 @@ export default function CreateDrill() {
 					type,
 					skillFocus,
 					difficulty,
-					// duration: Number(duration),
 					notes,
 					imageUrl,
 				}),
@@ -158,10 +209,9 @@ export default function CreateDrill() {
 
 			Alert.alert("Success", "Drill created successfully!");
 			setName("");
-			setType(null);
-			setSkillFocus(null);
-			setDifficulty(null);
-			// setDuration("");
+			setType([]);
+			setSkillFocus([]);
+			setDifficulty([]);
 			setNotes("");
 			setImageUri(null);
 		} catch (error) {
@@ -183,64 +233,45 @@ export default function CreateDrill() {
 			>
 				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 					<View>
-						<Text style={styles.label}>Drill Name *</Text>
+						<Text style={styles.label}>Drill Name</Text>
 						<TextInput
 							style={styles.input}
 							placeholder="Enter drill name"
 							value={name}
 							onChangeText={setName}
 						/>
-
-						<Text style={styles.label}>Type *</Text>
-						<Dropdown
-							label="Select Type"
-							placeholder="Choose type"
-							options={drillTypes}
-							selectedValue={type}
-							onValueChange={setType}
-							primaryColor="#007AFF"
-							containerStyle={styles.dropdown}
-						/>
-
-						<Text style={styles.label}>Skill Focus *</Text>
-						<Dropdown
-							label="Select Skill Focus"
-							placeholder="Choose skill focus"
-							options={drillCategories}
-							selectedValue={skillFocus}
-							onValueChange={setSkillFocus}
-							primaryColor="#007AFF"
-							containerStyle={styles.dropdown}
-						/>
-
-						<Text style={styles.label}>Difficulty *</Text>
-						<Dropdown
-							label="Select Difficulty"
-							placeholder="Choose difficulty"
-							options={drillDifficulties}
-							selectedValue={difficulty}
-							onValueChange={setDifficulty}
-							primaryColor="#007AFF"
-							containerStyle={styles.dropdown}
-						/>
-
-						{/* <Text style={styles.label}>Duration (minutes)</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="Enter duration in minutes"
-							value={duration}
-							onChangeText={setDuration}
-							keyboardType="numeric"
-						/> */}
-
-						<Text style={styles.label}>Notes</Text>
+						<Text style={styles.label}>Description</Text>
 						<TextInput
 							style={[styles.input, styles.notesInput]}
-							placeholder="Optional notes about the drill"
+							placeholder="Optional description about the drill"
 							value={notes}
 							onChangeText={setNotes}
 							multiline
 							numberOfLines={4}
+						/>
+
+						<SelectionButtons
+							title="Type"
+							options={drillTypes}
+							selectedValues={type}
+							onSelect={setType}
+							required={true}
+						/>
+
+						<SelectionButtons
+							title="Skill Focus"
+							options={drillCategories}
+							selectedValues={skillFocus}
+							onSelect={setSkillFocus}
+							required={true}
+						/>
+
+						<SelectionButtons
+							title="Difficulty"
+							options={drillDifficulties}
+							selectedValues={difficulty}
+							onSelect={setDifficulty}
+							required={true}
 						/>
 
 						<Text style={styles.label}>
@@ -265,7 +296,10 @@ export default function CreateDrill() {
 
 						<View style={styles.buttonContainer}>
 							<TouchableOpacity
-								style={styles.button}
+								style={[
+									styles.button,
+									saving && styles.buttonDisabled,
+								]}
 								onPress={handleSubmit}
 								disabled={saving}
 							>
@@ -312,18 +346,35 @@ const styles = StyleSheet.create({
 		textAlignVertical: "top",
 		backgroundColor: "#fafafa",
 	},
-	dropdown: {
-		borderWidth: 1,
-		borderColor: "#ccc",
-		borderRadius: 12,
-		backgroundColor: "#fafafa",
+	selectionContainer: {
+		marginBottom: 8,
+	},
+	buttonRow: {
+		flexDirection: "row",
+		flexWrap: "wrap",
+		gap: 8,
+	},
+	selectionButton: {
+		paddingVertical: 12,
 		paddingHorizontal: 16,
-		paddingVertical: 10,
-		marginBottom: 12,
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 4,
-		shadowOffset: { width: 0, height: 3 },
+		borderRadius: 8,
+		borderWidth: 2,
+		borderColor: "#E5E5E5",
+		backgroundColor: "#FAFAFA",
+		marginRight: 8,
+		marginBottom: 8,
+	},
+	selectedButton: {
+		backgroundColor: "#007AFF",
+		borderColor: "#007AFF",
+	},
+	selectionButtonText: {
+		fontSize: 16,
+		fontWeight: "600",
+		color: "#666",
+	},
+	selectedButtonText: {
+		color: "#FFFFFF",
 	},
 	imageUploadButton: {
 		backgroundColor: "#E5F0FF",
@@ -353,6 +404,9 @@ const styles = StyleSheet.create({
 	button: {
 		paddingVertical: 16,
 		alignItems: "center",
+	},
+	buttonDisabled: {
+		backgroundColor: "#B0B0B0",
 	},
 	buttonText: {
 		color: "white",
