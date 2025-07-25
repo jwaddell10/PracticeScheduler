@@ -28,7 +28,7 @@ export default function Auth() {
 			email: email,
 			password: password,
 		});
-		
+
 		if (error) {
 			Alert.alert(error.message);
 		} else {

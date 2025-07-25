@@ -17,19 +17,34 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import Dropdown from "react-native-input-select";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
-// import { supabase } from "../../server/supabase";
-import { useNavigation } from "@react-navigation/native";
-import Constants from "expo-constants"
+import { useNavigation, useRoute } from "@react-navigation/native";
+import Constants from "expo-constants";
 import { supabase } from "../lib/supabase";
 
 const CreatePractice = () => {
 	const navigation = useNavigation();
+	const route = useRoute();
 
 	const [drills, setDrills] = useState([]);
 	const [loadingDrills, setLoadingDrills] = useState(true);
 
-	const [startDate, setStartDate] = useState(new Date());
-	const [endDate, setEndDate] = useState(new Date());
+	// Initialize dates with the selected date from calendar if available
+	const initializeDate = () => {
+		if (route.params?.selectedDate) {
+			const selectedDate = new Date(route.params.selectedDate);
+			return selectedDate;
+		}
+		return new Date();
+	};
+
+	const [startDate, setStartDate] = useState(initializeDate());
+	const [endDate, setEndDate] = useState(() => {
+		const date = initializeDate();
+		// Set end date to 1 hour after start date by default
+		const endDate = new Date(date);
+		endDate.setHours(date.getHours() + 1);
+		return endDate;
+	});
 
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [notes, setNotes] = useState("");
@@ -38,13 +53,28 @@ const CreatePractice = () => {
 		fetchDrills();
 	}, []);
 
+	// Update dates when route params change
+	useEffect(() => {
+		if (route.params?.selectedDate) {
+			const selectedDate = new Date(route.params.selectedDate);
+			setStartDate(selectedDate);
+
+			// Set end date to 1 hour after start date
+			const newEndDate = new Date(selectedDate);
+			newEndDate.setHours(selectedDate.getHours() + 1);
+			setEndDate(newEndDate);
+		}
+	}, [route.params?.selectedDate]);
+
 	const fetchDrills = async () => {
 		try {
-			const response = await fetch(`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`)
+			const response = await fetch(
+				`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`
+			);
 			const data = await response.json();
 			// console.log(data, 'data from fetch')
 		} catch (error) {
-			console.log(error, 'error practice')
+			console.log(error, "error practice");
 		}
 		// const { data, error } = await supabase.from("Drill").select("*");
 		// if (error) {
@@ -64,8 +94,22 @@ const CreatePractice = () => {
 			if (selectedDate) {
 				if (type === "start") {
 					setStartDate(selectedDate);
+					// Auto-adjust end date to be at least 1 hour after start date
+					const newEndDate = new Date(selectedDate as Date);
+					newEndDate.setHours((selectedDate as Date).getHours() + 1);
+					if (endDate <= selectedDate) {
+						setEndDate(newEndDate);
+					}
 				} else {
-					setEndDate(selectedDate);
+					// Ensure end date is not before start date
+					if (selectedDate > startDate) {
+						setEndDate(selectedDate);
+					} else {
+						// If selected end date is before start date, set it to 1 hour after start
+						const newEndDate = new Date(startDate);
+						newEndDate.setHours(startDate.getHours() + 1);
+						setEndDate(newEndDate);
+					}
 				}
 			}
 		};
@@ -99,8 +143,28 @@ const CreatePractice = () => {
 	}
 
 	const handleSubmit = async () => {
+		// Validate that end date is after start date
+		if (endDate <= startDate) {
+			alert("End time must be after start time");
+			return;
+		}
+
 		await insertData(startDate, endDate, selectedDrills, notes);
 		navigation.goBack();
+	};
+
+	// Format date for display in header
+	const formatSelectedDate = () => {
+		if (route.params?.selectedDate) {
+			const date = new Date(route.params.selectedDate);
+			return date.toLocaleDateString("en-US", {
+				weekday: "long",
+				year: "numeric",
+				month: "long",
+				day: "numeric",
+			});
+		}
+		return null;
 	};
 
 	return (
@@ -117,33 +181,47 @@ const CreatePractice = () => {
 								contentContainerStyle={styles.scrollView}
 								keyboardShouldPersistTaps="handled"
 							>
+								{/* Header with selected date */}
+								{formatSelectedDate() && (
+									<View style={styles.headerContainer}>
+										<Text style={styles.headerTitle}>
+											Create Practice
+										</Text>
+										<Text style={styles.selectedDateText}>
+											{formatSelectedDate()}
+										</Text>
+									</View>
+								)}
+
 								{/* Start Date */}
 								<View style={styles.section}>
 									<Text style={styles.label}>Start Time</Text>
-										<DateTimePicker
-											testID="startDateTimePicker"
-											value={startDate}
-											mode="datetime"
-											onChange={onChange("start")}
-											style={styles.datePicker}
-										/>
+									<DateTimePicker
+										testID="startDateTimePicker"
+										value={startDate}
+										mode="datetime"
+										onChange={onChange("start")}
+										style={styles.datePicker}
+									/>
 								</View>
 
 								{/* End Date */}
 								<View style={styles.section}>
 									<Text style={styles.label}>End Time</Text>
-										<DateTimePicker
-											testID="endDateTimePicker"
-											value={endDate}
-											mode="datetime"
-											onChange={onChange("end")}
-											style={styles.datePicker}
-										/>
+									<DateTimePicker
+										testID="endDateTimePicker"
+										value={endDate}
+										mode="datetime"
+										onChange={onChange("end")}
+										style={styles.datePicker}
+									/>
 								</View>
 
 								{/* Drills */}
 								<View style={styles.section}>
-									<Text style={styles.label}>Selected Drills</Text>
+									<Text style={styles.label}>
+										Selected Drills
+									</Text>
 									{loadingDrills ? (
 										<ActivityIndicator
 											size="large"
@@ -155,19 +233,28 @@ const CreatePractice = () => {
 											<DraggableFlatList
 												data={selectedDrills}
 												keyExtractor={(item) => item}
-												renderItem={({ item, drag, isActive }) => (
+												renderItem={({
+													item,
+													drag,
+													isActive,
+												}) => (
 													<TouchableOpacity
 														style={[
 															styles.draggableItem,
 															{
-																backgroundColor: isActive
-																	? "#005BBB"
-																	: "#007AFF",
+																backgroundColor:
+																	isActive
+																		? "#005BBB"
+																		: "#007AFF",
 															},
 														]}
 														onLongPress={drag}
 													>
-														<Text style={styles.draggableText}>
+														<Text
+															style={
+																styles.draggableText
+															}
+														>
 															{item}
 														</Text>
 													</TouchableOpacity>
@@ -189,9 +276,15 @@ const CreatePractice = () => {
 												}
 												primaryColor={"#007AFF"}
 												isMultiple
-												containerStyle={styles.dropdownContainer}
-												labelStyle={styles.dropdownLabel}
-												placeholderStyle={styles.dropdownPlaceholder}
+												containerStyle={
+													styles.dropdownContainer
+												}
+												labelStyle={
+													styles.dropdownLabel
+												}
+												placeholderStyle={
+													styles.dropdownPlaceholder
+												}
 											/>
 										</>
 									)}
@@ -218,7 +311,9 @@ const CreatePractice = () => {
 									onPress={handleSubmit}
 									activeOpacity={0.8}
 								>
-									<Text style={styles.submitButtonText}>Create Practice</Text>
+									<Text style={styles.submitButtonText}>
+										Create Practice
+									</Text>
 								</TouchableOpacity>
 							</ScrollView>
 						</TouchableWithoutFeedback>
@@ -238,6 +333,29 @@ const styles = StyleSheet.create({
 		padding: 16,
 		paddingBottom: 32,
 		flexGrow: 1,
+	},
+	headerContainer: {
+		backgroundColor: "white",
+		borderRadius: 12,
+		padding: 16,
+		marginBottom: 20,
+		shadowColor: "#000",
+		shadowOpacity: 0.1,
+		shadowOffset: { width: 0, height: 3 },
+		shadowRadius: 6,
+		elevation: 3,
+		alignItems: "center",
+	},
+	headerTitle: {
+		fontSize: 24,
+		fontWeight: "700",
+		color: "#333",
+		marginBottom: 8,
+	},
+	selectedDateText: {
+		fontSize: 18,
+		fontWeight: "600",
+		color: "#007AFF",
 	},
 	section: {
 		backgroundColor: "white",

@@ -1,5 +1,11 @@
 import React from "react";
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from "react-native";
+import {
+	View,
+	Text,
+	StyleSheet,
+	ScrollView,
+	TouchableOpacity,
+} from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
 export default function PremiumScreen() {
@@ -15,7 +21,9 @@ export default function PremiumScreen() {
 	return (
 		<ScrollView contentContainerStyle={styles.container}>
 			<Text style={styles.header}>Why Go Premium?</Text>
-			<Text style={styles.subheader}>Unlock the full coaching toolkit:</Text>
+			<Text style={styles.subheader}>
+				Unlock the full coaching toolkit:
+			</Text>
 
 			{features.map((feature, index) => (
 				<View key={index} style={styles.featureItem}>
@@ -24,7 +32,10 @@ export default function PremiumScreen() {
 				</View>
 			))}
 
-			<TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+			<TouchableOpacity
+				style={styles.backButton}
+				onPress={() => navigation.goBack()}
+			>
 				<Text style={styles.backButtonText}>Back</Text>
 			</TouchableOpacity>
 		</ScrollView>

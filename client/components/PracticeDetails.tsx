@@ -45,7 +45,6 @@ export default function PracticeDetails({ route }) {
 		// 	.select("*")
 		// 	.eq("id", practiceId)
 		// 	.single();
-
 		// if (error) {
 		// 	console.error("Error fetching practice:", error);
 		// 	Alert.alert("Error", "Could not load practice details.");
@@ -72,11 +71,13 @@ export default function PracticeDetails({ route }) {
 	const saveChanges = async () => {
 		setSaving(true);
 		try {
-			const response = await fetch(`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`)
+			const response = await fetch(
+				`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`
+			);
 			const data = await response.json();
 			// console.log(data, 'data pract details')
 		} catch (error) {
-			console.log(error, 'err')
+			console.log(error, "err");
 		}
 		// const { error } = await supabase
 		// 	.from("Practice")
