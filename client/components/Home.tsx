@@ -8,6 +8,7 @@ import {
 	TouchableOpacity,
 	Alert,
 } from "react-native";
+import { Calendar } from "react-native-calendars";
 import { useNavigation } from "@react-navigation/native";
 import Constants from "expo-constants";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
@@ -17,48 +18,20 @@ export default function HomeScreen() {
 	const navigation = useNavigation();
 	const [practices, setPractices] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [selectedDate, setSelectedDate] = useState(null);
 
 	useEffect(() => {
 		fetchData();
-
-		// // Real-time subscription
-		// const subscription = supabase
-		// 	.channel("practice-changes")
-		// 	.on(
-		// 		"postgres_changes",
-		// 		{ event: "INSERT", schema: "public", table: "Practice" },
-		// 		(payload) => {
-		// 			console.log("New practice:", payload.new);
-		// 			setPractices((prev) => [payload.new, ...prev]);
-		// 		}
-		// 	)
-		// 	.on(
-		// 		"postgres_changes",
-		// 		{ event: "DELETE", schema: "public", table: "Practice" },
-		// 		(payload) => {
-		// 			console.log("Practice deleted:", payload.old);
-		// 			setPractices((prev) =>
-		// 				prev.filter((item) => item.id !== payload.old.id)
-		// 			);
-		// 		}
-		// 	)
-		// 	.subscribe();
-
-		// return () => {
-		// 	supabase.removeChannel(subscription);
-		// };
 	}, []);
 
 	async function fetchData() {
 		try {
 			const localIP = Constants.expoConfig?.extra?.localIP;
-
 			const PORT = Constants.expoConfig?.extra?.PORT;
 			const response = await fetch(`http://${localIP}:${PORT}/home`);
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
-
 			const data = await response.json();
 			setPractices(data);
 			setLoading(false);
@@ -68,11 +41,9 @@ export default function HomeScreen() {
 		}
 	}
 
-	// Delete practice by ID
 	const deletePractice = async (id) => {
 		try {
 			const localIP = Constants.expoConfig?.extra?.localIP;
-
 			const PORT = Constants.expoConfig?.extra?.PORT;
 			const response = await fetch(
 				`http://${localIP}:${PORT}/home/${id}/delete`,
@@ -83,14 +54,12 @@ export default function HomeScreen() {
 					},
 				}
 			);
-
 			if (!response.ok) {
 				throw new Error(`HTTP error! status: ${response.status}`);
 			}
 			const data = await response.json();
-			console.log(data, "data");
 			if (data.message === "Practice deleted") {
-				await fetchData(); // ✅ Refetch updated practices
+				await fetchData();
 			}
 		} catch (error) {
 			console.log(error, "err");
@@ -110,6 +79,27 @@ export default function HomeScreen() {
 				},
 			]
 		);
+	};
+
+	const getMarkedDates = () => {
+		const marks = {};
+		practices.forEach((practice) => {
+			const dateStr = new Date(practice.startTime)
+				.toISOString()
+				.split("T")[0];
+			marks[dateStr] = {
+				marked: true,
+				dotColor: theme.colors.secondary,
+			};
+		});
+		if (selectedDate) {
+			marks[selectedDate] = {
+				...(marks[selectedDate] || {}),
+				selected: true,
+				selectedColor: theme.colors.accent,
+			};
+		}
+		return marks;
 	};
 
 	const renderPracticeItem = ({ item }) => (
@@ -132,7 +122,6 @@ export default function HomeScreen() {
 					• {drill}
 				</Text>
 			))}
-
 			<TouchableOpacity
 				style={styles.deleteButton}
 				onPress={() => confirmDelete(item.id)}
@@ -142,18 +131,38 @@ export default function HomeScreen() {
 		</TouchableOpacity>
 	);
 
+	const filteredPractices = selectedDate
+		? practices.filter((p) =>
+				new Date(p.startTime).toISOString().startsWith(selectedDate)
+		  )
+		: practices;
+
 	return (
 		<ScrollView style={styles.container}>
 			<Text style={styles.header}>Welcome, Coach</Text>
-			{/* <UpgradeToPremiumBanner /> */}
+
+			<Calendar
+				markedDates={getMarkedDates()}
+				onDayPress={(day) => {
+					navigation.navigate("Practice", {
+						selectedDate: day.dateString, // format: YYYY-MM-DD
+					});
+				}}
+				theme={{
+					selectedDayBackgroundColor: theme.colors.accent,
+					todayTextColor: theme.colors.secondary,
+					arrowColor: theme.colors.primary,
+				}}
+				style={styles.calendar}
+			/>
 
 			{loading ? (
 				<Text>Loading...</Text>
-			) : practices.length === 0 ? (
-				<Text>No practices scheduled yet.</Text>
+			) : filteredPractices.length === 0 ? (
+				<Text style={{ marginTop: 16 }}>No practices scheduled.</Text>
 			) : (
 				<FlatList
-					data={practices}
+					data={filteredPractices}
 					keyExtractor={(item) => item.id}
 					renderItem={renderPracticeItem}
 					contentContainerStyle={styles.listContainer}
@@ -181,8 +190,13 @@ const styles = StyleSheet.create({
 	header: {
 		fontSize: 28,
 		fontWeight: "700",
-		marginBottom: 24,
+		marginBottom: 16,
 		color: theme.colors.textPrimary,
+	},
+	calendar: {
+		borderRadius: 12,
+		overflow: "hidden",
+		marginBottom: 24,
 	},
 	listContainer: {
 		paddingBottom: 24,

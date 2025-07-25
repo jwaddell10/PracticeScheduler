@@ -1,4 +1,5 @@
-import { SetStateAction, useEffect, useState } from "react";
+// CreatePractice.tsx
+import { useEffect, useState } from "react";
 import {
 	View,
 	Text,
@@ -11,108 +12,49 @@ import {
 	TouchableWithoutFeedback,
 	Keyboard,
 	ActivityIndicator,
+	Button,
+	Modal,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import Dropdown from "react-native-input-select";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import Constants from "expo-constants";
 import { supabase } from "../lib/supabase";
+import PracticeDateTimePicker from "./PracticeDateTimePicker";
+import { fetchUserDrills } from "../util/fetchDrills";
 
 const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
+	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
+	const [modalVisible, setModalVisible] = useState(false);
 
 	const [drills, setDrills] = useState([]);
 	const [loadingDrills, setLoadingDrills] = useState(true);
-
-	// Initialize dates with the selected date from calendar if available
-	const initializeDate = () => {
-		if (route.params?.selectedDate) {
-			const selectedDate = new Date(route.params.selectedDate);
-			return selectedDate;
-		}
-		return new Date();
-	};
-
-	const [startDate, setStartDate] = useState(initializeDate());
-	const [endDate, setEndDate] = useState(() => {
-		const date = initializeDate();
-		// Set end date to 1 hour after start date by default
-		const endDate = new Date(date);
-		endDate.setHours(date.getHours() + 1);
-		return endDate;
-	});
-
+	// console.log(drills, 'new drills')
+	const [startDate, setStartDate] = useState<Date | null>(null);
+	const [endDate, setEndDate] = useState<Date | null>(null);
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [notes, setNotes] = useState("");
 
 	useEffect(() => {
-		fetchDrills();
-	}, []);
-
-	// Update dates when route params change
-	useEffect(() => {
-		if (route.params?.selectedDate) {
-			const selectedDate = new Date(route.params.selectedDate);
-			setStartDate(selectedDate);
-
-			// Set end date to 1 hour after start date
-			const newEndDate = new Date(selectedDate);
-			newEndDate.setHours(selectedDate.getHours() + 1);
-			setEndDate(newEndDate);
-		}
-	}, [route.params?.selectedDate]);
-
-	const fetchDrills = async () => {
-		try {
-			const response = await fetch(
-				`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`
-			);
-			const data = await response.json();
-			// console.log(data, 'data from fetch')
-		} catch (error) {
-			console.log(error, "error practice");
-		}
-		// const { data, error } = await supabase.from("Drill").select("*");
-		// if (error) {
-		// 	console.error("Error fetching drills:", error);
-		// } else {
-		// 	const formattedDrills = data.map((drill) => ({
-		// 		label: `${drill.type}, ${drill.category}: ${drill.name}`,
-		// 		value: drill.name,
-		// 	}));
-		// 	setDrills(formattedDrills);
-		// }
-		// setLoadingDrills(false);
-	};
-
-	const onChange =
-		(type: string) => (event: any, selectedDate: SetStateAction<Date>) => {
-			if (selectedDate) {
-				if (type === "start") {
-					setStartDate(selectedDate);
-					// Auto-adjust end date to be at least 1 hour after start date
-					const newEndDate = new Date(selectedDate as Date);
-					newEndDate.setHours((selectedDate as Date).getHours() + 1);
-					if (endDate <= selectedDate) {
-						setEndDate(newEndDate);
-					}
-				} else {
-					// Ensure end date is not before start date
-					if (selectedDate > startDate) {
-						setEndDate(selectedDate);
-					} else {
-						// If selected end date is before start date, set it to 1 hour after start
-						const newEndDate = new Date(startDate);
-						newEndDate.setHours(startDate.getHours() + 1);
-						setEndDate(newEndDate);
-					}
-				}
+		const loadDrills = async () => {
+			try {
+				const drillsData = await fetchUserDrills();
+				setAvailableDrills(drillsData.map((d: any) => d.name));
+			} catch (error) {
+				console.error("Error fetching drills:", error);
 			}
 		};
+		loadDrills();
+	}, []);
+
+	const handleDatesChange = (start: Date, end: Date) => {
+		setStartDate(start);
+		setEndDate(end);
+	};
 
 	function toLocalISOString(date: Date) {
 		const tzoffset = date.getTimezoneOffset() * 60000; // offset in ms
@@ -143,7 +85,10 @@ const CreatePractice = () => {
 	}
 
 	const handleSubmit = async () => {
-		// Validate that end date is after start date
+		if (!startDate || !endDate) {
+			alert("Please select valid start and end times");
+			return;
+		}
 		if (endDate <= startDate) {
 			alert("End time must be after start time");
 			return;
@@ -153,11 +98,10 @@ const CreatePractice = () => {
 		navigation.goBack();
 	};
 
-	// Format date for display in header
+	// Format date for header display
 	const formatSelectedDate = () => {
-		if (route.params?.selectedDate) {
-			const date = new Date(route.params.selectedDate);
-			return date.toLocaleDateString("en-US", {
+		if (startDate) {
+			return startDate.toLocaleDateString("en-US", {
 				weekday: "long",
 				year: "numeric",
 				month: "long",
@@ -165,6 +109,13 @@ const CreatePractice = () => {
 			});
 		}
 		return null;
+	};
+
+	// Function to remove a drill from selected drills
+	const removeDrill = (drillToRemove: string) => {
+		setSelectedDrills((prev) =>
+			prev.filter((drill) => drill !== drillToRemove)
+		);
 	};
 
 	return (
@@ -181,7 +132,6 @@ const CreatePractice = () => {
 								contentContainerStyle={styles.scrollView}
 								keyboardShouldPersistTaps="handled"
 							>
-								{/* Header with selected date */}
 								{formatSelectedDate() && (
 									<View style={styles.headerContainer}>
 										<Text style={styles.headerTitle}>
@@ -193,105 +143,168 @@ const CreatePractice = () => {
 									</View>
 								)}
 
-								{/* Start Date */}
-								<View style={styles.section}>
-									<Text style={styles.label}>Start Time</Text>
-									<DateTimePicker
-										testID="startDateTimePicker"
-										value={startDate}
-										mode="datetime"
-										onChange={onChange("start")}
-										style={styles.datePicker}
-									/>
-								</View>
-
-								{/* End Date */}
-								<View style={styles.section}>
-									<Text style={styles.label}>End Time</Text>
-									<DateTimePicker
-										testID="endDateTimePicker"
-										value={endDate}
-										mode="datetime"
-										onChange={onChange("end")}
-										style={styles.datePicker}
-									/>
-								</View>
+								<PracticeDateTimePicker
+									initialDate={route.params?.selectedDate}
+									onDatesChange={handleDatesChange}
+								/>
 
 								{/* Drills */}
 								<View style={styles.section}>
 									<Text style={styles.label}>
 										Selected Drills
 									</Text>
-									{loadingDrills ? (
-										<ActivityIndicator
-											size="large"
-											color="#007AFF"
-											style={{ marginVertical: 12 }}
-										/>
-									) : (
-										<>
-											<DraggableFlatList
-												data={selectedDrills}
-												keyExtractor={(item) => item}
-												renderItem={({
-													item,
-													drag,
-													isActive,
-												}) => (
-													<TouchableOpacity
-														style={[
-															styles.draggableItem,
-															{
-																backgroundColor:
-																	isActive
-																		? "#005BBB"
-																		: "#007AFF",
-															},
-														]}
-														onLongPress={drag}
+									<Button
+										onPress={() => setModalVisible(true)}
+										title="Add Drills"
+									/>
+
+									{/* Display Selected Drills */}
+									{selectedDrills.length > 0 && (
+										<View
+											style={
+												styles.selectedDrillsContainer
+											}
+										>
+											{selectedDrills.map(
+												(drill, index) => (
+													<View
+														key={index}
+														style={
+															styles.selectedDrillItem
+														}
 													>
 														<Text
 															style={
-																styles.draggableText
+																styles.selectedDrillText
 															}
 														>
-															{item}
+															{drill}
 														</Text>
-													</TouchableOpacity>
-												)}
-												onDragEnd={({ data }) =>
-													setSelectedDrills(data)
-												}
-												scrollEnabled={false}
-												style={{ marginBottom: 16 }}
-											/>
-
-											<Dropdown
-												label="Add Drills"
-												placeholder="Select drills..."
-												options={drills}
-												selectedValue={selectedDrills}
-												onValueChange={(value) =>
-													setSelectedDrills(value)
-												}
-												primaryColor={"#007AFF"}
-												isMultiple
-												containerStyle={
-													styles.dropdownContainer
-												}
-												labelStyle={
-													styles.dropdownLabel
-												}
-												placeholderStyle={
-													styles.dropdownPlaceholder
-												}
-											/>
-										</>
+														<TouchableOpacity
+															onPress={() =>
+																removeDrill(
+																	drill
+																)
+															}
+															style={
+																styles.removeDrillButton
+															}
+														>
+															<Text
+																style={
+																	styles.removeDrillButtonText
+																}
+															>
+																×
+															</Text>
+														</TouchableOpacity>
+													</View>
+												)
+											)}
+										</View>
 									)}
+
+									{selectedDrills.length === 0 && (
+										<Text style={styles.noDrillsText}>
+											No drills selected yet
+										</Text>
+									)}
+
+									<Modal
+										visible={modalVisible}
+										animationType="slide"
+										transparent={true}
+										onRequestClose={() =>
+											setModalVisible(false)
+										}
+									>
+										<View style={styles.modalBackdrop}>
+											<View style={styles.modalContent}>
+												<Text style={styles.modalTitle}>
+													Select Drills
+												</Text>
+												<ScrollView
+													style={{ maxHeight: 300 }}
+												>
+													{availableDrills.map(
+														(drill, index) => {
+															const selected =
+																selectedDrills.includes(
+																	drill
+																);
+															return (
+																<TouchableOpacity
+																	key={index}
+																	style={[
+																		styles.drillItem,
+																		selected &&
+																			styles.drillItemSelected,
+																	]}
+																	onPress={() => {
+																		if (
+																			selected
+																		) {
+																			setSelectedDrills(
+																				(
+																					prev
+																				) =>
+																					prev.filter(
+																						(
+																							d
+																						) =>
+																							d !==
+																							drill
+																					)
+																			);
+																		} else {
+																			setSelectedDrills(
+																				(
+																					prev
+																				) => [
+																					...prev,
+																					drill,
+																				]
+																			);
+																		}
+																	}}
+																>
+																	<Text
+																		style={[
+																			styles.drillItemText,
+																			selected &&
+																				styles.drillItemTextSelected,
+																		]}
+																	>
+																		{drill}
+																	</Text>
+																</TouchableOpacity>
+															);
+														}
+													)}
+												</ScrollView>
+												<TouchableOpacity
+													style={
+														styles.closeModalButton
+													}
+													onPress={() =>
+														setModalVisible(false)
+													}
+												>
+													<Text
+														style={
+															styles.closeModalButtonText
+														}
+													>
+														Done
+													</Text>
+												</TouchableOpacity>
+											</View>
+										</View>
+									</Modal>
 								</View>
 
 								{/* Notes */}
-								<View style={styles.section}>
+								{/* <View style={styles.section}>
 									<Text style={styles.label}>Notes</Text>
 									<TextInput
 										style={styles.notesInput}
@@ -303,7 +316,7 @@ const CreatePractice = () => {
 										textAlignVertical="top"
 										returnKeyType="done"
 									/>
-								</View>
+								</View> */}
 
 								{/* Submit Button */}
 								<TouchableOpacity
@@ -374,14 +387,48 @@ const styles = StyleSheet.create({
 		color: "#333",
 		marginBottom: 12,
 	},
-	datePickerContainer: {
-		borderWidth: 1,
-		borderColor: "#ddd",
-		borderRadius: 8,
-		overflow: "hidden",
+	selectedDrillsContainer: {
+		marginTop: 16,
 	},
-	datePicker: {
-		width: "100%",
+	selectedDrillItem: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		backgroundColor: "#f0f8ff",
+		borderColor: "#007AFF",
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingVertical: 10,
+		paddingHorizontal: 12,
+		marginBottom: 8,
+	},
+	selectedDrillText: {
+		fontSize: 16,
+		color: "#007AFF",
+		fontWeight: "500",
+		flex: 1,
+	},
+	removeDrillButton: {
+		backgroundColor: "#ff4444",
+		borderRadius: 12,
+		width: 24,
+		height: 24,
+		justifyContent: "center",
+		alignItems: "center",
+		marginLeft: 8,
+	},
+	removeDrillButtonText: {
+		color: "white",
+		fontSize: 16,
+		fontWeight: "bold",
+		lineHeight: 16,
+	},
+	noDrillsText: {
+		fontSize: 14,
+		color: "#999",
+		fontStyle: "italic",
+		marginTop: 8,
+		textAlign: "center",
 	},
 	draggableItem: {
 		paddingVertical: 12,
@@ -436,6 +483,56 @@ const styles = StyleSheet.create({
 		color: "white",
 		fontWeight: "700",
 		fontSize: 18,
+	},
+	modalContent: {
+		backgroundColor: "white",
+		padding: 20,
+		borderRadius: 12,
+		flex: 1, // Takes available space
+		marginHorizontal: 10, // Small margins on sides
+		marginVertical: 50, // Margins on top/bottom
+	},
+	modalTitle: {
+		fontSize: 20,
+		fontWeight: "700",
+		marginBottom: 16,
+		color: "#333",
+		textAlign: "center",
+	},
+	drillItem: {
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+		backgroundColor: "#eee",
+		marginBottom: 10,
+	},
+	drillItemSelected: {
+		backgroundColor: "#007AFF",
+	},
+	drillItemText: {
+		color: "#333",
+		fontSize: 16,
+		fontWeight: "500",
+	},
+	drillItemTextSelected: {
+		color: "#fff",
+	},
+	closeModalButton: {
+		marginTop: 16,
+		backgroundColor: "#007AFF",
+		paddingVertical: 12,
+		borderRadius: 10,
+		alignItems: "center",
+	},
+	closeModalButtonText: {
+		color: "white",
+		fontWeight: "600",
+		fontSize: 16,
+	},
+	modalBackdrop: {
+		flex: 1,
+		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		padding: 20, // Add padding instead of using margins in modalContent
 	},
 });
 

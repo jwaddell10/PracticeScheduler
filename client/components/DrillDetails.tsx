@@ -44,35 +44,6 @@ export default function DrillDetails({ route }) {
 		}
 	};
 
-	// Helper function to get first difficulty for color
-	const getFirstDifficulty = (difficultyData) => {
-		if (!difficultyData) return "";
-
-		try {
-			const parsed = JSON.parse(difficultyData);
-			if (Array.isArray(parsed) && parsed.length > 0) {
-				return parsed[0];
-			}
-			return difficultyData;
-		} catch (error) {
-			return difficultyData;
-		}
-	};
-
-	// Helper function to get difficulty color
-	const getDifficultyColor = (difficulty) => {
-		switch (difficulty?.toLowerCase()) {
-			case "beginner":
-				return "#4CAF50";
-			case "intermediate":
-				return "#FF9800";
-			case "advanced":
-				return "#F44336";
-			default:
-				return "#666";
-		}
-	};
-
 	const handleImagePress = () => {
 		setModalVisible(true);
 		setModalImageLoading(true);
