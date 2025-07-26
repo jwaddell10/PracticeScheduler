@@ -14,6 +14,8 @@ import {
 	ActivityIndicator,
 	Button,
 	Modal,
+	Pressable,
+	Image, // Added Image import
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import Dropdown from "react-native-input-select";
@@ -24,26 +26,41 @@ import Constants from "expo-constants";
 import { supabase } from "../lib/supabase";
 import PracticeDateTimePicker from "./PracticeDateTimePicker";
 import { fetchUserDrills } from "../util/fetchDrills";
+import AntDesign from "@expo/vector-icons/AntDesign";
+import { Link } from "expo-router";
+
+interface DrillData {
+	name: string;
+	imageUrl?: string;
+	skillFocus?: any;
+	type?: any;
+	difficulty?: any;
+	duration?: number;
+	notes?: string;
+}
 
 const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
-	const [modalVisible, setModalVisible] = useState(false);
+	const [drillSelectionModalVisible, setDrillSelectionModalVisible] =
+		useState(false);
+	const [questionModalVisible, setQuestionModalVisible] = useState(false);
+	const [selectedDrillForDetails, setSelectedDrillForDetails] =
+		useState<DrillData | null>(null);
 
-	const [drills, setDrills] = useState([]);
-	const [loadingDrills, setLoadingDrills] = useState(true);
-	// console.log(drills, 'new drills')
+	const [drills, setDrills] = useState<DrillData[]>([]);
 	const [startDate, setStartDate] = useState<Date | null>(null);
 	const [endDate, setEndDate] = useState<Date | null>(null);
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
-	const [notes, setNotes] = useState("");
+	const [notes, setNotes] = useState(""); // Added notes state
 
 	useEffect(() => {
 		const loadDrills = async () => {
 			try {
 				const drillsData = await fetchUserDrills();
 				setAvailableDrills(drillsData.map((d: any) => d.name));
+				setDrills(drillsData); // Store full drill objects
 			} catch (error) {
 				console.error("Error fetching drills:", error);
 			}
@@ -118,6 +135,45 @@ const CreatePractice = () => {
 		);
 	};
 
+	// Handle question modal close - reopen drill selection modal
+	const handleQuestionModalClose = () => {
+		setQuestionModalVisible(false);
+		setSelectedDrillForDetails(null);
+		setDrillSelectionModalVisible(true);
+	};
+
+	// Handle drill question icon click
+	const handleDrillQuestionClick = (drillName: string) => {
+		const drillObject = drills.find((d: DrillData) => d.name === drillName);
+		setSelectedDrillForDetails(drillObject || null);
+		setDrillSelectionModalVisible(false);
+		setQuestionModalVisible(true);
+	};
+
+	// Helper function to capitalize first letter
+	const capitalize = (str: string) => {
+		return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
+	};
+
+	// Helper function to parse and format array data
+	const formatArrayData = (data: any) => {
+		if (!data) return "Not specified";
+
+		try {
+			// If it's a JSON string, parse it
+			const parsed = JSON.parse(data);
+			if (Array.isArray(parsed)) {
+				return parsed
+					.map((item: string) => capitalize(item))
+					.join(", ");
+			}
+			return capitalize(data);
+		} catch (error) {
+			// If parsing fails, treat as regular string
+			return capitalize(data);
+		}
+	};
+
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
@@ -154,7 +210,9 @@ const CreatePractice = () => {
 										Selected Drills
 									</Text>
 									<Button
-										onPress={() => setModalVisible(true)}
+										onPress={() =>
+											setDrillSelectionModalVisible(true)
+										}
 										title="Add Drills"
 									/>
 
@@ -210,12 +268,13 @@ const CreatePractice = () => {
 										</Text>
 									)}
 
+									{/* Drill Selection Modal */}
 									<Modal
-										visible={modalVisible}
+										visible={drillSelectionModalVisible}
 										animationType="slide"
 										transparent={true}
 										onRequestClose={() =>
-											setModalVisible(false)
+											setDrillSelectionModalVisible(false)
 										}
 									>
 										<View style={styles.modalBackdrop}>
@@ -277,6 +336,21 @@ const CreatePractice = () => {
 																	>
 																		{drill}
 																	</Text>
+																	<TouchableOpacity
+																		onPress={() =>
+																			handleDrillQuestionClick(
+																				drill
+																			)
+																		}
+																	>
+																		<AntDesign
+																			name="questioncircleo"
+																			size={
+																				24
+																			}
+																			color="black"
+																		/>
+																	</TouchableOpacity>
 																</TouchableOpacity>
 															);
 														}
@@ -287,7 +361,9 @@ const CreatePractice = () => {
 														styles.closeModalButton
 													}
 													onPress={() =>
-														setModalVisible(false)
+														setDrillSelectionModalVisible(
+															false
+														)
 													}
 												>
 													<Text
@@ -301,22 +377,248 @@ const CreatePractice = () => {
 											</View>
 										</View>
 									</Modal>
-								</View>
 
-								{/* Notes */}
-								{/* <View style={styles.section}>
-									<Text style={styles.label}>Notes</Text>
-									<TextInput
-										style={styles.notesInput}
-										value={notes}
-										onChangeText={setNotes}
-										placeholder="Add notes about this practice..."
-										multiline
-										numberOfLines={4}
-										textAlignVertical="top"
-										returnKeyType="done"
-									/>
-								</View> */}
+									{/* Question Modal - Drill Details */}
+									<Modal
+										visible={questionModalVisible}
+										animationType="slide"
+										transparent={true}
+										onRequestClose={
+											handleQuestionModalClose
+										}
+									>
+										<View style={styles.modalBackdrop}>
+											<View
+												style={[
+													styles.modalContent,
+													{
+														maxWidth: "90%",
+														maxHeight: "80%",
+													},
+												]}
+											>
+												{selectedDrillForDetails && (
+													<ScrollView
+														style={{ flex: 1 }}
+													>
+														{/* Drill Name */}
+														<Text
+															style={[
+																styles.modalTitle,
+																{
+																	marginBottom: 20,
+																},
+															]}
+														>
+															{
+																selectedDrillForDetails.name
+															}
+														</Text>
+
+														{/* Drill Image */}
+														{selectedDrillForDetails.imageUrl && (
+															<View
+																style={{
+																	marginBottom: 20,
+																	alignItems:
+																		"center",
+																}}
+															>
+																<Image
+																	source={{
+																		uri: selectedDrillForDetails.imageUrl,
+																	}}
+																	style={{
+																		width: 250,
+																		height: 200,
+																		borderRadius: 8,
+																		resizeMode:
+																			"cover",
+																	}}
+																/>
+															</View>
+														)}
+
+														{/* Drill Details */}
+														<View
+															style={{
+																marginBottom: 20,
+															}}
+														>
+															<View
+																style={{
+																	flexDirection:
+																		"row",
+																	marginBottom: 8,
+																}}
+															>
+																<Text
+																	style={{
+																		fontWeight:
+																			"bold",
+																		flex: 1,
+																	}}
+																>
+																	Skill Focus:
+																</Text>
+																<Text
+																	style={{
+																		flex: 2,
+																	}}
+																>
+																	{formatArrayData(
+																		selectedDrillForDetails.skillFocus
+																	)}
+																</Text>
+															</View>
+
+															<View
+																style={{
+																	flexDirection:
+																		"row",
+																	marginBottom: 8,
+																}}
+															>
+																<Text
+																	style={{
+																		fontWeight:
+																			"bold",
+																		flex: 1,
+																	}}
+																>
+																	Type:
+																</Text>
+																<Text
+																	style={{
+																		flex: 2,
+																	}}
+																>
+																	{formatArrayData(
+																		selectedDrillForDetails.type
+																	)}
+																</Text>
+															</View>
+
+															<View
+																style={{
+																	flexDirection:
+																		"row",
+																	marginBottom: 8,
+																}}
+															>
+																<Text
+																	style={{
+																		fontWeight:
+																			"bold",
+																		flex: 1,
+																	}}
+																>
+																	Difficulty:
+																</Text>
+																<Text
+																	style={{
+																		flex: 2,
+																	}}
+																>
+																	{formatArrayData(
+																		selectedDrillForDetails.difficulty
+																	)}
+																</Text>
+															</View>
+
+															{selectedDrillForDetails.duration && (
+																<View
+																	style={{
+																		flexDirection:
+																			"row",
+																		marginBottom: 8,
+																	}}
+																>
+																	<Text
+																		style={{
+																			fontWeight:
+																				"bold",
+																			flex: 1,
+																		}}
+																	>
+																		Duration:
+																	</Text>
+																	<Text
+																		style={{
+																			flex: 2,
+																		}}
+																	>
+																		{
+																			selectedDrillForDetails.duration
+																		}{" "}
+																		min
+																	</Text>
+																</View>
+															)}
+														</View>
+
+														{/* Description/Notes */}
+														{selectedDrillForDetails.notes &&
+														selectedDrillForDetails.notes.trim() !==
+															"" ? (
+															<>
+																<Text
+																	style={{
+																		fontWeight:
+																			"bold",
+																		fontSize: 16,
+																		marginBottom: 8,
+																	}}
+																>
+																	Description
+																</Text>
+																<Text
+																	style={{
+																		lineHeight: 20,
+																		color: "#666",
+																	}}
+																>
+																	{
+																		selectedDrillForDetails.notes
+																	}
+																</Text>
+															</>
+														) : (
+															<Text
+																style={{
+																	fontStyle:
+																		"italic",
+																	color: "#999",
+																}}
+															>
+																No description
+																available for
+																this drill.
+															</Text>
+														)}
+													</ScrollView>
+												)}
+
+												<TouchableOpacity
+													style={
+														styles.closeModalButton
+													}
+													onPress={
+														handleQuestionModalClose
+													}
+												>
+													<Text
+														style={
+															styles.closeModalButtonText
+														}
+													>
+														Back to Drill Selection
+													</Text>
+												</TouchableOpacity>
+											</View>
+										</View>
+									</Modal>
+								</View>
 
 								{/* Submit Button */}
 								<TouchableOpacity
@@ -500,6 +802,8 @@ const styles = StyleSheet.create({
 		textAlign: "center",
 	},
 	drillItem: {
+		flexDirection: "row",
+		justifyContent: "space-between",
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderRadius: 8,

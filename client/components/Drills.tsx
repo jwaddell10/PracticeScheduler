@@ -16,7 +16,7 @@ export default function Drills() {
 	const navigation = useNavigation();
 	const [drills, setDrills] = useState([]);
 	const [loading, setLoading] = useState(true);
-
+	// console.log(drills, 'drills in fetch drills')
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			headerRight: () => (
@@ -45,6 +45,7 @@ export default function Drills() {
 				throw new Error(`HTTP Status error! ${response.status}`);
 			}
 			const data = await response.json();
+			// console.log(data, 'data from fetchdrills')
 			setDrills(data);
 			setLoading(false);
 		} catch (error) {

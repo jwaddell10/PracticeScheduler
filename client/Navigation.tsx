@@ -13,6 +13,7 @@ import PremiumScreen from "./components/PremiumFeaturesScreen";
 import Auth from "./components/Auth";
 import Account from "./components/Account";
 import { useSession } from "./context/SessionContext";
+import Modal from "./components/Modal";
 
 // Stack for Home
 const HomeStack = createNativeStackNavigator();
@@ -26,8 +27,15 @@ function HomeStackScreen() {
 				name="PracticeDetails"
 				component={PracticeDetails}
 			/>
-			{/* <HomeStack.Screen name="Drills" component={Drills} />
-			<HomeStack.Screen name="DrillDetails" component={DrillDetails} /> */}
+			<HomeStack.Screen
+				name="Modal"
+				component={Modal}
+				options={{
+					presentation: "modal",
+				}}
+			/>
+			{/* <HomeStack.Screen name="Drills" component={Drills} /> */}
+			{/* <HomeStack.Screen name="DrillDetails" component={DrillDetails} /> */}
 			<HomeStack.Screen name="Premium" component={PremiumScreen} />
 		</HomeStack.Navigator>
 	);

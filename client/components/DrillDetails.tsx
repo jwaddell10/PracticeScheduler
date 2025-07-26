@@ -15,12 +15,13 @@ const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function DrillDetails({ route }) {
 	const { drill } = route.params;
+	console.log(drill, 'drill in drill details')
 	const [imageLoading, setImageLoading] = useState(true);
 	const [imageError, setImageError] = useState(false);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [modalImageLoading, setModalImageLoading] = useState(true);
 
-	console.log(drill, "drill");
+	// console.log(drill, "drill");
 
 	// Helper function to capitalize first letter
 	const capitalize = (str) => {
