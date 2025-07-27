@@ -5,16 +5,16 @@ import {
 	TextInput,
 	ActivityIndicator,
 	StyleSheet,
-	Button,
 	Alert,
 	TouchableOpacity,
+	Keyboard,
+	TouchableWithoutFeedback,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-// import { supabase } from "../../server/src/supabase";
+import { supabase } from "../lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import Constants from "expo-constants";
 
 export default function PracticeDetails({ route }) {
 	const { practiceId } = route.params;
@@ -25,12 +25,8 @@ export default function PracticeDetails({ route }) {
 	const [startDate, setStartDate] = useState(new Date());
 	const [endDate, setEndDate] = useState(new Date());
 	const [notes, setNotes] = useState("");
-	const [isEditingNotes, setIsEditingNotes] = useState(false);
-
 	const [showStartPicker, setShowStartPicker] = useState(false);
 	const [showEndPicker, setShowEndPicker] = useState(false);
-
-	// Drills state for drag & drop
 	const [drills, setDrills] = useState([]);
 
 	useEffect(() => {
@@ -39,66 +35,91 @@ export default function PracticeDetails({ route }) {
 
 	const toggleStartPicker = () => setShowStartPicker((prev) => !prev);
 	const toggleEndPicker = () => setShowEndPicker((prev) => !prev);
+
+	// Helper function to convert local datetime to UTC without timezone shift
+	const toLocalISOString = (date) => {
+		const tzoffset = date.getTimezoneOffset() * 60000; // offset in milliseconds
+		return new Date(date.getTime() - tzoffset).toISOString().slice(0, -1);
+	};
+
 	const fetchPracticeDetails = async () => {
-		// const { data, error } = await supabase
-		// 	.from("Practice")
-		// 	.select("*")
-		// 	.eq("id", practiceId)
-		// 	.single();
-		// if (error) {
-		// 	console.error("Error fetching practice:", error);
-		// 	Alert.alert("Error", "Could not load practice details.");
-		// } else {
-		// 	setPractice(data);
-		// 	setStartDate(new Date(data.startTime));
-		// 	setEndDate(new Date(data.endTime));
-		// 	setNotes(data.notes || "");
-		// 	setDrills(data.drills || []);
-		// }
-		// setLoading(false);
+		const { data, error } = await supabase
+			.from("Practice")
+			.select("*")
+			.eq("id", practiceId)
+			.single();
+
+		if (error) {
+			console.error("Error fetching practice:", error);
+			Alert.alert("Error", "Could not load practice details.");
+		} else {
+			setPractice(data);
+			// Parse the stored datetime as local time (not UTC)
+			setStartDate(new Date(data.startTime.replace("Z", "")));
+			setEndDate(new Date(data.endTime.replace("Z", "")));
+			setNotes(data.notes || "");
+			setDrills(data.drills || []);
+		}
+		setLoading(false);
 	};
 
 	const onChangeStart = (event, selectedDate) => {
+		if (event.type === "set" && selectedDate) {
+			setStartDate(selectedDate);
+		}
 		setShowStartPicker(false);
-		if (selectedDate) setStartDate(selectedDate);
 	};
 
 	const onChangeEnd = (event, selectedDate) => {
+		if (event.type === "set" && selectedDate) {
+			setEndDate(selectedDate);
+		}
 		setShowEndPicker(false);
-		if (selectedDate) setEndDate(selectedDate);
 	};
 
 	const saveChanges = async () => {
 		setSaving(true);
-		try {
-			const response = await fetch(
-				`http://${Constants.expoConfig?.extra?.localIP}:8081/practice`
-			);
-			const data = await response.json();
-			// console.log(data, 'data pract details')
-		} catch (error) {
-			console.log(error, "err");
+
+		// Convert local time to ISO string without timezone conversion
+		const startTimeString = toLocalISOString(startDate);
+		const endTimeString = toLocalISOString(endDate);
+
+		console.log("Saving times:", {
+			startLocal: startDate.toString(),
+			endLocal: endDate.toString(),
+			startSaved: startTimeString,
+			endSaved: endTimeString,
+		});
+
+		const { error } = await supabase
+			.from("Practice")
+			.update({
+				startTime: startTimeString,
+				endTime: endTimeString,
+				notes,
+				drills,
+			})
+			.eq("id", practiceId);
+
+		setSaving(false);
+
+		if (error) {
+			console.error("Error updating practice:", error);
+			Alert.alert("Error", "Failed to update practice.");
+		} else {
+			Alert.alert("Success", "Practice updated!");
+			setPractice((prev) => ({
+				...prev,
+				startTime: startTimeString,
+				endTime: endTimeString,
+				notes,
+				drills,
+			}));
 		}
-		// const { error } = await supabase
-		// 	.from("Practice")
-		// 	.update({
-		// 		startTime: startDate.toISOString(),
-		// 		endTime: endDate.toISOString(),
-		// 		notes,
-		// 		drills, // save updated drills order here
-		// 	})
-		// 	.eq("id", practiceId);
-
-		// setSaving(false);
-
-		// if (error) {
-		// 	console.error("Error updating practice:", error);
-		// 	Alert.alert("Error", "Failed to update practice.");
-		// } else {
-		// 	Alert.alert("Success", "Practice updated!");
-		// 	setIsEditingNotes(false);
-		// }
 	};
+
+	const handleDrillsReorder = (newOrder) => setDrills(newOrder);
+	const handleNotesChange = (text) => setNotes(text);
 
 	if (loading) {
 		return (
@@ -125,97 +146,93 @@ export default function PracticeDetails({ route }) {
 			onLongPress={drag}
 			activeOpacity={0.8}
 		>
-			<Text style={styles.drillText}>{item}</Text>
-			<MaterialIcons name="drag-handle" size={20} color="#666" />
+			<Text style={[styles.drillText, isActive && { color: "#fff" }]}>
+				{item}
+			</Text>
+			<MaterialIcons
+				name="drag-handle"
+				size={20}
+				color={isActive ? "#fff" : "#666"}
+			/>
 		</TouchableOpacity>
 	);
 
 	return (
 		<GestureHandlerRootView style={{ flex: 1 }}>
-			<View style={styles.container}>
-				<Text style={styles.title}>Practice Details</Text>
+			<TouchableWithoutFeedback
+				onPress={Keyboard.dismiss}
+				accessible={false}
+			>
+				<View style={styles.container}>
+					<Text style={styles.title}>Practice Details</Text>
 
-				<Text style={styles.label}>Start Time</Text>
-				<TouchableOpacity
-					onPress={toggleStartPicker}
-					style={styles.dateTouchable}
-					activeOpacity={0.7}
-				>
-					<Text style={styles.dateText}>
-						{startDate.toLocaleString()}
-					</Text>
-					<MaterialIcons name="edit" size={18} color="#007AFF" />
-				</TouchableOpacity>
-				{showStartPicker && (
-					<DateTimePicker
-						value={startDate}
-						mode="datetime"
-						display="default"
-						onChange={onChangeStart}
-					/>
-				)}
-
-				<Text style={styles.label}>End Time</Text>
-				<TouchableOpacity
-					onPress={toggleEndPicker}
-					style={styles.dateTouchable}
-					activeOpacity={0.7}
-				>
-					<Text style={styles.dateText}>
-						{endDate.toLocaleString()}
-					</Text>
-					<MaterialIcons name="edit" size={18} color="#007AFF" />
-				</TouchableOpacity>
-				{showEndPicker && (
-					<DateTimePicker
-						value={endDate}
-						mode="datetime"
-						display="default"
-						onChange={onChangeEnd}
-					/>
-				)}
-
-				<View style={styles.notesHeader}>
-					<Text style={styles.label}>Notes</Text>
+					<Text style={styles.label}>Start Time</Text>
 					<TouchableOpacity
-						onPress={() => setIsEditingNotes(!isEditingNotes)}
+						onPress={toggleStartPicker}
+						style={styles.dateTouchable}
 						activeOpacity={0.7}
 					>
-						<MaterialIcons
-							name={isEditingNotes ? "close" : "edit"}
-							size={24}
-							color="#007AFF"
-						/>
+						<Text style={styles.dateText}>
+							{startDate.toLocaleString()}
+						</Text>
+						<MaterialIcons name="edit" size={18} color="#007AFF" />
 					</TouchableOpacity>
-				</View>
+					{showStartPicker && (
+						<DateTimePicker
+							value={startDate}
+							mode="datetime"
+							display="default"
+							onChange={onChangeStart}
+						/>
+					)}
 
-				<TextInput
-					style={[
-						styles.notesInput,
-						!isEditingNotes && styles.notesInputDisabled,
-					]}
-					multiline
-					numberOfLines={4}
-					value={notes}
-					onChangeText={setNotes}
-					editable={isEditingNotes}
-					placeholder="Add notes about this practice..."
-					placeholderTextColor="#aaa"
-				/>
+					<Text style={styles.label}>End Time</Text>
+					<TouchableOpacity
+						onPress={toggleEndPicker}
+						style={styles.dateTouchable}
+						activeOpacity={0.7}
+					>
+						<Text style={styles.dateText}>
+							{endDate.toLocaleString()}
+						</Text>
+						<MaterialIcons name="edit" size={18} color="#007AFF" />
+					</TouchableOpacity>
+					{showEndPicker && (
+						<DateTimePicker
+							value={endDate}
+							mode="datetime"
+							display="default"
+							onChange={onChangeEnd}
+						/>
+					)}
 
-				<Text style={[styles.label, { marginTop: 24 }]}>
-					Drills (drag to reorder)
-				</Text>
-				<DraggableFlatList
-					data={drills}
-					onDragEnd={({ data }) => setDrills(data)}
-					keyExtractor={(item, index) => `${item}-${index}`}
-					renderItem={renderDrill}
-					containerStyle={styles.drillListContainer}
-					scrollEnabled={false}
-				/>
+					<View style={styles.notesHeader}>
+						<Text style={styles.label}>Notes</Text>
+					</View>
 
-				{isEditingNotes && (
+					<TextInput
+						style={styles.notesInput}
+						multiline
+						numberOfLines={4}
+						value={notes}
+						onChangeText={handleNotesChange}
+						placeholder="Add notes about this practice..."
+						placeholderTextColor="#aaa"
+						onSubmitEditing={Keyboard.dismiss}
+					/>
+
+					<Text style={[styles.label, { marginTop: 24 }]}>
+						Drills (drag to reorder)
+					</Text>
+					<DraggableFlatList
+						data={drills}
+						onDragEnd={({ data }) => handleDrillsReorder(data)}
+						keyExtractor={(item, index) => `${item}-${index}`}
+						renderItem={renderDrill}
+						containerStyle={styles.drillListContainer}
+						scrollEnabled={false}
+					/>
+
 					<TouchableOpacity
 						style={[
 							styles.saveButton,
@@ -229,8 +246,8 @@ export default function PracticeDetails({ route }) {
 							{saving ? "Saving..." : "Save Changes"}
 						</Text>
 					</TouchableOpacity>
-				)}
-			</View>
+				</View>
+			</TouchableWithoutFeedback>
 		</GestureHandlerRootView>
 	);
 }
@@ -291,10 +308,6 @@ const styles = StyleSheet.create({
 		textAlignVertical: "top",
 		color: "#222",
 	},
-	notesInputDisabled: {
-		backgroundColor: "#F5F5F5",
-		color: "#999",
-	},
 	drillListContainer: {
 		maxHeight: 280,
 	},
@@ -313,10 +326,7 @@ const styles = StyleSheet.create({
 		shadowRadius: 4,
 		elevation: 2,
 	},
-	drillText: {
-		fontSize: 16,
-		color: "#333",
-	},
+	drillText: { fontSize: 16, color: "#333" },
 	saveButton: {
 		marginTop: 30,
 		backgroundColor: "#007AFF",
@@ -329,12 +339,6 @@ const styles = StyleSheet.create({
 		shadowRadius: 6,
 		elevation: 5,
 	},
-	saveButtonDisabled: {
-		backgroundColor: "#7AB8FF",
-	},
-	saveButtonText: {
-		color: "#fff",
-		fontWeight: "700",
-		fontSize: 18,
-	},
+	saveButtonDisabled: { backgroundColor: "#7AB8FF" },
+	saveButtonText: { color: "#fff", fontWeight: "700", fontSize: 18 },
 });

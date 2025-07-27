@@ -17,12 +17,13 @@ import theme from "./styles/theme";
 export default function HomeScreen() {
 	const navigation = useNavigation();
 	const [practices, setPractices] = useState([]);
+	console.log(practices, 'practice home page')
 	const [loading, setLoading] = useState(true);
 	const [selectedDate, setSelectedDate] = useState(null);
 
 	useEffect(() => {
 		fetchData();
-	}, []);
+	}, [practices]);
 
 	async function fetchData() {
 		try {
