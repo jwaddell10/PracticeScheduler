@@ -4,7 +4,7 @@ const { createSupabaseClientWithAuth } = require("../supabase.ts");
 
 exports.fetchDrills = expressAsyncHandler(async (req, res) => {
 	const { data, error } = await supabase.from("Drill").select("*");
-	// console.log(data, 'data drills')
+	console.log(data, 'data drills')
 	if (error) {
 		console.error("Supabase error:", error);
 		return res.status(500).json({ error: error.message });
@@ -13,6 +13,7 @@ exports.fetchDrills = expressAsyncHandler(async (req, res) => {
 });
 
 exports.createDrill = expressAsyncHandler(async (req, res) => {
+	console.log(req.body, 'create drill runs')
 	if (!req.user || !req.token) {
 		return res
 			.status(401)
@@ -33,7 +34,7 @@ exports.createDrill = expressAsyncHandler(async (req, res) => {
 			user_id: req.user.id,
 		},
 	]);
-
+	console.log(data, 'data?')
 	if (error) {
 		console.error("Supabase insert error:", error.message);
 		return res.status(500).json({ error: error.message });
