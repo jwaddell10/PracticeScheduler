@@ -6,16 +6,21 @@ import {
 	Image,
 	TouchableOpacity,
 } from "react-native";
-import { useFavorites } from "../hooks/useFavorites";
-import StarButton from "../components/StarButton"; // Adjust path as needed
+import { useContext } from "react";
+import { FavoritesContext } from "../context/FavoritesContext";
+import StarButton from "../components/StarButton";
 import { useNavigation } from "@react-navigation/native";
 
 export default function FavoriteDrills() {
-	const { favoriteDrills, loading, error, handleFavoriteToggle } =
-		useFavorites();
-	const navigation = useNavigation();
+	const {
+		favoriteDrills,
+		favoriteDrillIds,
+		loading,
+		error,
+		handleFavoriteToggle,
+	} = useContext(FavoritesContext);
 
-	console.log(favoriteDrills, "fav drills");
+	const navigation = useNavigation();
 
 	if (loading) {
 		return (
@@ -70,7 +75,7 @@ export default function FavoriteDrills() {
 				alignItems: "flex-start",
 			}}
 			activeOpacity={0.7}
-			onPress={() => navigation.navigate("Drill Details", { drill: item })}
+			onPress={() => navigation.navigate("DrillDetails", { drill: item })}
 		>
 			{item.imageUrl ? (
 				<Image
@@ -125,9 +130,11 @@ export default function FavoriteDrills() {
 					</Text>
 					<StarButton
 						drillId={item.id}
-						initialIsFavorited={true}
+						initialIsFavorited={favoriteDrillIds.has(item.id)}
 						size={20}
-						onToggle={handleFavoriteToggle}
+						onToggle={(drillId, isFavorited) => {
+							handleFavoriteToggle(drillId, isFavorited);
+						}}
 						style={{ marginTop: -4 }}
 					/>
 				</View>

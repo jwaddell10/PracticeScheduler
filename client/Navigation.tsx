@@ -15,6 +15,7 @@ import Account from "./components/Account";
 import { useSession } from "./context/SessionContext";
 import Modal from "./components/Modal";
 import FavoriteDrills from "./components/FavoriteDrills";
+import { FavoritesProvider } from "./context/FavoritesContext"; // Add this import
 
 // Stack for Home
 const HomeStack = createNativeStackNavigator();
@@ -57,23 +58,17 @@ const FavoriteDrillsStack = createNativeStackNavigator();
 function FavoriteDrillsStackScreen() {
 	return (
 		<FavoriteDrillsStack.Navigator>
-			<FavoriteDrillsStack.Screen name="Favorite Drills" component={FavoriteDrills} />
-			<FavoriteDrillsStack.Screen name="Drill Details" component={DrillDetails} />
+			<FavoriteDrillsStack.Screen
+				name="Favorite Drills"
+				component={FavoriteDrills}
+			/>
+			<FavoriteDrillsStack.Screen
+				name="Drill Details"
+				component={DrillDetails}
+			/>
 		</FavoriteDrillsStack.Navigator>
 	);
 }
-
-// const AuthStack = createNativeStackNavigator();
-
-// function AuthStackScreen() {
-// 	return (
-// 		<AuthStack.Navigator>
-// 			{/* <DrillStack.Screen name="Drills" component={Drills} />
-// 			<DrillStack.Screen name="DrillDetails" component={DrillDetails} />
-// 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} /> */}
-// 		</AuthStack.Navigator>
-// 	);
-// }
 
 // Bottom Tabs
 const Tab = createBottomTabNavigator();
@@ -83,39 +78,41 @@ export default function Navigation() {
 
 	return (
 		<NavigationContainer>
-			<Tab.Navigator screenOptions={{ headerShown: false }}>
-				{session ? (
-					<>
+			<FavoritesProvider>
+				<Tab.Navigator screenOptions={{ headerShown: false }}>
+					{session ? (
+						<>
+							<Tab.Screen
+								name="HomeTab"
+								component={HomeStackScreen}
+								options={{ title: "Home" }}
+							/>
+							<Tab.Screen
+								name="DrillsTab"
+								component={DrillStackScreen}
+								options={{ title: "Drills" }}
+							></Tab.Screen>
+							<Tab.Screen
+								name="FavoriteTab"
+								component={FavoriteDrillsStackScreen}
+								options={{ title: "Your Drills" }}
+							></Tab.Screen>
+							<Tab.Screen
+								name="AccountTab"
+								options={{ title: "Profile" }}
+							>
+								{() => <Account session={session} />}
+							</Tab.Screen>
+						</>
+					) : (
 						<Tab.Screen
-							name="HomeTab"
-							component={HomeStackScreen}
-							options={{ title: "Home" }}
-						/>
-						<Tab.Screen
-							name="DrillsTab"
-							component={DrillStackScreen}
-							options={{ title: "Drills" }}
-						></Tab.Screen>
-						<Tab.Screen
-							name="FavoriteTab"
-							component={FavoriteDrillsStackScreen}
-							options={{ title: "Your Drills" }}
-						></Tab.Screen>
-						<Tab.Screen
-							name="AccountTab"
+							name="ProfileTab"
+							component={Auth}
 							options={{ title: "Profile" }}
-						>
-							{() => <Account session={session} />}
-						</Tab.Screen>
-					</>
-				) : (
-					<Tab.Screen
-						name="ProfileTab"
-						component={Auth}
-						options={{ title: "Profile" }}
-					/>
-				)}
-			</Tab.Navigator>
+						/>
+					)}
+				</Tab.Navigator>
+			</FavoritesProvider>
 		</NavigationContainer>
 	);
 }

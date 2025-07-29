@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
-export const useFavorites = () => {
+export const FavoritesContext = createContext();
+
+export const FavoritesProvider = ({ children }) => {
 	const [favoriteDrills, setFavoriteDrills] = useState([]);
 	const [favoriteDrillIds, setFavoriteDrillIds] = useState(new Set());
 	const [loading, setLoading] = useState(true);
@@ -65,18 +67,15 @@ export const useFavorites = () => {
 
 	const handleFavoriteToggle = async (drillId, isFavorited) => {
 		try {
-			// Calculate the new set of IDs first
-			let newFavoriteIds;
-			setFavoriteDrillIds((prev) => {
-				const newSet = new Set(prev);
-				if (isFavorited) {
-					newSet.add(drillId);
-				} else {
-					newSet.delete(drillId);
-				}
-				newFavoriteIds = newSet; // Store reference to the new set
-				return newSet;
-			});
+			// Calculate the new IDs array first
+			const currentIds = Array.from(favoriteDrillIds);
+			const updatedIds = isFavorited
+				? [...currentIds, drillId]
+				: currentIds.filter((id) => id !== drillId);
+
+			// Update local state immediately for better UX
+			const newFavoriteIdsSet = new Set(updatedIds);
+			setFavoriteDrillIds(newFavoriteIdsSet);
 
 			// Update the drills array
 			if (isFavorited) {
@@ -103,9 +102,6 @@ export const useFavorites = () => {
 			} = await supabase.auth.getUser();
 
 			if (user) {
-				// Use the new set we calculated above
-				const updatedIds = Array.from(newFavoriteIds);
-
 				const { error: updateError } = await supabase
 					.from("users")
 					.update({ favoriteDrills: updatedIds })
@@ -135,13 +131,28 @@ export const useFavorites = () => {
 		fetchFavorites();
 	}, []);
 
-	return {
-		favoriteDrills, // Array of full drill objects
-		favoriteDrillIds, // Set of drill IDs for quick lookup
+	const value = {
+		favoriteDrills,
+		favoriteDrillIds,
 		loading,
 		error,
 		handleFavoriteToggle,
 		refreshFavorites,
-		setFavoriteDrills, // Export for direct manipulation if needed
+		setFavoriteDrills,
 	};
+
+	return (
+		<FavoritesContext.Provider value={value}>
+			{children}
+		</FavoritesContext.Provider>
+	);
+};
+
+// Custom hook to use the context
+export const useFavorites = () => {
+	const context = useContext(FavoritesContext);
+	if (!context) {
+		throw new Error("useFavorites must be used within a FavoritesProvider");
+	}
+	return context;
 };

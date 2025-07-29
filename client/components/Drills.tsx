@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from "react";
+import React, { useState, useLayoutEffect, useContext } from "react";
 import {
 	View,
 	Text,
@@ -13,14 +13,17 @@ import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
-import { useDrills } from "../hooks/useDrills"; // Import the hook
-import { useFavorites } from "../hooks/useFavorites"; // We should create this too
+import { useDrills } from "../hooks/useDrills";
+import { FavoritesContext } from "../context/FavoritesContext"; // Use FavoritesContext instead of useFavorites hook
 
 export default function Drills() {
 	const navigation = useNavigation();
 	const { drills, loading, error, refreshDrills } = useDrills();
-	const { favoriteDrills, favoriteDrillIds, handleFavoriteToggle } =
-		useFavorites(); // Add favoriteDrillIds
+
+	// Use FavoritesContext instead of useFavorites hook
+	const { favoriteDrillIds, handleFavoriteToggle } =
+		useContext(FavoritesContext);
+
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState({
 		skillFocus: [],
@@ -429,9 +432,11 @@ export default function Drills() {
 
 			<StarButton
 				drillId={drill.id}
-				initialIsFavorited={favoriteDrillIds.has(drill.id)} // Use favoriteDrillIds instead of favoriteDrills
+				initialIsFavorited={favoriteDrillIds.has(drill.id)}
 				size={20}
-				onToggle={handleFavoriteToggle}
+				onToggle={(drillId, isFavorited) => {
+					handleFavoriteToggle(drillId, isFavorited);
+				}}
 				style={styles.starButtonStyle}
 			/>
 		</View>
