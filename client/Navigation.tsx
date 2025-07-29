@@ -14,6 +14,7 @@ import Auth from "./components/Auth";
 import Account from "./components/Account";
 import { useSession } from "./context/SessionContext";
 import Modal from "./components/Modal";
+import FavoriteDrills from "./components/FavoriteDrills";
 
 // Stack for Home
 const HomeStack = createNativeStackNavigator();
@@ -34,8 +35,6 @@ function HomeStackScreen() {
 					presentation: "modal",
 				}}
 			/>
-			{/* <HomeStack.Screen name="Drills" component={Drills} /> */}
-			{/* <HomeStack.Screen name="DrillDetails" component={DrillDetails} /> */}
 			<HomeStack.Screen name="Premium" component={PremiumScreen} />
 		</HomeStack.Navigator>
 	);
@@ -50,6 +49,17 @@ function DrillStackScreen() {
 			<DrillStack.Screen name="DrillDetails" component={DrillDetails} />
 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} />
 		</DrillStack.Navigator>
+	);
+}
+
+const FavoriteDrillsStack = createNativeStackNavigator();
+
+function FavoriteDrillsStackScreen() {
+	return (
+		<FavoriteDrillsStack.Navigator>
+			<FavoriteDrillsStack.Screen name="Favorite Drills" component={FavoriteDrills} />
+			<FavoriteDrillsStack.Screen name="Drill Details" component={DrillDetails} />
+		</FavoriteDrillsStack.Navigator>
 	);
 }
 
@@ -85,6 +95,11 @@ export default function Navigation() {
 							name="DrillsTab"
 							component={DrillStackScreen}
 							options={{ title: "Drills" }}
+						></Tab.Screen>
+						<Tab.Screen
+							name="FavoriteTab"
+							component={FavoriteDrillsStackScreen}
+							options={{ title: "Your Drills" }}
 						></Tab.Screen>
 						<Tab.Screen
 							name="AccountTab"

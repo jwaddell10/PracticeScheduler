@@ -25,7 +25,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import Constants from "expo-constants";
 import { supabase } from "../lib/supabase";
 import PracticeDateTimePicker from "./PracticeDateTimePicker";
-import { fetchUserDrills } from "../util/fetchDrills";
+import { useDrills } from "../hooks/useDrills";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { Link } from "expo-router";
 
@@ -58,7 +58,7 @@ const CreatePractice = () => {
 	useEffect(() => {
 		const loadDrills = async () => {
 			try {
-				const drillsData = await fetchUserDrills();
+				const drillsData = await useDrills();
 				setAvailableDrills(drillsData.map((d: any) => d.name));
 				setDrills(drillsData); // Store full drill objects
 			} catch (error) {

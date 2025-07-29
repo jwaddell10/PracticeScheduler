@@ -13,7 +13,7 @@ exports.fetchDrills = expressAsyncHandler(async (req, res) => {
 });
 
 exports.createDrill = expressAsyncHandler(async (req, res) => {
-	console.log(req.body, 'create drill runs')
+	console.log(req.user, 'req user')
 	if (!req.user || !req.token) {
 		return res
 			.status(401)

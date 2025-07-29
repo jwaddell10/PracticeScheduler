@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useLayoutEffect } from "react";
+import React, { useState, useLayoutEffect } from "react";
 import {
 	View,
 	Text,
@@ -7,27 +7,37 @@ import {
 	TouchableOpacity,
 	ActivityIndicator,
 	Modal,
+	Alert,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import Constants from "expo-constants";
+import StarButton from "./StarButton";
+import { useDrills } from "../hooks/useDrills"; // Import the hook
+import { useFavorites } from "../hooks/useFavorites"; // We should create this too
 
 export default function Drills() {
 	const navigation = useNavigation();
-	const [drills, setDrills] = useState([]);
-	const [loading, setLoading] = useState(true);
+	const { drills, loading, error, refreshDrills } = useDrills();
+	const { favoriteDrills, favoriteDrillIds, handleFavoriteToggle } =
+		useFavorites(); // Add favoriteDrillIds
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState({
 		skillFocus: [],
 		difficulty: [],
-		type: []
+		type: [],
 	});
 
 	// Filter options
-	const skillFocusOptions = ['Offense', 'Defense', 'Serve', 'Serve Receive', 'Blocking'];
-	const difficultyOptions = ['Beginner', 'Intermediate', 'Advanced'];
-	const typeOptions = ['Team Drill', 'Individual'];
+	const skillFocusOptions = [
+		"Offense",
+		"Defense",
+		"Serve",
+		"Serve Receive",
+		"Blocking",
+	];
+	const difficultyOptions = ["Beginner", "Intermediate", "Advanced"];
+	const typeOptions = ["Team Drill", "Individual"];
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
@@ -42,7 +52,9 @@ export default function Drills() {
 							size={24}
 							color="#007AFF"
 						/>
-						{(selectedFilters.skillFocus.length > 0 || selectedFilters.difficulty.length > 0 || selectedFilters.type.length > 0) && (
+						{(selectedFilters.skillFocus.length > 0 ||
+							selectedFilters.difficulty.length > 0 ||
+							selectedFilters.type.length > 0) && (
 							<View style={styles.filterBadge} />
 						)}
 					</TouchableOpacity>
@@ -58,37 +70,38 @@ export default function Drills() {
 		});
 	}, [navigation, selectedFilters]);
 
-	useEffect(() => {
-		fetchDrills();
-	}, []);
-
-	const fetchDrills = async () => {
-		const localIP = Constants.expoConfig?.extra?.localIP;
-		const PORT = Constants.expoConfig?.extra?.PORT;
-		setLoading(true);
-		try {
-			const response = await fetch(`http://${localIP}:${PORT}/drill`);
-			if (!response.ok) {
-				throw new Error(`HTTP Status error! ${response.status}`);
-			}
-			const data = await response.json();
-			setDrills(data);
-			setLoading(false);
-		} catch (error) {
-			console.log(error, "err");
-		}
-	};
+	// Show error if there's one
+	if (error) {
+		return (
+			<SafeAreaProvider>
+				<SafeAreaView style={styles.safeArea}>
+					<View style={styles.errorContainer}>
+						<MaterialIcons name="error" size={48} color="#ff4444" />
+						<Text style={styles.errorText}>
+							Error loading drills: {error}
+						</Text>
+						<TouchableOpacity
+							style={styles.retryButton}
+							onPress={refreshDrills}
+						>
+							<Text style={styles.retryButtonText}>Retry</Text>
+						</TouchableOpacity>
+					</View>
+				</SafeAreaView>
+			</SafeAreaProvider>
+		);
+	}
 
 	const toggleFilter = (filterType, value) => {
-		setSelectedFilters(prev => {
+		setSelectedFilters((prev) => {
 			const currentFilters = prev[filterType];
 			const newFilters = currentFilters.includes(value)
-				? currentFilters.filter(f => f !== value)
+				? currentFilters.filter((f) => f !== value)
 				: [...currentFilters, value];
-			
+
 			return {
 				...prev,
-				[filterType]: newFilters
+				[filterType]: newFilters,
 			};
 		});
 	};
@@ -97,42 +110,50 @@ export default function Drills() {
 		setSelectedFilters({
 			skillFocus: [],
 			difficulty: [],
-			type: []
+			type: [],
 		});
 	};
 
 	const filterDrills = (drillsToFilter) => {
-		if (selectedFilters.skillFocus.length === 0 && selectedFilters.difficulty.length === 0 && selectedFilters.type.length === 0) {
+		if (
+			selectedFilters.skillFocus.length === 0 &&
+			selectedFilters.difficulty.length === 0 &&
+			selectedFilters.type.length === 0
+		) {
 			return drillsToFilter;
 		}
 
-		return drillsToFilter.filter(drill => {
+		return drillsToFilter.filter((drill) => {
 			// Parse data - handle both JSON string arrays and plain strings
 			let drillSkillFocus = [];
 			let drillDifficulty = [];
 			let drillType = [];
-			
+
 			// Handle skillFocus
 			if (drill.skillFocus) {
-				if (typeof drill.skillFocus === 'string') {
+				if (typeof drill.skillFocus === "string") {
 					try {
 						// Try parsing as JSON array first
 						const parsed = JSON.parse(drill.skillFocus);
-						drillSkillFocus = Array.isArray(parsed) ? parsed.map(s => s.toLowerCase()) : [drill.skillFocus.toLowerCase()];
+						drillSkillFocus = Array.isArray(parsed)
+							? parsed.map((s) => s.toLowerCase())
+							: [drill.skillFocus.toLowerCase()];
 					} catch (e) {
 						// If parsing fails, treat as plain string
 						drillSkillFocus = [drill.skillFocus.toLowerCase()];
 					}
 				}
 			}
-			
+
 			// Handle difficulty
 			if (drill.difficulty) {
-				if (typeof drill.difficulty === 'string') {
+				if (typeof drill.difficulty === "string") {
 					try {
 						// Try parsing as JSON array first
 						const parsed = JSON.parse(drill.difficulty);
-						drillDifficulty = Array.isArray(parsed) ? parsed.map(d => d.toLowerCase()) : [drill.difficulty.toLowerCase()];
+						drillDifficulty = Array.isArray(parsed)
+							? parsed.map((d) => d.toLowerCase())
+							: [drill.difficulty.toLowerCase()];
 					} catch (e) {
 						// If parsing fails, treat as plain string
 						drillDifficulty = [drill.difficulty.toLowerCase()];
@@ -142,11 +163,13 @@ export default function Drills() {
 
 			// Handle type
 			if (drill.type) {
-				if (typeof drill.type === 'string') {
+				if (typeof drill.type === "string") {
 					try {
 						// Try parsing as JSON array first
 						const parsed = JSON.parse(drill.type);
-						drillType = Array.isArray(parsed) ? parsed.map(t => t.toLowerCase()) : [drill.type.toLowerCase()];
+						drillType = Array.isArray(parsed)
+							? parsed.map((t) => t.toLowerCase())
+							: [drill.type.toLowerCase()];
 					} catch (e) {
 						// If parsing fails, treat as plain string
 						drillType = [drill.type.toLowerCase()];
@@ -154,18 +177,21 @@ export default function Drills() {
 				}
 			}
 
-			const skillFocusMatch = selectedFilters.skillFocus.length === 0 || 
-				selectedFilters.skillFocus.some(filter => 
+			const skillFocusMatch =
+				selectedFilters.skillFocus.length === 0 ||
+				selectedFilters.skillFocus.some((filter) =>
 					drillSkillFocus.includes(filter.toLowerCase())
 				);
 
-			const difficultyMatch = selectedFilters.difficulty.length === 0 || 
-				selectedFilters.difficulty.some(filter => 
+			const difficultyMatch =
+				selectedFilters.difficulty.length === 0 ||
+				selectedFilters.difficulty.some((filter) =>
 					drillDifficulty.includes(filter.toLowerCase())
 				);
 
-			const typeMatch = selectedFilters.type.length === 0 || 
-				selectedFilters.type.some(filter => 
+			const typeMatch =
+				selectedFilters.type.length === 0 ||
+				selectedFilters.type.some((filter) =>
 					drillType.includes(filter.toLowerCase())
 				);
 
@@ -192,147 +218,223 @@ export default function Drills() {
 	);
 
 	const renderDrillRow = (drill) => (
-		<TouchableOpacity
-			key={drill.id}
-			style={styles.drillCard}
-			onPress={() => navigation.navigate("DrillDetails", { drill })}
-			activeOpacity={0.7}
-		>
-			<View style={styles.drillTextContainer}>
-				<Text style={styles.drillTitle}>{drill.name}</Text>
-				{drill.notes ? (
-					<Text style={styles.drillNotes} numberOfLines={2}>
-						{drill.notes}
-					</Text>
-				) : null}
-				{/* Display tags if available */}
-				{(drill.skillFocus || drill.difficulty || drill.type) && (
-					<View style={styles.tagsContainer}>
-						{/* Show skill focus tags */}
-						{drill.skillFocus && (() => {
-							try {
-								// Try parsing as JSON array first
-								let skillFocusArray;
-								try {
-									const parsed = JSON.parse(drill.skillFocus);
-									skillFocusArray = Array.isArray(parsed) ? parsed : [drill.skillFocus];
-								} catch (e) {
-									// If parsing fails, treat as plain string
-									skillFocusArray = [drill.skillFocus];
-								}
-								
-								return skillFocusArray.slice(0, 2).map((skill, index) => (
-									<View key={`skill-${index}`} style={[styles.tag, styles.skillTag]}>
-										<Text style={styles.tagText}>{skill}</Text>
-									</View>
-								));
-							} catch (e) {
-								return null;
-							}
-						})()}
-						
-						{/* Show difficulty tags */}
-						{drill.difficulty && (() => {
-							try {
-								// Try parsing as JSON array first
-								let difficultyArray;
-								try {
-									const parsed = JSON.parse(drill.difficulty);
-									difficultyArray = Array.isArray(parsed) ? parsed : [drill.difficulty];
-								} catch (e) {
-									// If parsing fails, treat as plain string
-									difficultyArray = [drill.difficulty];
-								}
-								
-								return difficultyArray.slice(0, 1).map((diff, index) => (
-									<View key={`diff-${index}`} style={[styles.tag, styles.difficultyTag]}>
-										<Text style={styles.tagText}>{diff}</Text>
-									</View>
-								));
-							} catch (e) {
-								return null;
-							}
-						})()}
-						
-						{/* Show type tags */}
-						{drill.type && (() => {
-							try {
-								// Try parsing as JSON array first
-								let typeArray;
-								try {
-									const parsed = JSON.parse(drill.type);
-									typeArray = Array.isArray(parsed) ? parsed : [drill.type];
-								} catch (e) {
-									// If parsing fails, treat as plain string
-									typeArray = [drill.type];
-								}
-								
-								return typeArray.slice(0, 1).map((type, index) => (
-									<View key={`type-${index}`} style={[styles.tag, styles.typeTag]}>
-										<Text style={styles.tagText}>{type}</Text>
-									</View>
-								));
-							} catch (e) {
-								return null;
-							}
-						})()}
-						
-						{/* Show more indicator if there are many tags */}
-						{(() => {
-							try {
-								// Calculate total tags handling both formats
-								let skillCount = 0, diffCount = 0, typeCount = 0;
-								
-								if (drill.skillFocus) {
+		<View key={drill.id} style={styles.drillCard}>
+			<TouchableOpacity
+				style={styles.drillCardContent}
+				onPress={() => navigation.navigate("DrillDetails", { drill })}
+				activeOpacity={0.7}
+			>
+				<View style={styles.drillTextContainer}>
+					<Text style={styles.drillTitle}>{drill.name}</Text>
+					{drill.notes ? (
+						<Text style={styles.drillNotes} numberOfLines={2}>
+							{drill.notes}
+						</Text>
+					) : null}
+					{(drill.skillFocus || drill.difficulty || drill.type) && (
+						<View style={styles.tagsContainer}>
+							{drill.skillFocus &&
+								(() => {
 									try {
-										const parsed = JSON.parse(drill.skillFocus);
-										skillCount = Array.isArray(parsed) ? parsed.length : 1;
+										let skillFocusArray;
+										try {
+											const parsed = JSON.parse(
+												drill.skillFocus
+											);
+											skillFocusArray = Array.isArray(
+												parsed
+											)
+												? parsed
+												: [drill.skillFocus];
+										} catch (e) {
+											skillFocusArray = [
+												drill.skillFocus,
+											];
+										}
+
+										return skillFocusArray
+											.slice(0, 2)
+											.map((skill, index) => (
+												<View
+													key={`skill-${index}`}
+													style={[
+														styles.tag,
+														styles.skillTag,
+													]}
+												>
+													<Text
+														style={styles.tagText}
+													>
+														{skill}
+													</Text>
+												</View>
+											));
 									} catch (e) {
-										skillCount = 1;
+										return null;
 									}
-								}
-								
-								if (drill.difficulty) {
+								})()}
+
+							{drill.difficulty &&
+								(() => {
 									try {
-										const parsed = JSON.parse(drill.difficulty);
-										diffCount = Array.isArray(parsed) ? parsed.length : 1;
+										let difficultyArray;
+										try {
+											const parsed = JSON.parse(
+												drill.difficulty
+											);
+											difficultyArray = Array.isArray(
+												parsed
+											)
+												? parsed
+												: [drill.difficulty];
+										} catch (e) {
+											difficultyArray = [
+												drill.difficulty,
+											];
+										}
+
+										return difficultyArray
+											.slice(0, 1)
+											.map((diff, index) => (
+												<View
+													key={`diff-${index}`}
+													style={[
+														styles.tag,
+														styles.difficultyTag,
+													]}
+												>
+													<Text
+														style={styles.tagText}
+													>
+														{diff}
+													</Text>
+												</View>
+											));
 									} catch (e) {
-										diffCount = 1;
+										return null;
 									}
-								}
-								
-								if (drill.type) {
+								})()}
+
+							{drill.type &&
+								(() => {
 									try {
-										const parsed = JSON.parse(drill.type);
-										typeCount = Array.isArray(parsed) ? parsed.length : 1;
+										let typeArray;
+										try {
+											const parsed = JSON.parse(
+												drill.type
+											);
+											typeArray = Array.isArray(parsed)
+												? parsed
+												: [drill.type];
+										} catch (e) {
+											typeArray = [drill.type];
+										}
+
+										return typeArray
+											.slice(0, 1)
+											.map((type, index) => (
+												<View
+													key={`type-${index}`}
+													style={[
+														styles.tag,
+														styles.typeTag,
+													]}
+												>
+													<Text
+														style={styles.tagText}
+													>
+														{type}
+													</Text>
+												</View>
+											));
 									} catch (e) {
-										typeCount = 1;
+										return null;
 									}
+								})()}
+
+							{(() => {
+								try {
+									let skillCount = 0,
+										diffCount = 0,
+										typeCount = 0;
+
+									if (drill.skillFocus) {
+										try {
+											const parsed = JSON.parse(
+												drill.skillFocus
+											);
+											skillCount = Array.isArray(parsed)
+												? parsed.length
+												: 1;
+										} catch (e) {
+											skillCount = 1;
+										}
+									}
+
+									if (drill.difficulty) {
+										try {
+											const parsed = JSON.parse(
+												drill.difficulty
+											);
+											diffCount = Array.isArray(parsed)
+												? parsed.length
+												: 1;
+										} catch (e) {
+											diffCount = 1;
+										}
+									}
+
+									if (drill.type) {
+										try {
+											const parsed = JSON.parse(
+												drill.type
+											);
+											typeCount = Array.isArray(parsed)
+												? parsed.length
+												: 1;
+										} catch (e) {
+											typeCount = 1;
+										}
+									}
+
+									const totalShown =
+										Math.min(2, skillCount) +
+										Math.min(1, diffCount) +
+										Math.min(1, typeCount);
+									const totalTags =
+										skillCount + diffCount + typeCount;
+
+									if (totalTags > totalShown) {
+										return (
+											<Text style={styles.moreTagsText}>
+												+{totalTags - totalShown}
+											</Text>
+										);
+									}
+									return null;
+								} catch (e) {
+									return null;
 								}
-								
-								const totalShown = Math.min(2, skillCount) + Math.min(1, diffCount) + Math.min(1, typeCount);
-								const totalTags = skillCount + diffCount + typeCount;
-								
-								if (totalTags > totalShown) {
-									return (
-										<Text style={styles.moreTagsText}>+{totalTags - totalShown}</Text>
-									);
-								}
-								return null;
-							} catch (e) {
-								return null;
-							}
-						})()}
-					</View>
-				)}
-			</View>
-			<MaterialIcons
-				name="arrow-forward-ios"
+							})()}
+						</View>
+					)}
+				</View>
+				<MaterialIcons
+					name="arrow-forward-ios"
+					size={20}
+					color="#007AFF"
+					style={styles.arrowIcon}
+				/>
+			</TouchableOpacity>
+
+			<StarButton
+				drillId={drill.id}
+				initialIsFavorited={favoriteDrillIds.has(drill.id)} // Use favoriteDrillIds instead of favoriteDrills
 				size={20}
-				color="#007AFF"
-				style={styles.arrowIcon}
+				onToggle={handleFavoriteToggle}
+				style={styles.starButtonStyle}
 			/>
-		</TouchableOpacity>
+		</View>
 	);
 
 	const renderFilterModal = () => (
@@ -355,25 +457,42 @@ export default function Drills() {
 				<ScrollView style={styles.modalContent}>
 					{/* Skill Focus Filters */}
 					<View style={styles.filterSection}>
-						<Text style={styles.filterSectionTitle}>Skill Focus</Text>
+						<Text style={styles.filterSectionTitle}>
+							Skill Focus
+						</Text>
 						<View style={styles.filterOptionsContainer}>
-							{skillFocusOptions.map(option => (
+							{skillFocusOptions.map((option) => (
 								<TouchableOpacity
 									key={option}
 									style={[
 										styles.filterOption,
-										selectedFilters.skillFocus.includes(option) && styles.filterOptionSelected
+										selectedFilters.skillFocus.includes(
+											option
+										) && styles.filterOptionSelected,
 									]}
-									onPress={() => toggleFilter('skillFocus', option)}
+									onPress={() =>
+										toggleFilter("skillFocus", option)
+									}
 								>
-									<Text style={[
-										styles.filterOptionText,
-										selectedFilters.skillFocus.includes(option) && styles.filterOptionTextSelected
-									]}>
+									<Text
+										style={[
+											styles.filterOptionText,
+											selectedFilters.skillFocus.includes(
+												option
+											) &&
+												styles.filterOptionTextSelected,
+										]}
+									>
 										{option}
 									</Text>
-									{selectedFilters.skillFocus.includes(option) && (
-										<MaterialIcons name="check" size={20} color="#007AFF" />
+									{selectedFilters.skillFocus.includes(
+										option
+									) && (
+										<MaterialIcons
+											name="check"
+											size={20}
+											color="#007AFF"
+										/>
 									)}
 								</TouchableOpacity>
 							))}
@@ -382,25 +501,42 @@ export default function Drills() {
 
 					{/* Difficulty Filters */}
 					<View style={styles.filterSection}>
-						<Text style={styles.filterSectionTitle}>Difficulty</Text>
+						<Text style={styles.filterSectionTitle}>
+							Difficulty
+						</Text>
 						<View style={styles.filterOptionsContainer}>
-							{difficultyOptions.map(option => (
+							{difficultyOptions.map((option) => (
 								<TouchableOpacity
 									key={option}
 									style={[
 										styles.filterOption,
-										selectedFilters.difficulty.includes(option) && styles.filterOptionSelected
+										selectedFilters.difficulty.includes(
+											option
+										) && styles.filterOptionSelected,
 									]}
-									onPress={() => toggleFilter('difficulty', option)}
+									onPress={() =>
+										toggleFilter("difficulty", option)
+									}
 								>
-									<Text style={[
-										styles.filterOptionText,
-										selectedFilters.difficulty.includes(option) && styles.filterOptionTextSelected
-									]}>
+									<Text
+										style={[
+											styles.filterOptionText,
+											selectedFilters.difficulty.includes(
+												option
+											) &&
+												styles.filterOptionTextSelected,
+										]}
+									>
 										{option}
 									</Text>
-									{selectedFilters.difficulty.includes(option) && (
-										<MaterialIcons name="check" size={20} color="#007AFF" />
+									{selectedFilters.difficulty.includes(
+										option
+									) && (
+										<MaterialIcons
+											name="check"
+											size={20}
+											color="#007AFF"
+										/>
 									)}
 								</TouchableOpacity>
 							))}
@@ -410,23 +546,33 @@ export default function Drills() {
 					<View style={styles.filterSection}>
 						<Text style={styles.filterSectionTitle}>Type</Text>
 						<View style={styles.filterOptionsContainer}>
-							{typeOptions.map(option => (
+							{typeOptions.map((option) => (
 								<TouchableOpacity
 									key={option}
 									style={[
 										styles.filterOption,
-										selectedFilters.type.includes(option) && styles.filterOptionSelected
+										selectedFilters.type.includes(option) &&
+											styles.filterOptionSelected,
 									]}
-									onPress={() => toggleFilter('type', option)}
+									onPress={() => toggleFilter("type", option)}
 								>
-									<Text style={[
-										styles.filterOptionText,
-										selectedFilters.type.includes(option) && styles.filterOptionTextSelected
-									]}>
+									<Text
+										style={[
+											styles.filterOptionText,
+											selectedFilters.type.includes(
+												option
+											) &&
+												styles.filterOptionTextSelected,
+										]}
+									>
 										{option}
 									</Text>
 									{selectedFilters.type.includes(option) && (
-										<MaterialIcons name="check" size={20} color="#007AFF" />
+										<MaterialIcons
+											name="check"
+											size={20}
+											color="#007AFF"
+										/>
 									)}
 								</TouchableOpacity>
 							))}
@@ -452,7 +598,12 @@ export default function Drills() {
 		return (
 			<SafeAreaProvider>
 				<SafeAreaView style={styles.safeArea}>
-					<ActivityIndicator size="large" color="#007AFF" />
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size="large" color="#007AFF" />
+						<Text style={styles.loadingText}>
+							Loading drills...
+						</Text>
+					</View>
 				</SafeAreaView>
 			</SafeAreaProvider>
 		);
@@ -463,25 +614,60 @@ export default function Drills() {
 			<SafeAreaView style={styles.safeArea}>
 				<View style={styles.container}>
 					{/* Active filters display */}
-					{(selectedFilters.skillFocus.length > 0 || selectedFilters.difficulty.length > 0 || selectedFilters.type.length > 0) && (
+					{(selectedFilters.skillFocus.length > 0 ||
+						selectedFilters.difficulty.length > 0 ||
+						selectedFilters.type.length > 0) && (
 						<View style={styles.activeFiltersContainer}>
-							<ScrollView horizontal showsHorizontalScrollIndicator={false}>
-								{[...selectedFilters.skillFocus, ...selectedFilters.difficulty, ...selectedFilters.type].map((filter, index) => (
-									<View key={index} style={styles.activeFilter}>
-										<Text style={styles.activeFilterText}>{filter}</Text>
+							<ScrollView
+								horizontal
+								showsHorizontalScrollIndicator={false}
+							>
+								{[
+									...selectedFilters.skillFocus,
+									...selectedFilters.difficulty,
+									...selectedFilters.type,
+								].map((filter, index) => (
+									<View
+										key={index}
+										style={styles.activeFilter}
+									>
+										<Text style={styles.activeFilterText}>
+											{filter}
+										</Text>
 										<TouchableOpacity
 											onPress={() => {
-												if (selectedFilters.skillFocus.includes(filter)) {
-													toggleFilter('skillFocus', filter);
-												} else if (selectedFilters.difficulty.includes(filter)) {
-													toggleFilter('difficulty', filter);
+												if (
+													selectedFilters.skillFocus.includes(
+														filter
+													)
+												) {
+													toggleFilter(
+														"skillFocus",
+														filter
+													);
+												} else if (
+													selectedFilters.difficulty.includes(
+														filter
+													)
+												) {
+													toggleFilter(
+														"difficulty",
+														filter
+													);
 												} else {
-													toggleFilter('type', filter);
+													toggleFilter(
+														"type",
+														filter
+													);
 												}
 											}}
 											style={styles.removeFilterButton}
 										>
-											<MaterialIcons name="close" size={16} color="#007AFF" />
+											<MaterialIcons
+												name="close"
+												size={16}
+												color="#007AFF"
+											/>
 										</TouchableOpacity>
 									</View>
 								))}
@@ -491,7 +677,8 @@ export default function Drills() {
 
 					<ScrollView contentContainerStyle={styles.scrollView}>
 						<Text style={styles.header}>
-							Team Drills ({Object.values(groupedDrills.team).flat().length})
+							Team Drills (
+							{Object.values(groupedDrills.team).flat().length})
 						</Text>
 						{Object.entries(groupedDrills.team).map(
 							([category, drills]) => (
@@ -499,7 +686,8 @@ export default function Drills() {
 									<Text style={styles.categoryTitle}>
 										{category.replace(/\b\w/g, (c) =>
 											c.toUpperCase()
-										)} ({drills.length})
+										)}{" "}
+										({drills.length})
 									</Text>
 									{drills.map(renderDrillRow)}
 								</View>
@@ -507,7 +695,12 @@ export default function Drills() {
 						)}
 
 						<Text style={styles.header}>
-							Individual Drills ({Object.values(groupedDrills.individual).flat().length})
+							Individual Drills (
+							{
+								Object.values(groupedDrills.individual).flat()
+									.length
+							}
+							)
 						</Text>
 						{Object.entries(groupedDrills.individual).map(
 							([category, drills]) => (
@@ -515,7 +708,8 @@ export default function Drills() {
 									<Text style={styles.categoryTitle}>
 										{category.replace(/\b\w/g, (c) =>
 											c.toUpperCase()
-										)} ({drills.length})
+										)}{" "}
+										({drills.length})
 									</Text>
 									{drills.map(renderDrillRow)}
 								</View>
@@ -524,10 +718,21 @@ export default function Drills() {
 
 						{filteredDrills.length === 0 && (
 							<View style={styles.emptyState}>
-								<MaterialIcons name="search-off" size={48} color="#ccc" />
-								<Text style={styles.emptyStateText}>No drills match your filters</Text>
-								<TouchableOpacity onPress={clearAllFilters} style={styles.clearFiltersButton}>
-									<Text style={styles.clearFiltersButtonText}>Clear Filters</Text>
+								<MaterialIcons
+									name="search-off"
+									size={48}
+									color="#ccc"
+								/>
+								<Text style={styles.emptyStateText}>
+									No drills match your filters
+								</Text>
+								<TouchableOpacity
+									onPress={clearAllFilters}
+									style={styles.clearFiltersButton}
+								>
+									<Text style={styles.clearFiltersButtonText}>
+										Clear Filters
+									</Text>
 								</TouchableOpacity>
 							</View>
 						)}
@@ -557,6 +762,39 @@ const styles = StyleSheet.create({
 		flex: 1,
 		position: "relative",
 	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	loadingText: {
+		marginTop: 16,
+		fontSize: 16,
+		color: "#666",
+	},
+	errorContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		padding: 20,
+	},
+	errorText: {
+		fontSize: 16,
+		color: "#ff4444",
+		textAlign: "center",
+		marginVertical: 16,
+	},
+	retryButton: {
+		backgroundColor: "#007AFF",
+		paddingHorizontal: 20,
+		paddingVertical: 10,
+		borderRadius: 8,
+	},
+	retryButtonText: {
+		color: "#fff",
+		fontSize: 16,
+		fontWeight: "600",
+	},
 	scrollView: {
 		padding: 16,
 		paddingBottom: 100,
@@ -582,7 +820,6 @@ const styles = StyleSheet.create({
 	},
 	drillCard: {
 		backgroundColor: "white",
-		padding: 16,
 		borderRadius: 12,
 		marginBottom: 12,
 		flexDirection: "row",
@@ -592,6 +829,12 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 3,
+	},
+	drillCardContent: {
+		flex: 1,
+		padding: 16,
+		flexDirection: "row",
+		alignItems: "center",
 	},
 	drillTextContainer: {
 		flex: 1,
@@ -608,12 +851,12 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 	},
 	tagsContainer: {
-		flexDirection: 'row',
-		flexWrap: 'wrap',
-		alignItems: 'center',
+		flexDirection: "row",
+		flexWrap: "wrap",
+		alignItems: "center",
 	},
 	tag: {
-		backgroundColor: '#f0f0f0',
+		backgroundColor: "#f0f0f0",
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		borderRadius: 12,
@@ -621,32 +864,36 @@ const styles = StyleSheet.create({
 		marginBottom: 4,
 	},
 	skillTag: {
-		backgroundColor: '#e8f5e8',
-		borderColor: '#4caf50',
+		backgroundColor: "#e8f5e8",
+		borderColor: "#4caf50",
 		borderWidth: 1,
 	},
 	difficultyTag: {
-		backgroundColor: '#fff3e0',
-		borderColor: '#ff9800',
+		backgroundColor: "#fff3e0",
+		borderColor: "#ff9800",
 		borderWidth: 1,
 	},
 	typeTag: {
-		backgroundColor: '#f3e5f5',
-		borderColor: '#9c27b0',
+		backgroundColor: "#f3e5f5",
+		borderColor: "#9c27b0",
 		borderWidth: 1,
 	},
 	tagText: {
 		fontSize: 12,
-		color: '#666',
-		fontWeight: '500',
+		color: "#666",
+		fontWeight: "500",
 	},
 	moreTagsText: {
 		fontSize: 12,
-		color: '#999',
-		fontStyle: 'italic',
+		color: "#999",
+		fontStyle: "italic",
 	},
 	arrowIcon: {
 		marginLeft: 12,
+	},
+	starButtonStyle: {
+		paddingHorizontal: 8,
+		paddingVertical: 16,
 	},
 	fab: {
 		position: "absolute",
@@ -667,34 +914,34 @@ const styles = StyleSheet.create({
 	},
 	// Header styles
 	headerButtons: {
-		flexDirection: 'row',
-		alignItems: 'center',
+		flexDirection: "row",
+		alignItems: "center",
 	},
 	headerButton: {
-		position: 'relative',
+		position: "relative",
 		padding: 4,
 	},
 	filterBadge: {
-		position: 'absolute',
+		position: "absolute",
 		top: 2,
 		right: 2,
 		width: 8,
 		height: 8,
 		borderRadius: 4,
-		backgroundColor: '#FF3B30',
+		backgroundColor: "#FF3B30",
 	},
 	// Active filters styles
 	activeFiltersContainer: {
-		backgroundColor: '#fff',
+		backgroundColor: "#fff",
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderBottomWidth: 1,
-		borderBottomColor: '#eee',
+		borderBottomColor: "#eee",
 	},
 	activeFilter: {
-		flexDirection: 'row',
-		alignItems: 'center',
-		backgroundColor: '#e3f2fd',
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#e3f2fd",
 		paddingHorizontal: 12,
 		paddingVertical: 6,
 		borderRadius: 16,
@@ -702,8 +949,8 @@ const styles = StyleSheet.create({
 	},
 	activeFilterText: {
 		fontSize: 14,
-		color: '#007AFF',
-		fontWeight: '500',
+		color: "#007AFF",
+		fontWeight: "500",
 		marginRight: 4,
 	},
 	removeFilterButton: {
@@ -712,29 +959,29 @@ const styles = StyleSheet.create({
 	// Modal styles
 	modalContainer: {
 		flex: 1,
-		backgroundColor: '#fff',
+		backgroundColor: "#fff",
 	},
 	modalHeader: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: '#eee',
+		borderBottomColor: "#eee",
 	},
 	modalTitle: {
 		fontSize: 18,
-		fontWeight: '600',
-		color: '#222',
+		fontWeight: "600",
+		color: "#222",
 	},
 	cancelButton: {
 		fontSize: 16,
-		color: '#007AFF',
+		color: "#007AFF",
 	},
 	clearButton: {
 		fontSize: 16,
-		color: '#FF3B30',
+		color: "#FF3B30",
 	},
 	modalContent: {
 		flex: 1,
@@ -745,71 +992,71 @@ const styles = StyleSheet.create({
 	},
 	filterSectionTitle: {
 		fontSize: 20,
-		fontWeight: '600',
-		color: '#222',
+		fontWeight: "600",
+		color: "#222",
 		marginBottom: 16,
 	},
 	filterOptionsContainer: {
 		gap: 8,
 	},
 	filterOption: {
-		flexDirection: 'row',
-		justifyContent: 'space-between',
-		alignItems: 'center',
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
 		padding: 16,
-		backgroundColor: '#f8f9fa',
+		backgroundColor: "#f8f9fa",
 		borderRadius: 12,
 		borderWidth: 1,
-		borderColor: '#eee',
+		borderColor: "#eee",
 	},
 	filterOptionSelected: {
-		backgroundColor: '#e3f2fd',
-		borderColor: '#007AFF',
+		backgroundColor: "#e3f2fd",
+		borderColor: "#007AFF",
 	},
 	filterOptionText: {
 		fontSize: 16,
-		color: '#222',
-		fontWeight: '500',
+		color: "#222",
+		fontWeight: "500",
 	},
 	filterOptionTextSelected: {
-		color: '#007AFF',
+		color: "#007AFF",
 	},
 	modalFooter: {
 		padding: 16,
 		borderTopWidth: 1,
-		borderTopColor: '#eee',
+		borderTopColor: "#eee",
 	},
 	applyButton: {
-		backgroundColor: '#007AFF',
+		backgroundColor: "#007AFF",
 		paddingVertical: 16,
 		borderRadius: 12,
-		alignItems: 'center',
+		alignItems: "center",
 	},
 	applyButtonText: {
-		color: '#fff',
+		color: "#fff",
 		fontSize: 16,
-		fontWeight: '600',
+		fontWeight: "600",
 	},
 	// Empty state styles
 	emptyState: {
-		alignItems: 'center',
+		alignItems: "center",
 		paddingVertical: 48,
 	},
 	emptyStateText: {
 		fontSize: 16,
-		color: '#666',
+		color: "#666",
 		marginTop: 16,
 		marginBottom: 24,
 	},
 	clearFiltersButton: {
-		backgroundColor: '#007AFF',
+		backgroundColor: "#007AFF",
 		paddingHorizontal: 24,
 		paddingVertical: 12,
 		borderRadius: 8,
 	},
 	clearFiltersButtonText: {
-		color: '#fff',
+		color: "#fff",
 		fontSize: 16,
-		fontWeight: '600',
+		fontWeight: "600",
 	},
 });

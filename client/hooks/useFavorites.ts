@@ -1,0 +1,152 @@
+import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabase";
+
+export const useFavorites = () => {
+	const [favoriteDrills, setFavoriteDrills] = useState([]);
+	const [favoriteDrillIds, setFavoriteDrillIds] = useState(new Set());
+	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+
+	const fetchFavorites = async () => {
+		try {
+			setLoading(true);
+			setError(null);
+
+			// Get current user
+			const {
+				data: { user },
+				error: userError,
+			} = await supabase.auth.getUser();
+			if (userError || !user) {
+				console.log("No user authenticated");
+				setFavoriteDrills([]);
+				setFavoriteDrillIds(new Set());
+				return;
+			}
+
+			// Get user's favorite drill IDs
+			const { data: userData, error: fetchError } = await supabase
+				.from("users")
+				.select("favoriteDrills")
+				.eq("id", user.id)
+				.maybeSingle();
+
+			if (fetchError) {
+				throw fetchError;
+			}
+
+			const favoriteIds = userData?.favoriteDrills || [];
+			setFavoriteDrillIds(new Set(favoriteIds));
+
+			// If there are favorite drill IDs, fetch the full drill data
+			if (favoriteIds.length > 0) {
+				const { data: drillsData, error: drillsError } = await supabase
+					.from("Drill")
+					.select("*")
+					.in("id", favoriteIds);
+
+				if (drillsError) {
+					throw drillsError;
+				}
+
+				setFavoriteDrills(drillsData || []);
+			} else {
+				setFavoriteDrills([]);
+			}
+		} catch (err) {
+			console.error("Error fetching favorites:", err);
+			setError(err.message);
+			setFavoriteDrills([]);
+			setFavoriteDrillIds(new Set());
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	const handleFavoriteToggle = async (drillId, isFavorited) => {
+		try {
+			// Update local state immediately for better UX
+			setFavoriteDrillIds((prev) => {
+				const newSet = new Set(prev);
+				if (isFavorited) {
+					newSet.add(drillId);
+				} else {
+					newSet.delete(drillId);
+				}
+				return newSet;
+			});
+
+			// Update the drills array
+			if (isFavorited) {
+				// Fetch the drill data and add it to favorites
+				const { data: drillData, error: drillError } = await supabase
+					.from("Drill")
+					.select("*")
+					.eq("id", drillId)
+					.single();
+
+				if (!drillError && drillData) {
+					setFavoriteDrills((prev) => [...prev, drillData]);
+				}
+			} else {
+				// Remove from favorites array
+				setFavoriteDrills((prev) =>
+					prev.filter((drill) => drill.id !== drillId)
+				);
+			}
+
+			// Update the database
+			const {
+				data: { user },
+			} = await supabase.auth.getUser();
+
+			if (user) {
+				const updatedIds = Array.from(
+					isFavorited
+						? new Set([...favoriteDrillIds, drillId])
+						: new Set(
+								[...favoriteDrillIds].filter(
+									(id) => id !== drillId
+								)
+						  )
+				);
+
+				const { error: updateError } = await supabase
+					.from("users")
+					.update({ favoriteDrills: updatedIds })
+					.eq("id", user.id);
+
+				if (updateError) {
+					console.error(
+						"Error updating favorites in database:",
+						updateError
+					);
+					// Revert local state on error
+					fetchFavorites();
+				}
+			}
+		} catch (err) {
+			console.error("Error toggling favorite:", err);
+			// Revert local state on error
+			fetchFavorites();
+		}
+	};
+
+	const refreshFavorites = () => {
+		fetchFavorites();
+	};
+
+	useEffect(() => {
+		fetchFavorites();
+	}, []);
+
+	return {
+		favoriteDrills, // Array of full drill objects
+		favoriteDrillIds, // Set of drill IDs for quick lookup
+		loading,
+		error,
+		handleFavoriteToggle,
+		refreshFavorites,
+		setFavoriteDrills, // Export for direct manipulation if needed
+	};
+};
