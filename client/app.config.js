@@ -19,6 +19,7 @@ export default () => ({
 		ios: {
 			supportsTablet: true,
 			bundleIdentifier: "com.jwaddell10.PracticeScheduler",
+			buildNumber: "1.0.0",
 		},
 		android: {
 			adaptiveIcon: {
@@ -26,6 +27,7 @@ export default () => ({
 				backgroundColor: "#ffffff",
 			},
 			edgeToEdgeEnabled: true,
+			package: "com.jwaddell10.PracticeScheduler",
 		},
 		web: {
 			favicon: "./assets/favicon.png",
@@ -39,7 +41,6 @@ export default () => ({
 			serverApi: process.env.SERVER_API,
 			localIP: process.env.LOCAL_IP,
 			PORT: process.env.PORT,
-
 		},
 		plugins: ["expo-secure-store"],
 	},

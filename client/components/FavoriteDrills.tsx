@@ -22,6 +22,51 @@ export default function FavoriteDrills() {
 
 	const navigation = useNavigation();
 
+	// Helper function to format array values
+	const formatArrayValue = (value) => {
+		// If it's a string that looks like a JSON array, parse it
+		if (
+			typeof value === "string" &&
+			value.startsWith("[") &&
+			value.endsWith("]")
+		) {
+			try {
+				const parsed = JSON.parse(value);
+				if (Array.isArray(parsed)) {
+					return parsed
+						.map((item) =>
+							typeof item === "string"
+								? item.charAt(0).toUpperCase() +
+								  item.slice(1).toLowerCase()
+								: item
+						)
+						.join(", ");
+				}
+			} catch (e) {
+				// If parsing fails, treat as regular string
+			}
+		}
+
+		// If it's already an array
+		if (Array.isArray(value)) {
+			return value
+				.map((item) =>
+					typeof item === "string"
+						? item.charAt(0).toUpperCase() +
+						  item.slice(1).toLowerCase()
+						: item
+				)
+				.join(", ");
+		}
+
+		// If it's a regular string, just capitalize it
+		if (typeof value === "string" && value.trim() !== "") {
+			return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
+		}
+
+		return "Not specified";
+	};
+
 	if (loading) {
 		return (
 			<View
@@ -75,7 +120,7 @@ export default function FavoriteDrills() {
 				alignItems: "flex-start",
 			}}
 			activeOpacity={0.7}
-			onPress={() => navigation.navigate("DrillDetails", { drill: item })}
+			onPress={() => navigation.navigate("Drill Details", { drill: item })}
 		>
 			{item.imageUrl ? (
 				<Image
@@ -160,12 +205,11 @@ export default function FavoriteDrills() {
 						style={{
 							fontSize: 14,
 							color: "#666",
-							textTransform: "capitalize",
 							flex: 1,
 						}}
 						numberOfLines={1}
 					>
-						{item.skillFocus || "Not specified"}
+						{formatArrayValue(item.skillFocus)}
 					</Text>
 				</View>
 
@@ -190,12 +234,11 @@ export default function FavoriteDrills() {
 						style={{
 							fontSize: 14,
 							color: "#666",
-							textTransform: "capitalize",
 							flex: 1,
 						}}
 						numberOfLines={1}
 					>
-						{item.type || "Not specified"}
+						{formatArrayValue(item.type)}
 					</Text>
 				</View>
 
@@ -220,19 +263,12 @@ export default function FavoriteDrills() {
 						<Text
 							style={{
 								fontSize: 14,
-								color:
-									item.difficulty === "beginner"
-										? "#4CAF50"
-										: item.difficulty === "intermediate"
-										? "#FF9800"
-										: "#F44336",
-								textTransform: "capitalize",
-								fontWeight: "500",
+								color: "#666",
 								flex: 1,
 							}}
 							numberOfLines={1}
 						>
-							{item.difficulty}
+							{formatArrayValue(item.difficulty)}
 						</Text>
 					</View>
 				)}
