@@ -5,29 +5,23 @@ import {
 	Text,
 	StyleSheet,
 	ScrollView,
-	TextInput,
 	TouchableOpacity,
 	KeyboardAvoidingView,
 	Platform,
 	TouchableWithoutFeedback,
 	Keyboard,
-	ActivityIndicator,
 	Button,
 	Modal,
-	Pressable,
 	Image, // Added Image import
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
-import Dropdown from "react-native-input-select";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import DraggableFlatList from "react-native-draggable-flatlist";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import Constants from "expo-constants";
 import { supabase } from "../lib/supabase";
 import PracticeDateTimePicker from "./PracticeDateTimePicker";
 import { useDrills } from "../hooks/useDrills";
 import AntDesign from "@expo/vector-icons/AntDesign";
-import { Link } from "expo-router";
+import theme from "./styles/theme";
 
 interface DrillData {
 	name: string;
@@ -208,7 +202,6 @@ const CreatePractice = () => {
 										</Text>
 									</View>
 								)}
-
 								<PracticeDateTimePicker
 									initialDate={route.params?.selectedDate}
 									onDatesChange={handleDatesChange}
@@ -224,6 +217,7 @@ const CreatePractice = () => {
 											setDrillSelectionModalVisible(true)
 										}
 										title="Add Drills"
+										color={theme.colors.primary}
 									/>
 
 									{/* Display Selected Drills */}
@@ -358,7 +352,13 @@ const CreatePractice = () => {
 																			size={
 																				24
 																			}
-																			color="black"
+																			color={
+																				selected
+																					? "#fff"
+																					: theme
+																							.colors
+																							.secondary
+																			}
 																		/>
 																	</TouchableOpacity>
 																</TouchableOpacity>
@@ -467,6 +467,9 @@ const CreatePractice = () => {
 																		fontWeight:
 																			"bold",
 																		flex: 1,
+																		color: theme
+																			.colors
+																			.textPrimary,
 																	}}
 																>
 																	Skill Focus:
@@ -474,6 +477,9 @@ const CreatePractice = () => {
 																<Text
 																	style={{
 																		flex: 2,
+																		color: theme
+																			.colors
+																			.textPrimary,
 																	}}
 																>
 																	{formatArrayData(
@@ -494,6 +500,9 @@ const CreatePractice = () => {
 																		fontWeight:
 																			"bold",
 																		flex: 1,
+																		color: theme
+																			.colors
+																			.textPrimary,
 																	}}
 																>
 																	Type:
@@ -501,6 +510,9 @@ const CreatePractice = () => {
 																<Text
 																	style={{
 																		flex: 2,
+																		color: theme
+																			.colors
+																			.textPrimary,
 																	}}
 																>
 																	{formatArrayData(
@@ -521,6 +533,9 @@ const CreatePractice = () => {
 																		fontWeight:
 																			"bold",
 																		flex: 1,
+																		color: theme
+																			.colors
+																			.textPrimary,
 																	}}
 																>
 																	Difficulty:
@@ -528,6 +543,9 @@ const CreatePractice = () => {
 																<Text
 																	style={{
 																		flex: 2,
+																		color: theme
+																			.colors
+																			.textPrimary,
 																	}}
 																>
 																	{formatArrayData(
@@ -549,6 +567,9 @@ const CreatePractice = () => {
 																			fontWeight:
 																				"bold",
 																			flex: 1,
+																			color: theme
+																				.colors
+																				.textPrimary,
 																		}}
 																	>
 																		Duration:
@@ -556,6 +577,9 @@ const CreatePractice = () => {
 																	<Text
 																		style={{
 																			flex: 2,
+																			color: theme
+																				.colors
+																				.textPrimary,
 																		}}
 																	>
 																		{
@@ -652,7 +676,7 @@ const CreatePractice = () => {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: "#f2f5f8",
+		backgroundColor: theme.colors.background,
 	},
 	scrollView: {
 		padding: 16,
@@ -660,7 +684,7 @@ const styles = StyleSheet.create({
 		flexGrow: 1,
 	},
 	headerContainer: {
-		backgroundColor: "white",
+		backgroundColor: theme.colors.surface,
 		borderRadius: 12,
 		padding: 16,
 		marginBottom: 20,
@@ -674,16 +698,16 @@ const styles = StyleSheet.create({
 	headerTitle: {
 		fontSize: 24,
 		fontWeight: "700",
-		color: "#333",
+		color: theme.colors.textPrimary,
 		marginBottom: 8,
 	},
 	selectedDateText: {
 		fontSize: 18,
 		fontWeight: "600",
-		color: "#007AFF",
+		color: theme.colors.secondary,
 	},
 	section: {
-		backgroundColor: "white",
+		backgroundColor: theme.colors.surface,
 		borderRadius: 12,
 		padding: 16,
 		marginBottom: 20,
@@ -696,7 +720,7 @@ const styles = StyleSheet.create({
 	label: {
 		fontSize: 16,
 		fontWeight: "600",
-		color: "#333",
+		color: theme.colors.textPrimary,
 		marginBottom: 12,
 	},
 	selectedDrillsContainer: {
@@ -706,8 +730,8 @@ const styles = StyleSheet.create({
 		flexDirection: "row",
 		justifyContent: "space-between",
 		alignItems: "center",
-		backgroundColor: "#f0f8ff",
-		borderColor: "#007AFF",
+		backgroundColor: theme.colors.surface,
+		borderColor: theme.colors.primary,
 		borderWidth: 1,
 		borderRadius: 8,
 		paddingVertical: 10,
@@ -716,7 +740,7 @@ const styles = StyleSheet.create({
 	},
 	selectedDrillText: {
 		fontSize: 16,
-		color: "#007AFF",
+		color: theme.colors.textPrimary,
 		fontWeight: "500",
 		flex: 1,
 	},
@@ -760,44 +784,44 @@ const styles = StyleSheet.create({
 		padding: 12,
 		fontSize: 16,
 		minHeight: 100,
-		backgroundColor: "#fafafa",
+		backgroundColor: theme.colors.surface,
 	},
 	dropdownContainer: {
-		backgroundColor: "#fff",
+		backgroundColor: theme.colors.surface,
 		borderWidth: 1,
-		borderColor: "#ddd",
+		borderColor: theme.colors.primary,
 		borderRadius: 12,
 		paddingHorizontal: 12,
 		paddingVertical: 4,
 		marginTop: 8,
 	},
 	dropdownLabel: {
-		color: "#007AFF",
+		color: theme.colors.primary,
 		fontWeight: "600",
 	},
 	dropdownPlaceholder: {
 		color: "#999",
 	},
 	submitButton: {
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 		paddingVertical: 16,
 		borderRadius: 12,
 		alignItems: "center",
 		marginTop: 8,
 		marginBottom: 20,
-		shadowColor: "#007AFF",
+		shadowColor: theme.colors.primary,
 		shadowOpacity: 0.4,
 		shadowOffset: { width: 0, height: 5 },
 		shadowRadius: 10,
 		elevation: 5,
 	},
 	submitButtonText: {
-		color: "white",
+		color: theme.colors.textPrimary,
 		fontWeight: "700",
 		fontSize: 18,
 	},
 	modalContent: {
-		backgroundColor: "white",
+		backgroundColor: theme.colors.surface,
 		padding: 20,
 		borderRadius: 12,
 		flex: 1, // Takes available space
@@ -808,7 +832,7 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: "700",
 		marginBottom: 16,
-		color: "#333",
+		color: theme.colors.textPrimary,
 		textAlign: "center",
 	},
 	drillItem: {
@@ -817,23 +841,25 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderRadius: 8,
-		backgroundColor: "#eee",
+		borderWidth: 1,
+		borderColor: "white",
+		backgroundColor: theme.colors.surface,
 		marginBottom: 10,
 	},
 	drillItemSelected: {
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 	},
 	drillItemText: {
-		color: "#333",
+		color: theme.colors.textPrimary,
 		fontSize: 16,
 		fontWeight: "500",
 	},
 	drillItemTextSelected: {
-		color: "#fff",
+		color: "#fff", // Fixed: White text for selected items
 	},
 	closeModalButton: {
 		marginTop: 16,
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 		paddingVertical: 12,
 		borderRadius: 10,
 		alignItems: "center",

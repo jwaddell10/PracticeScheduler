@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { View, Text, StyleSheet, Platform } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import theme from "./styles/theme";
 
 type Props = {
 	initialDate?: string;
@@ -18,14 +19,7 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 			return parseLocalDateString(initialDate);
 		}
 		const now = new Date();
-		return new Date(
-			now.getFullYear(),
-			now.getMonth(),
-			now.getDate(),
-			18,
-			0,
-			0
-		);
+		return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0);
 	};
 
 	const [startDate, setStartDate] = useState<Date>(initializeDate());
@@ -41,22 +35,22 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 	}, [startDate, endDate]);
 
 	const onChange =
-		(type: "start" | "end") => (event: any, selectedDate?: Date) => {
+		(type: "start" | "end") => (_event: any, selectedDate?: Date) => {
 			if (selectedDate) {
 				if (type === "start") {
 					setStartDate(selectedDate);
 					if (endDate <= selectedDate) {
-						const newEndDate = new Date(selectedDate);
-						newEndDate.setHours(selectedDate.getHours() + 1);
-						setEndDate(newEndDate);
+						const newEnd = new Date(selectedDate);
+						newEnd.setHours(selectedDate.getHours() + 1);
+						setEndDate(newEnd);
 					}
 				} else {
 					if (selectedDate > startDate) {
 						setEndDate(selectedDate);
 					} else {
-						const newEndDate = new Date(startDate);
-						newEndDate.setHours(startDate.getHours() + 1);
-						setEndDate(newEndDate);
+						const newEnd = new Date(startDate);
+						newEnd.setHours(startDate.getHours() + 1);
+						setEndDate(newEnd);
 					}
 				}
 			}
@@ -69,7 +63,9 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 				<DateTimePicker
 					value={startDate}
 					mode="datetime"
+					display="default" // <- native-style, no spinner
 					onChange={onChange("start")}
+					themeVariant="dark"
 					style={styles.datePicker}
 				/>
 			</View>
@@ -79,7 +75,9 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 				<DateTimePicker
 					value={endDate}
 					mode="datetime"
+					display="default" // <- native-style, no spinner
 					onChange={onChange("end")}
+					themeVariant="dark"
 					style={styles.datePicker}
 				/>
 			</View>
@@ -92,12 +90,15 @@ const styles = StyleSheet.create({
 		marginBottom: 20,
 	},
 	label: {
+		color: theme.colors.textPrimary,
 		fontSize: 16,
 		fontWeight: "600",
 		marginBottom: 8,
 	},
 	datePicker: {
 		width: "100%",
+		backgroundColor: Platform.OS === "android" ? "#1E293B" : "transparent",
+		borderRadius: 12,
 	},
 });
 
