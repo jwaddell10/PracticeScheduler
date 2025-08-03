@@ -25,11 +25,16 @@
     <key>CFBundleURLTypes</key>
     <array>
       <dict>
-        <key>CFBundleURLSchemes</key>
-        <array>
-          <string>com.supabase://**</string>
-          <string>com.jwaddell10.PracticeScheduler</string>
-        </array>
+       <key>CFBundleURLTypes</key>
+    <array>
+      <dict>
+      <key>CFBundleURLSchemes</key>
+    <array>
+      <string>com.supabase</string>  <!-- ✅ Valid scheme -->
+      <string>com.jwaddell10.PracticeScheduler</string>
+    </array>
+      </dict>
+    </array>
       </dict>
     </array>
     <key>CFBundleVersion</key>
