@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	View,
 	Text,
@@ -9,7 +9,7 @@ import {
 	Alert,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { supabase } from "../lib/supabase"; // Adjust path as needed
 import theme from "./styles/theme";
 
@@ -19,9 +19,11 @@ export default function HomeScreen() {
 	const [loading, setLoading] = useState(true);
 	const [selectedDate, setSelectedDate] = useState(null);
 
-	useEffect(() => {
-		fetchPractices();
-	}, []);
+	useFocusEffect(
+		useCallback(() => {
+			fetchPractices();
+		}, [])
+	);
 
 	const fetchPractices = async () => {
 		setLoading(true);

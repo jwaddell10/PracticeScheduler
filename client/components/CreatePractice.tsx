@@ -55,18 +55,28 @@ const CreatePractice = () => {
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [notes, setNotes] = useState(""); // Added notes state
 
+	const {
+		drills: drillsData,
+		loading: drillsLoading,
+		error: drillsError,
+	} = useDrills();
+
+	// Update local state when hook data changes
 	useEffect(() => {
-		const loadDrills = async () => {
-			try {
-				const drillsData = await useDrills();
-				setAvailableDrills(drillsData.map((d: any) => d.name));
-				setDrills(drillsData); // Store full drill objects
-			} catch (error) {
-				console.error("Error fetching drills:", error);
-			}
-		};
-		loadDrills();
-	}, []);
+		if (drillsData && drillsData.length > 0) {
+			setAvailableDrills(drillsData.map((d: any) => d.name));
+			setDrills(drillsData);
+		}
+	}, [drillsData]);
+
+	// Handle loading and error states if needed
+	if (drillsLoading) {
+		return <Text>Loading drills...</Text>;
+	}
+
+	if (drillsError) {
+		return <Text>Error loading drills: {drillsError}</Text>;
+	}
 
 	const handleDatesChange = (start: Date, end: Date) => {
 		setStartDate(start);

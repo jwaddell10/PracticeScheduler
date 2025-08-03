@@ -22,6 +22,7 @@ export const useDrills = () => {
 				.select("*")
 				.eq("user_id", userData.user.id);
 
+				console.log(drills, 'drills')
 			if (drillError) throw drillError;
 
 			setDrills(drills || []);
