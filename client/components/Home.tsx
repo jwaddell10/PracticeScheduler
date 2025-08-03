@@ -10,8 +10,7 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { useNavigation } from "@react-navigation/native";
-import Constants from "expo-constants";
-import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
+import { supabase } from "../lib/supabase"; // Adjust path as needed
 import theme from "./styles/theme";
 
 export default function HomeScreen() {
@@ -21,52 +20,36 @@ export default function HomeScreen() {
 	const [selectedDate, setSelectedDate] = useState(null);
 
 	useEffect(() => {
-		fetchData();
-	}, [practices]);
+		fetchPractices();
+	}, []);
 
-	async function fetchData() {
-		try {
-			const localIP = Constants.expoConfig?.extra?.localIP;
-			const PORT = Constants.expoConfig?.extra?.PORT;
-			const response = await fetch(`http://${localIP}:${PORT}/home`);
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			const data = await response.json();
-			setPractices(data);
-			setLoading(false);
-		} catch (error) {
-			console.error(error, "error home");
-			Alert.alert("Error", "Failed to fetch data from server.");
+	const fetchPractices = async () => {
+		setLoading(true);
+		const { data, error } = await supabase
+			.from("Practice")
+			.select("id, startTime, endTime, drills");
+
+		if (error) {
+			console.error("Supabase error:", error.message);
+			Alert.alert("Error", "Failed to fetch practices.");
+		} else {
+			setPractices(data || []);
 		}
-	}
+		setLoading(false);
+	};
 
-	const deletePractice = async (id) => {
-		try {
-			const localIP = Constants.expoConfig?.extra?.localIP;
-			const PORT = Constants.expoConfig?.extra?.PORT;
-			const response = await fetch(
-				`http://${localIP}:${PORT}/home/${id}/delete`,
-				{
-					method: "DELETE",
-					headers: {
-						"Content-type": "application/json",
-					},
-				}
-			);
-			if (!response.ok) {
-				throw new Error(`HTTP error! status: ${response.status}`);
-			}
-			const data = await response.json();
-			if (data.message === "Practice deleted") {
-				await fetchData();
-			}
-		} catch (error) {
-			console.log(error, "err");
+	const deletePractice = async (id: string) => {
+		const { error } = await supabase.from("Practice").delete().eq("id", id);
+
+		if (error) {
+			console.error("Delete error:", error.message);
+			Alert.alert("Error", "Failed to delete practice.");
+		} else {
+			await fetchPractices();
 		}
 	};
 
-	const confirmDelete = (id) => {
+	const confirmDelete = (id: string) => {
 		Alert.alert(
 			"Delete Practice",
 			"Are you sure you want to delete this practice?",
@@ -96,7 +79,7 @@ export default function HomeScreen() {
 			marks[selectedDate] = {
 				...(marks[selectedDate] || {}),
 				selected: true,
-				selectedColor: theme.colors.accent,
+				selectedColor: theme.colors.primary,
 			};
 		}
 		return marks;
@@ -117,7 +100,7 @@ export default function HomeScreen() {
 				End: {new Date(item.endTime).toLocaleString()}
 			</Text>
 			<Text style={styles.drillsLabel}>Drills:</Text>
-			{item.drills.map((drill, index) => (
+			{(item.drills || []).map((drill, index) => (
 				<Text key={index} style={styles.drillItem}>
 					• {drill}
 				</Text>
@@ -144,22 +127,33 @@ export default function HomeScreen() {
 			<Calendar
 				markedDates={getMarkedDates()}
 				onDayPress={(day) => {
+					setSelectedDate(day.dateString);
 					navigation.navigate("Practice", {
-						selectedDate: day.dateString, // format: YYYY-MM-DD
+						selectedDate: day.dateString,
 					});
 				}}
 				theme={{
-					selectedDayBackgroundColor: theme.colors.accent,
+					backgroundColor: "#1E293B",
+					calendarBackground: "#1E293B", // Add this too
+					selectedDayBackgroundColor: theme.colors.primary,
 					todayTextColor: theme.colors.secondary,
 					arrowColor: theme.colors.primary,
+					// Add these text color properties:
+					dayTextColor: "#ffffff",
+					textDayFontSize: 16,
+					textMonthFontSize: 18,
+					textDayHeaderFontSize: 14,
+					textSectionTitleColor: "#ffffff",
+					monthTextColor: "#ffffff",
+					textDisabledColor: "#64748b", // Lighter gray for disabled days
 				}}
 				style={styles.calendar}
 			/>
 
 			{loading ? (
-				<Text>Loading...</Text>
+				<Text style={styles.loadingText}>Loading...</Text>
 			) : filteredPractices.length === 0 ? (
-				<Text style={{ marginTop: 16 }}>No practices scheduled.</Text>
+				<Text style={styles.emptyText}>No practices scheduled.</Text>
 			) : (
 				<FlatList
 					data={filteredPractices}
@@ -172,7 +166,6 @@ export default function HomeScreen() {
 			<TouchableOpacity
 				style={styles.scheduleButton}
 				onPress={() => navigation.navigate("Practice")}
-				activeOpacity={0.8}
 			>
 				<Text style={styles.scheduleButtonText}>Schedule Practice</Text>
 			</TouchableOpacity>
@@ -194,19 +187,31 @@ const styles = StyleSheet.create({
 		color: theme.colors.textPrimary,
 	},
 	calendar: {
-		borderRadius: 12,
+		borderRadius: theme.roundness,
 		overflow: "hidden",
 		marginBottom: 24,
+	},
+	loadingText: {
+		color: theme.colors.textMuted,
+		textAlign: "center",
+		marginVertical: 20,
+	},
+	emptyText: {
+		color: theme.colors.textMuted,
+		textAlign: "center",
+		marginVertical: 20,
 	},
 	listContainer: {
 		paddingBottom: 24,
 	},
 	practiceItem: {
-		backgroundColor: theme.colors.primary,
+		backgroundColor: theme.colors.surface,
 		padding: theme.padding,
 		borderRadius: theme.roundness,
 		marginBottom: 16,
-		shadowColor: "#000",
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+		shadowColor: theme.colors.surface,
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.1,
 		shadowRadius: 6,
@@ -216,7 +221,7 @@ const styles = StyleSheet.create({
 		fontWeight: "700",
 		fontSize: 20,
 		marginBottom: 8,
-		color: theme.colors.accent,
+		color: theme.colors.textPrimary,
 	},
 	dateText: {
 		fontSize: 14,
@@ -250,19 +255,19 @@ const styles = StyleSheet.create({
 		elevation: 4,
 	},
 	deleteButtonText: {
-		color: "white",
+		color: theme.colors.white,
 		fontWeight: "700",
 		fontSize: 16,
 	},
 	scheduleButton: {
-		backgroundColor: theme.colors.secondary,
+		backgroundColor: theme.colors.primary,
 		paddingVertical: 16,
 		borderRadius: theme.roundness,
 		alignItems: "center",
 		marginBottom: 32,
 	},
 	scheduleButtonText: {
-		color: theme.colors.textPrimary,
+		color: theme.colors.white,
 		fontWeight: "700",
 		fontSize: 18,
 	},
