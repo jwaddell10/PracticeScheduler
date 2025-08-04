@@ -26,6 +26,7 @@
         <category android:name="android.intent.category.DEFAULT"/>
         <category android:name="android.intent.category.BROWSABLE"/>
         <data android:scheme="com.supabase://**"/>
+        <data android:scheme="exp+practicescheduler"/>
       </intent-filter>
     </activity>
   </application>
