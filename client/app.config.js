@@ -21,17 +21,17 @@ export default () => ({
 			bundleIdentifier: "com.jwaddell10.PracticeScheduler",
 			buildNumber: "1.0.0",
 		},
-		android: {
-			adaptiveIcon: {
-				foregroundImage: "./assets/adaptive-icon.png",
-				backgroundColor: "#ffffff",
-			},
-			edgeToEdgeEnabled: true,
-			package: "com.jwaddell10.PracticeScheduler",
-		},
-		web: {
-			favicon: "./assets/favicon.png",
-		},
+		// android: {
+		// 	adaptiveIcon: {
+		// 		foregroundImage: "./assets/adaptive-icon.png",
+		// 		backgroundColor: "#ffffff",
+		// 	},
+		// 	edgeToEdgeEnabled: true,
+		// 	package: "com.jwaddell10.PracticeScheduler",
+		// },
+		// web: {
+		// 	favicon: "./assets/favicon.png",
+		// },
 		extra: {
 			eas: {
 				projectId: "7952f98e-4bdd-4d28-84ef-b4e9fe8951e0",
