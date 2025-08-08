@@ -22,21 +22,22 @@ export default function UpgradeToPremiumBanner() {
 				<MaterialCommunityIcons
 					name="crown"
 					size={28}
-					color={theme.colors.accent}
+					color={theme.colors.proPurple} // Use consistent color
 					style={styles.icon}
 				/>
-				<View style={styles.textColumn}>
+				<View style={styles.textContainer}>
 					<Text style={styles.title}>Upgrade to Premium</Text>
 					<Text style={styles.subtitle}>
-						Get advanced features to power up your coaching!
+						Get access to premium drills and advanced features.
 					</Text>
 				</View>
 			</View>
+
 			<TouchableOpacity
 				style={styles.upgradeButton}
 				onPress={handleUpgrade}
 			>
-				<Text style={styles.buttonText}>Upgrade</Text>
+				<Text style={styles.upgradeButtonText}>Upgrade</Text>
 			</TouchableOpacity>
 		</View>
 	);
@@ -44,45 +45,54 @@ export default function UpgradeToPremiumBanner() {
 
 const styles = StyleSheet.create({
 	bannerContainer: {
-		backgroundColor: theme.colors.primaryDark,
+		backgroundColor: theme.colors.surface,
 		borderRadius: theme.roundness,
 		padding: theme.padding,
 		marginBottom: 24,
-		flexDirection: "column", // vertical stacking
-		justifyContent: "center",
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+		shadowColor: theme.colors.surface,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 2,
 	},
 	topRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		marginBottom: 16, // space between top row and button
+		marginBottom: 16,
 	},
 	icon: {
 		marginRight: 12,
 	},
-	textColumn: {
-		flexDirection: "column",
+	textContainer: {
+		flex: 1,
 	},
 	title: {
 		fontSize: 18,
 		fontWeight: "700",
-		color: theme.colors.accent,
+		color: theme.colors.textPrimary,
 		marginBottom: 4,
 	},
 	subtitle: {
 		fontSize: 14,
-		color: theme.colors.textPrimary,
+		color: theme.colors.textMuted,
 	},
 	upgradeButton: {
-		backgroundColor: theme.colors.accent,
+		backgroundColor: "purple", // Match PRO button
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderRadius: 8,
 		alignItems: "center",
-		// button spans full width of container
 		width: "100%",
+		shadowColor: theme.colors.proPurple,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.2,
+		shadowRadius: 4,
+		elevation: 3,
 	},
-	buttonText: {
-		color: theme.colors.background,
+	upgradeButtonText: {
+		color: theme.colors.white,
 		fontWeight: "700",
 		fontSize: 16,
 	},

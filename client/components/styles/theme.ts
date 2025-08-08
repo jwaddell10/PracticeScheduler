@@ -14,6 +14,7 @@ const theme = {
 		textPrimary: "#F1F5F9", // Explicit primary text
 		textMuted: "#94A3B8", // Muted gray/blue
 		white: "#FFFFFF",
+		proPurple: "#8B5CF6",
 	},
 	padding: 16,
 	roundness: 12,

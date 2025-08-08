@@ -10,11 +10,14 @@ import {
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { supabase } from "../lib/supabase"; // Adjust path as needed
+import { useFavorites } from "../context/FavoritesContext"; // Adjust path as needed
 import theme from "./styles/theme";
 
 export default function HomeScreen() {
 	const navigation = useNavigation();
+	const { favoriteDrills } = useFavorites();
 	const [practices, setPractices] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [selectedDate, setSelectedDate] = useState(null);
@@ -42,7 +45,6 @@ export default function HomeScreen() {
 
 	const deletePractice = async (id: string) => {
 		const { error } = await supabase.from("Practice").delete().eq("id", id);
-
 		if (error) {
 			console.error("Delete error:", error.message);
 			Alert.alert("Error", "Failed to delete practice.");
@@ -77,6 +79,7 @@ export default function HomeScreen() {
 				dotColor: theme.colors.secondary,
 			};
 		});
+
 		if (selectedDate) {
 			marks[selectedDate] = {
 				...(marks[selectedDate] || {}),
@@ -84,6 +87,7 @@ export default function HomeScreen() {
 				selectedColor: theme.colors.primary,
 			};
 		}
+
 		return marks;
 	};
 
@@ -122,9 +126,85 @@ export default function HomeScreen() {
 		  )
 		: practices;
 
+	// Get upcoming practices count (practices with startTime in the future)
+	const upcomingPracticesCount = practices.filter(
+		(practice) => new Date(practice.startTime) > new Date()
+	).length;
+
 	return (
 		<ScrollView style={styles.container}>
 			<Text style={styles.header}>Welcome, Coach</Text>
+
+			{/* Upgrade to Premium Banner */}
+			{/* <View style={styles.bannerContainer}>
+				<View style={styles.topRow}>
+					<MaterialCommunityIcons
+						name="crown"
+						size={28}
+						color={theme.colors.secondary}
+						style={styles.icon}
+					/>
+					<View style={styles.textColumn}>
+						<Text style={styles.bannerTitle}>
+							Upgrade to Premium
+						</Text>
+						<Text style={styles.bannerSubtitle}>
+							Get advanced features to power up your coaching!
+						</Text>
+					</View>
+				</View>
+				<TouchableOpacity
+					style={styles.upgradeButton}
+					onPress={() => navigation.navigate("Premium")}
+				>
+					<Text style={styles.upgradeButtonText}>Upgrade</Text>
+				</TouchableOpacity>
+			</View> */}
+
+			{/* Stats Components */}
+			<View style={styles.statsContainer}>
+				{/* Your Drills */}
+				<TouchableOpacity
+					style={styles.statCard}
+					onPress={() => navigation.navigate("FavoriteDrills")}
+				>
+					<MaterialCommunityIcons
+						name="book-open-variant"
+						size={28}
+						color="#14B8A6"
+					/>
+					<Text style={styles.statNumber}>
+						{favoriteDrills.length}
+					</Text>
+					<Text style={styles.statLabel}>Your Drills</Text>
+				</TouchableOpacity>
+
+				{/* Clipboard */}
+				<TouchableOpacity
+					style={styles.statCard}
+					onPress={() => navigation.navigate("Clipboard")}
+				>
+					<MaterialIcons
+						name="assignment"
+						size={28}
+						color="#06B6D4"
+					/>
+					<Text style={styles.statNumber}>
+						{upcomingPracticesCount}
+					</Text>
+					<Text style={styles.statLabel}>Upcoming Practices</Text>
+				</TouchableOpacity>
+
+				{/* PRO Library */}
+				<TouchableOpacity
+					style={styles.statCard}
+					onPress={() => navigation.navigate("Premium")}
+				>
+					<MaterialIcons name="add" size={28} color="#8B5CF6" />
+					<Text style={styles.statNumber}>PRO</Text>
+					<Text style={styles.statLabel}>Library</Text>
+				</TouchableOpacity>
+			</View>
 
 			<Calendar
 				markedDates={getMarkedDates()}
@@ -188,6 +268,48 @@ const styles = StyleSheet.create({
 		marginBottom: 16,
 		color: theme.colors.textPrimary,
 	},
+	statsContainer: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		marginBottom: 24,
+		gap: 12,
+	},
+
+	statCard: {
+		flex: 1,
+		backgroundColor: theme.colors.surface,
+		borderRadius: theme.roundness,
+		paddingVertical: 16,
+		paddingHorizontal: 8,
+		alignItems: "center",
+		justifyContent: "center",
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+		shadowColor: theme.colors.surface,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 2,
+		minHeight: 120,
+	},
+
+	statNumber: {
+		fontSize: 20,
+		fontWeight: "700",
+		color: "#F1F5F9",
+		marginTop: 6,
+		marginBottom: 2,
+		textAlign: "center",
+	},
+
+	statLabel: {
+		fontSize: 12,
+		fontWeight: "600",
+		color: theme.colors.textMuted,
+		textAlign: "center",
+		lineHeight: 14,
+	},
+
 	calendar: {
 		borderRadius: theme.roundness,
 		overflow: "hidden",
@@ -272,5 +394,61 @@ const styles = StyleSheet.create({
 		color: theme.colors.white,
 		fontWeight: "700",
 		fontSize: 18,
+	},
+	// Premium Banner Styles
+	bannerContainer: {
+		backgroundColor: theme.colors.surface,
+		borderRadius: theme.roundness,
+		padding: theme.padding,
+		marginBottom: 24,
+		flexDirection: "column",
+		justifyContent: "center",
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+		shadowColor: theme.colors.surface,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 4,
+		elevation: 2,
+	},
+	topRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginBottom: 16,
+	},
+	icon: {
+		marginRight: 12,
+	},
+	textColumn: {
+		flexDirection: "column",
+		flex: 1,
+	},
+	bannerTitle: {
+		fontSize: 18,
+		fontWeight: "700",
+		color: theme.colors.textPrimary,
+		marginBottom: 4,
+	},
+	bannerSubtitle: {
+		fontSize: 14,
+		color: theme.colors.textMuted,
+	},
+	upgradeButton: {
+		backgroundColor: theme.colors.primary,
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+		alignItems: "center",
+		width: "100%",
+		shadowColor: theme.colors.primary,
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.2,
+		shadowRadius: 4,
+		elevation: 3,
+	},
+	upgradeButtonText: {
+		color: theme.colors.white,
+		fontWeight: "700",
+		fontSize: 16,
 	},
 });
