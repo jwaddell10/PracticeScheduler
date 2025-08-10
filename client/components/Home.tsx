@@ -132,7 +132,7 @@ export default function HomeScreen() {
 	).length;
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView style={styles.container} nestedScrollEnabled={true}>
 			<Text style={styles.header}>Welcome, Coach</Text>
 
 			{/* Upgrade to Premium Banner */}

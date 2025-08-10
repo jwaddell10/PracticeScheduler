@@ -195,48 +195,72 @@ export default function CreateDrill() {
 	};
 
 	const handleSubmit = async () => {
+		if (!session?.user) {
+			Alert.alert("Error", "You must be logged in to create a drill.");
+			return;
+		}
+
 		if (
 			!name ||
 			type.length === 0 ||
 			skillFocus.length === 0 ||
 			difficulty.length === 0
 		) {
-			Alert.alert("Validation error", "Please fill in required fields");
+			Alert.alert(
+				"Validation error",
+				"Please fill in all required fields."
+			);
 			return;
 		}
+
 		setSaving(true);
 
 		try {
+			console.log("Supabase URL:", supabaseUrl);
+			console.log(
+				"Supabase Key:",
+				supabaseAnonKey ? "Loaded" : "Missing"
+			);
+			console.log("User:", session?.user);
+
 			let imageUrl = null;
+
 			if (imageUri) {
-				const fileInfo = await FileSystem.getInfoAsync(imageUri);
-				if (!fileInfo.exists) throw new Error("Image file not found.");
-				imageUrl = await uploadImageAsync(imageUri);
+				// Handle HEIC files from iOS
+				let fixedUri = imageUri;
+				let fileExt = imageUri.split(".").pop()?.toLowerCase();
+
+				if (fileExt === "heic") {
+					const jpegUri = imageUri.replace(/\.heic$/i, ".jpg");
+					await FileSystem.copyAsync({ from: imageUri, to: jpegUri });
+					fixedUri = jpegUri;
+					fileExt = "jpg";
+				}
+
+				// Upload and get public URL
+				imageUrl = await uploadImageAsync(fixedUri);
 			}
 
-			const localIP = Constants.expoConfig?.extra?.localIP;
-			const PORT = Constants.expoConfig?.extra?.PORT;
+			// Insert into Supabase
+			const { error: insertError } = await supabase
+				.from("Drill")
+				.insert([
+					{
+						user_id: session.user.id,
+						name,
+						type,
+						skillFocus: skillFocus,
+						difficulty,
+						notes,
+						imageUrl: imageUrl,
+					},
+				]);
 
-			const res = await fetch(`http://${localIP}:${PORT}/drill/create`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${session?.access_token}`,
-				},
-				body: JSON.stringify({
-					name,
-					type,
-					skillFocus,
-					difficulty,
-					notes,
-					imageUrl,
-				}),
-			});
-			if (!res.ok) {
-				throw new Error(`Failed to create drill: ${res.status}`);
-			}
+			if (insertError) throw insertError;
 
 			Alert.alert("Success", "Drill created successfully!");
+
+			// Reset form
 			setName("");
 			setType([]);
 			setSkillFocus([]);
@@ -244,7 +268,8 @@ export default function CreateDrill() {
 			setNotes("");
 			setImageUri(null);
 		} catch (error) {
-			Alert.alert("Error", error.message);
+			console.error("Submit error:", error);
+			Alert.alert("Error", error.message || "Something went wrong.");
 		} finally {
 			setSaving(false);
 		}
@@ -259,6 +284,7 @@ export default function CreateDrill() {
 			<ScrollView
 				contentContainerStyle={styles.container}
 				keyboardShouldPersistTaps="handled"
+				nestedScrollEnabled={true} // ✅ prevents VirtualizedList nesting issues
 			>
 				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 					<View>
