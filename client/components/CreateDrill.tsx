@@ -120,8 +120,8 @@ export default function CreateDrill() {
 			// Open image picker
 			const result = await ImagePicker.launchImageLibraryAsync({
 				mediaTypes: "images", // ✅ Modern API
-				allowsEditing: true, // Optional: allow cropping
-				aspect: [4, 3],
+				allowsEditing: false, // Optional: allow cropping
+				// aspect: [4, 3],
 				quality: 1,
 			});
 
