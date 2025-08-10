@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase";
 import { StyleSheet, View, Alert } from "react-native";
 import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
+import theme from "./styles/theme";
 
 export default function Account({ session }: { session: Session | null }) {
 	const [loading, setLoading] = useState(true);
@@ -76,8 +77,15 @@ export default function Account({ session }: { session: Session | null }) {
 	return (
 		<View style={styles.container}>
 			<View style={[styles.verticallySpaced, styles.mt20]}>
-				<Input label="Email" value={session?.user?.email} disabled />
+				<Input
+					label="Email"
+					labelStyle={{ color: theme.colors.text }}
+					inputStyle={{ color: theme.colors.text }}
+					value={session?.user?.email}
+					disabled
+				/>
 			</View>
+
 			{/* <View style={styles.verticallySpaced}>
 				<Input
 					label="Email"
@@ -88,6 +96,8 @@ export default function Account({ session }: { session: Session | null }) {
 			<View style={styles.verticallySpaced}>
 				<Input
 					label="Drills"
+					labelStyle={{ color: theme.colors.textPrimary }} // label text color
+					inputStyle={{ color: theme.colors.text }} // user input text color
 					value={drills || ""}
 					onChangeText={(text) => setDrills(text)}
 				/>

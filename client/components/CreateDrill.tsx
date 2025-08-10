@@ -105,29 +105,55 @@ export default function CreateDrill() {
 	);
 
 	const pickImage = async () => {
-		const { status } =
-			await ImagePicker.requestMediaLibraryPermissionsAsync();
-		if (status !== "granted") {
-			Alert.alert(
-				"Permission denied",
-				"Please allow media access to upload images."
-			);
-			return;
-		}
-		const result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ImagePicker.MediaType,
-			aspect: [4, 3],
-			quality: 1,
-		});
-		if (!result.canceled) {
-			setImageUri(result.assets[0].uri);
+		try {
+			// Ask for permission
+			const { status } =
+				await ImagePicker.requestMediaLibraryPermissionsAsync();
+			if (status !== "granted") {
+				Alert.alert(
+					"Permission denied",
+					"Please allow media access to upload images."
+				);
+				return;
+			}
+
+			// Open image picker
+			const result = await ImagePicker.launchImageLibraryAsync({
+				mediaTypes: "images", // ✅ Modern API
+				allowsEditing: true, // Optional: allow cropping
+				aspect: [4, 3],
+				quality: 1,
+			});
+
+			// If user didn't cancel, and assets exist
+			if (!result.canceled && result.assets?.length > 0) {
+				const uri = result.assets[0].uri;
+
+				// Make sure the file exists before setting state
+				const fileInfo = await FileSystem.getInfoAsync(uri);
+				if (!fileInfo.exists) {
+					Alert.alert("Error", "Selected file does not exist.");
+					return;
+				}
+
+				setImageUri(uri);
+			}
+		} catch (error) {
+			console.error("Image picker error:", error);
+			Alert.alert("Error", "Unable to pick image. Please try again.");
 		}
 	};
 
-	const uploadImageAsync = async (uri: string): Promise<string> => {
+	const uploadImageAsync = async (uri) => {
 		try {
 			if (!session?.user) {
 				throw new Error("Unable to get authenticated user.");
+			}
+
+			// Verify file exists before upload
+			const fileInfo = await FileSystem.getInfoAsync(uri);
+			if (!fileInfo.exists) {
+				throw new Error("Image file not found.");
 			}
 
 			const userId = session.user.id;
@@ -136,23 +162,24 @@ export default function CreateDrill() {
 			)}`;
 			const filePath = `${userId}/${fileName}`;
 
-			// Read file as base64 string (without "data:image/..." prefix)
+			// Read file as base64
 			const base64 = await FileSystem.readAsStringAsync(uri, {
 				encoding: FileSystem.EncodingType.Base64,
 			});
 
-			// Decode base64 string to ArrayBuffer
+			// Convert to ArrayBuffer
 			const arrayBuffer = decode(base64);
 
-			// Upload to Supabase Storage as ArrayBuffer
-			const { data, error } = await supabase.storage
+			// Upload to Supabase
+			const { error } = await supabase.storage
 				.from("drill-images")
 				.upload(filePath, arrayBuffer, {
-					contentType: "image/jpeg", // adjust if you want dynamic contentType
+					contentType: "image/jpeg",
 				});
+
 			if (error) {
-				console.error("Upload error here:", error.message);
-				throw error;
+				console.error("Upload error:", error.message);
+				throw new Error("Failed to upload image.");
 			}
 
 			// Get public URL
@@ -182,6 +209,8 @@ export default function CreateDrill() {
 		try {
 			let imageUrl = null;
 			if (imageUri) {
+				const fileInfo = await FileSystem.getInfoAsync(imageUri);
+				if (!fileInfo.exists) throw new Error("Image file not found.");
 				imageUrl = await uploadImageAsync(imageUri);
 			}
 

@@ -20,6 +20,12 @@ export default () => ({
 			supportsTablet: true,
 			bundleIdentifier: "com.jwaddell10.PracticeScheduler",
 			buildNumber: "1.0.0",
+			infoPlist: {
+				NSPhotoLibraryUsageDescription:
+					"We need access to your photo library so you can upload an image for your drill.",
+				NSCameraUsageDescription:
+					"We need camera access to take photos for your drill.",
+			},
 		},
 		// android: {
 		// 	adaptiveIcon: {

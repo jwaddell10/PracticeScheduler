@@ -3,6 +3,7 @@ import { Alert, StyleSheet, View, AppState } from "react-native";
 import { supabase } from "../lib/supabase.ts";
 import { Button, Input } from "@rneui/themed";
 import { useNavigation } from "@react-navigation/native";
+import theme from "./styles/theme"; // <-- make sure you import your theme
 
 export default function Auth() {
 	const navigation = useNavigation();
@@ -18,21 +19,19 @@ export default function Auth() {
 				supabase.auth.stopAutoRefresh();
 			}
 		});
-
 		return () => subscription?.remove();
 	}, []);
 
 	async function signInWithEmail() {
 		setLoading(true);
 		const { error } = await supabase.auth.signInWithPassword({
-			email: email,
-			password: password,
+			email,
+			password,
 		});
 
 		if (error) {
 			Alert.alert(error.message);
 		} else {
-			// Only navigate on successful login
 			navigation.replace("Home");
 		}
 		setLoading(false);
@@ -44,8 +43,8 @@ export default function Auth() {
 			data: { session },
 			error,
 		} = await supabase.auth.signUp({
-			email: email,
-			password: password,
+			email,
+			password,
 		});
 		console.log(error, "error");
 		if (error) {
@@ -62,36 +61,52 @@ export default function Auth() {
 			<View style={[styles.verticallySpaced, styles.mt20]}>
 				<Input
 					label="Email"
-					leftIcon={{ type: "font-awesome", name: "envelope" }}
+					labelStyle={{ color: theme.colors.text }}
+					inputStyle={{ color: theme.colors.text }}
+					leftIcon={{
+						type: "font-awesome",
+						name: "envelope",
+						color: theme.colors.text,
+					}}
 					onChangeText={(text) => setEmail(text)}
 					value={email}
 					placeholder="email@address.com"
-					autoCapitalize={"none"}
+					placeholderTextColor={theme.colors.textMuted}
+					autoCapitalize="none"
 				/>
 			</View>
+
 			<View style={styles.verticallySpaced}>
 				<Input
 					label="Password"
-					leftIcon={{ type: "font-awesome", name: "lock" }}
+					labelStyle={{ color: theme.colors.text }}
+					inputStyle={{ color: theme.colors.text }}
+					leftIcon={{
+						type: "font-awesome",
+						name: "lock",
+						color: theme.colors.text,
+					}}
 					onChangeText={(text) => setPassword(text)}
 					value={password}
-					secureTextEntry={true}
+					secureTextEntry
 					placeholder="Password"
-					autoCapitalize={"none"}
+					placeholderTextColor={theme.colors.textMuted}
+					autoCapitalize="none"
 				/>
 			</View>
+
 			<View style={[styles.verticallySpaced, styles.mt20]}>
 				<Button
 					title="Sign in"
 					disabled={loading}
-					onPress={() => signInWithEmail()}
+					onPress={signInWithEmail}
 				/>
 			</View>
 			<View style={styles.verticallySpaced}>
 				<Button
 					title="Sign up"
 					disabled={loading}
-					onPress={() => signUpWithEmail()}
+					onPress={signUpWithEmail}
 				/>
 			</View>
 		</View>
