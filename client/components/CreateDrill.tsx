@@ -17,6 +17,7 @@ import * as ImagePicker from "expo-image-picker";
 import Constants from "expo-constants";
 import { createClient } from "@supabase/supabase-js";
 import { useSession } from "../context/SessionContext";
+import { useRoute } from "@react-navigation/native";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
 
@@ -45,6 +46,9 @@ const drillDifficulties = [
 
 export default function CreateDrill() {
 	const session = useSession();
+	const route = useRoute();
+	const { refreshDrills } = route.params || {};
+
 	const [name, setName] = useState("");
 	const [type, setType] = useState([]);
 	const [skillFocus, setSkillFocus] = useState([]);
@@ -242,19 +246,17 @@ export default function CreateDrill() {
 			}
 
 			// Insert into Supabase
-			const { error: insertError } = await supabase
-				.from("Drill")
-				.insert([
-					{
-						user_id: session.user.id,
-						name,
-						type,
-						skillFocus: skillFocus,
-						difficulty,
-						notes,
-						imageUrl: imageUrl,
-					},
-				]);
+			const { error: insertError } = await supabase.from("Drill").insert([
+				{
+					user_id: session.user.id,
+					name,
+					type,
+					skillFocus: skillFocus,
+					difficulty,
+					notes,
+					imageUrl: imageUrl,
+				},
+			]);
 
 			if (insertError) throw insertError;
 
@@ -267,6 +269,11 @@ export default function CreateDrill() {
 			setDifficulty([]);
 			setNotes("");
 			setImageUri(null);
+
+			// Call refreshDrills if available to update the drills list
+			if (refreshDrills) {
+				refreshDrills();
+			}
 		} catch (error) {
 			console.error("Submit error:", error);
 			Alert.alert("Error", error.message || "Something went wrong.");
@@ -284,7 +291,7 @@ export default function CreateDrill() {
 			<ScrollView
 				contentContainerStyle={styles.container}
 				keyboardShouldPersistTaps="handled"
-				nestedScrollEnabled={true} // ✅ prevents VirtualizedList nesting issues
+				nestedScrollEnabled={true}
 			>
 				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 					<View>
@@ -372,37 +379,30 @@ export default function CreateDrill() {
 
 const styles = StyleSheet.create({
 	container: {
-		padding: 24,
-		backgroundColor: "#fff",
-		flexGrow: 1,
+		padding: 20,
+		paddingBottom: 40,
 	},
 	label: {
-		fontWeight: "700",
-		fontSize: 17,
-		marginTop: 24,
+		fontSize: 16,
+		fontWeight: "600",
 		marginBottom: 8,
-		color: "#222",
+		marginTop: 16,
+		color: "#333",
 	},
 	input: {
 		borderWidth: 1,
-		borderColor: "#ccc",
-		borderRadius: 12,
-		paddingVertical: Platform.OS === "ios" ? 16 : 12,
-		paddingHorizontal: 18,
-		fontSize: 17,
-		backgroundColor: "#fafafa",
-		shadowColor: "#000",
-		shadowOpacity: 0.05,
-		shadowRadius: 4,
-		shadowOffset: { width: 0, height: 3 },
+		borderColor: "#ddd",
+		borderRadius: 8,
+		padding: 12,
+		fontSize: 16,
+		backgroundColor: "#fff",
 	},
 	notesInput: {
-		height: 120,
+		height: 100,
 		textAlignVertical: "top",
-		backgroundColor: "#fafafa",
 	},
 	selectionContainer: {
-		marginBottom: 8,
+		marginBottom: 20,
 	},
 	buttonRow: {
 		flexDirection: "row",
@@ -410,62 +410,58 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	selectionButton: {
-		paddingVertical: 12,
+		borderWidth: 1,
+		borderColor: "#007AFF",
+		borderRadius: 20,
 		paddingHorizontal: 16,
-		borderRadius: 8,
-		borderWidth: 2,
-		borderColor: "#E5E5E5",
-		backgroundColor: "#FAFAFA",
-		marginRight: 8,
-		marginBottom: 8,
+		paddingVertical: 8,
+		backgroundColor: "#fff",
 	},
 	selectedButton: {
 		backgroundColor: "#007AFF",
-		borderColor: "#007AFF",
 	},
 	selectionButtonText: {
-		fontSize: 16,
-		fontWeight: "600",
-		color: "#666",
+		color: "#007AFF",
+		fontSize: 14,
+		fontWeight: "500",
 	},
 	selectedButtonText: {
-		color: "#FFFFFF",
+		color: "#fff",
 	},
 	imageUploadButton: {
-		backgroundColor: "#E5F0FF",
-		paddingVertical: 14,
-		paddingHorizontal: 20,
-		borderRadius: 10,
-		marginTop: 10,
+		borderWidth: 1,
+		borderColor: "#007AFF",
+		borderRadius: 8,
+		padding: 12,
 		alignItems: "center",
+		backgroundColor: "#f8f9fa",
 	},
 	imageUploadButtonText: {
 		color: "#007AFF",
 		fontSize: 16,
-		fontWeight: "600",
+		fontWeight: "500",
 	},
 	previewImage: {
 		width: "100%",
 		height: 200,
-		marginTop: 16,
-		borderRadius: 12,
+		borderRadius: 8,
+		marginTop: 12,
 	},
 	buttonContainer: {
-		marginTop: 36,
-		backgroundColor: "#007AFF",
-		borderRadius: 12,
-		overflow: "hidden",
+		marginTop: 30,
 	},
 	button: {
-		paddingVertical: 16,
+		backgroundColor: "#007AFF",
+		borderRadius: 8,
+		padding: 16,
 		alignItems: "center",
 	},
 	buttonDisabled: {
-		backgroundColor: "#B0B0B0",
+		backgroundColor: "#ccc",
 	},
 	buttonText: {
-		color: "white",
+		color: "#fff",
 		fontSize: 18,
-		fontWeight: "700",
+		fontWeight: "600",
 	},
 });

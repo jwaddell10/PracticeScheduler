@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useContext } from "react";
+import React, { useState, useLayoutEffect, useContext, useEffect } from "react";
 import {
 	View,
 	Text,
@@ -42,6 +42,15 @@ export default function Drills() {
 	const difficultyOptions = ["Beginner", "Intermediate", "Advanced"];
 	const typeOptions = ["Team Drill", "Individual"];
 
+	useEffect(() => {
+		const unsubscribe = navigation.addListener("focus", () => {
+			// Refresh drills when screen comes into focus
+			refreshDrills();
+		});
+
+		return unsubscribe; // Clean up the listener
+	}, [navigation, refreshDrills]);
+	// Update your useLayoutEffect and FAB navigation calls to pass refreshDrills
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			headerRight: () => (
@@ -66,12 +75,29 @@ export default function Drills() {
 						size={28}
 						color="#007AFF"
 						style={{ marginRight: 16, marginLeft: 8 }}
-						onPress={() => navigation.navigate("CreateDrill")}
+						onPress={() =>
+							navigation.navigate("CreateDrill", {
+								refreshDrills,
+							})
+						}
 					/>
 				</View>
 			),
 		});
-	}, [navigation, selectedFilters]);
+	}, [navigation, selectedFilters, refreshDrills]); // Add refreshDrills to dependencies
+
+	// Also update your FAB button
+	<TouchableOpacity
+		onPress={() =>
+			navigation.navigate("CreateDrill", {
+				refreshDrills,
+			})
+		}
+		style={styles.fab}
+		activeOpacity={0.8}
+	>
+		<MaterialIcons name="add" size={28} color="#fff" />
+	</TouchableOpacity>;
 
 	// Show error if there's one
 	if (error) {
