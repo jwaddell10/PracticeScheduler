@@ -19,7 +19,7 @@ export default () => ({
 		ios: {
 			supportsTablet: true,
 			bundleIdentifier: "com.jwaddell10.PracticeScheduler",
-			buildNumber: "28",
+			buildNumber: "29",
 			infoPlist: {
 				NSPhotoLibraryUsageDescription:
 					"We need access to your photo library so you can upload an image for your drill.",
