@@ -19,7 +19,6 @@ export default () => ({
 		ios: {
 			supportsTablet: true,
 			bundleIdentifier: "com.jwaddell10.PracticeScheduler",
-			buildNumber: "29",
 			infoPlist: {
 				NSPhotoLibraryUsageDescription:
 					"We need access to your photo library so you can upload an image for your drill.",
@@ -27,6 +26,7 @@ export default () => ({
 					"We need camera access to take photos for your drill.",
 			},
 		},
+
 		// android: {
 		// 	adaptiveIcon: {
 		// 		foregroundImage: "./assets/adaptive-icon.png",
