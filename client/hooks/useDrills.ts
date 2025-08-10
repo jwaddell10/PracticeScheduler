@@ -1,84 +1,81 @@
-// hooks/useDrills.js - Modified to include admin drills
+// hooks/useDrills.js
 import { useState, useEffect } from "react";
-import { supabase } from "../lib/supabase"; // Adjust import path as needed
+import { supabase } from "../lib/supabase";
 import { useSession } from "../context/SessionContext";
 
 export function useDrills() {
-	const [drills, setDrills] = useState([]);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
-	const session = useSession();
+  const [drills, setDrills] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const session = useSession();
 
-	const fetchDrills = async () => {
-		try {
-			setLoading(true);
-			setError(null);
+  const fetchDrills = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-			if (!session?.user?.id) {
-				setDrills([]);
-				return;
-			}
+      if (!session?.user?.id) {
+        setDrills([]);
+        return;
+      }
 
-			// Get current user's role
-			const { data: userData, error: userError } = await supabase
-				.from("users")
-				.select("role")
-				.eq("id", session.user.id)
-				.single();
+      // 1. Get the current user's role
+      const { data: userData, error: userError } = await supabase
+        .from("users")
+        .select("role")
+        .eq("id", session.user.id)
+        .single();
 
-			if (userError) {
-				throw userError;
-			}
+      if (userError) throw userError;
 
-			let query = supabase.from("Drill").select(`
+      let query = supabase
+        .from("Drill")
+        .select(
+          `
           *,
           users!Drill_user_id_fkey (
             id,
             email,
             role
           )
-        `);
+        `
+        )
+        .order("name");
 
-			// If user is admin, they see all drills
-			// If user is not admin, they see:
-			// 1. Their own drills
-			// 2. Drills created by admin users
-			if (userData.role !== "admin") {
-				query = query.or(
-					`user_id.eq.${session.user.id},users.role.eq.admin`
-				);
-			}
+      if (userData.role !== "admin") {
+        // 2. Get all admin IDs
+        const { data: admins, error: adminError } = await supabase
+          .from("users")
+          .select("id")
+          .eq("role", "admin");
 
-			const { data, error: drillsError } = await query.order("name");
+        if (adminError) throw adminError;
 
-			if (drillsError) {
-				throw drillsError;
-			}
+        // 3. Restrict results to own drills + admin drills
+        const allowedUserIds = [session.user.id, ...admins.map((a) => a.id)];
+        query = query.in("user_id", allowedUserIds);
+      }
 
-			setDrills(data || []);
-		} catch (err) {
-			console.error("Error fetching drills:", err);
-			setError(err.message);
-		} finally {
-			setLoading(false);
-		}
-	};
+      // 4. Run final query
+      const { data, error: drillsError } = await query;
+      if (drillsError) throw drillsError;
 
-	const refreshDrills = () => {
-		fetchDrills();
-	};
+      setDrills(data || []);
+    } catch (err) {
+      console.error("Error fetching drills:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	useEffect(() => {
-		fetchDrills();
-	}, [session?.user?.id]);
+  useEffect(() => {
+    fetchDrills();
+  }, [session?.user?.id]);
 
-	return {
-		drills,
-		loading,
-		error,
-		refreshDrills,
-	};
+  return { drills, loading, error, refreshDrills: fetchDrills };
 }
+
 
 // Alternative approach if the above query doesn't work with your Supabase setup
 export function useDrillsAlternative() {
