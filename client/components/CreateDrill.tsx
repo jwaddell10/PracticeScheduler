@@ -204,6 +204,13 @@ export default function CreateDrill() {
 			return;
 		}
 
+		if (session) {
+			await supabase.auth.setSession({
+				access_token: session.access_token,
+				refresh_token: session.refresh_token,
+			});
+		}
+
 		if (
 			!name ||
 			type.length === 0 ||
@@ -220,17 +227,35 @@ export default function CreateDrill() {
 		setSaving(true);
 
 		try {
-			console.log("Supabase URL:", supabaseUrl);
-			console.log(
-				"Supabase Key:",
-				supabaseAnonKey ? "Loaded" : "Missing"
-			);
-			console.log("User:", session?.user);
+			// 1️⃣ Check Auth app_metadata for role
+			let isAdmin = session.user.app_metadata?.role === "admin";
+			console.log(isAdmin, "is admin");
 
+			// 2️⃣ If not admin, check database
+			if (!isAdmin) {
+				const { data: userData, error: userError } = await supabase
+					.from("users")
+					.select("role")
+					.eq("id", session.user.id)
+					.maybeSingle();
+
+				console.log("Query result - data:", userData);
+				console.log("Query result - error:", userError);
+
+				if (userError) throw userError;
+
+				// 🔥 ADD THIS - Actually set isAdmin based on the result
+				if (userData?.role === "admin") {
+					isAdmin = true;
+					console.log("Setting isAdmin to true from database");
+				}
+			}
+
+			console.log("Final isAdmin value:", isAdmin);
+
+			// 3️⃣ Handle optional image upload
 			let imageUrl = null;
-
 			if (imageUri) {
-				// Handle HEIC files from iOS
 				let fixedUri = imageUri;
 				let fileExt = imageUri.split(".").pop()?.toLowerCase();
 
@@ -241,45 +266,43 @@ export default function CreateDrill() {
 					fileExt = "jpg";
 				}
 
-				// Upload and get public URL
 				imageUrl = await uploadImageAsync(fixedUri);
 			}
 
-			// Insert into Supabase
+			// 4️⃣ Insert drill
 			const { error: insertError } = await supabase.from("Drill").insert([
 				{
 					user_id: session.user.id,
 					name,
 					type,
-					skillFocus: skillFocus,
+					skillFocus,
 					difficulty,
 					notes,
-					imageUrl: imageUrl,
+					imageUrl,
+					isPublic: isAdmin, // This should now be true for admin users
 				},
 			]);
 
 			if (insertError) throw insertError;
 
 			Alert.alert("Success", "Drill created successfully!");
-
-			// Reset form
-			setName("");
-			setType([]);
-			setSkillFocus([]);
-			setDifficulty([]);
-			setNotes("");
-			setImageUri(null);
-
-			// Call refreshDrills if available to update the drills list
-			if (refreshDrills) {
-				refreshDrills();
-			}
+			resetForm();
+			refreshDrills?.();
 		} catch (error) {
 			console.error("Submit error:", error);
 			Alert.alert("Error", error.message || "Something went wrong.");
 		} finally {
 			setSaving(false);
 		}
+	};
+
+	const resetForm = () => {
+		setName("");
+		setType([]);
+		setSkillFocus([]);
+		setDifficulty([]);
+		setNotes("");
+		setImageUri(null);
 	};
 
 	return (
