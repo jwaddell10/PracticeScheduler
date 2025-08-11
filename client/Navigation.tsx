@@ -14,12 +14,12 @@ import PremiumScreen from "./components/PremiumFeaturesScreen";
 import Auth from "./components/Auth";
 import Account from "./components/Account";
 import Modal from "./components/Modal";
-import FavoriteDrills from "./components/FavoriteDrills";
 
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 
 import theme from "./components/styles/theme"; // Make sure this path is correct
+import YourDrills from "./components/YourDrills";
 
 // ----- Custom Navigation Theme -----
 const navigationTheme = {
@@ -57,8 +57,8 @@ function HomeStackScreen() {
 			/>
 			<HomeStack.Screen name="Premium" component={PremiumScreen} />
 			<HomeStack.Screen
-				name="FavoriteDrills"
-				component={FavoriteDrills}
+				name="YourDrills"
+				component={YourDrills}
 				options={{ title: "Your Drills" }}
 			/>
 			<HomeStack.Screen
@@ -96,8 +96,8 @@ function FavoriteDrillsStackScreen() {
 			}}
 		>
 			<FavoriteDrillsStack.Screen
-				name="Favorite Drills"
-				component={FavoriteDrills}
+				name="Your Drills"
+				component={YourDrills}
 			/>
 			<FavoriteDrillsStack.Screen
 				name="Drill Details"

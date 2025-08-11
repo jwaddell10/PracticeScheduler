@@ -12,18 +12,14 @@ import {
 	Keyboard,
 	TouchableOpacity,
 	Image,
+	Switch,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import Constants from "expo-constants";
-import { createClient } from "@supabase/supabase-js";
 import { useSession } from "../context/SessionContext";
-import { useRoute } from "@react-navigation/native";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
-
-const supabaseUrl = Constants.expoConfig?.extra?.SUPABASE_URL;
-const supabaseAnonKey = Constants.expoConfig?.extra?.SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { supabase } from "../lib/supabase";
+import { useUserRole } from "../hooks/useUserRole"; // ⬅️ import our hook
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -44,10 +40,9 @@ const drillDifficulties = [
 	{ label: "Advanced", value: "advanced" },
 ];
 
-export default function CreateDrill() {
+export default function CreateDrill({ refreshDrills, onClose }) {
 	const session = useSession();
-	const route = useRoute();
-	const { refreshDrills } = route.params || {};
+	const { isAdmin, loading: roleLoading, error: roleError } = useUserRole(); // ⬅️ use the hook
 
 	const [name, setName] = useState("");
 	const [type, setType] = useState([]);
@@ -56,15 +51,10 @@ export default function CreateDrill() {
 	const [notes, setNotes] = useState("");
 	const [saving, setSaving] = useState(false);
 	const [imageUri, setImageUri] = useState(null);
+	const [isPublic, setIsPublic] = useState(isAdmin); // default to admin value
 
 	// Button selection component
-	const SelectionButtons = ({
-		title,
-		options,
-		selectedValues,
-		onSelect,
-		required = false,
-	}) => (
+	const SelectionButtons = ({ title, options, selectedValues, onSelect }) => (
 		<View style={styles.selectionContainer}>
 			<Text style={styles.label}>
 				{title} {"(select all that apply)"}
@@ -81,14 +71,12 @@ export default function CreateDrill() {
 							]}
 							onPress={() => {
 								if (isSelected) {
-									// Remove from selection
 									onSelect(
 										selectedValues.filter(
 											(val) => val !== option.value
 										)
 									);
 								} else {
-									// Add to selection
 									onSelect([...selectedValues, option.value]);
 								}
 							}}
@@ -110,7 +98,6 @@ export default function CreateDrill() {
 
 	const pickImage = async () => {
 		try {
-			// Ask for permission
 			const { status } =
 				await ImagePicker.requestMediaLibraryPermissionsAsync();
 			if (status !== "granted") {
@@ -121,25 +108,19 @@ export default function CreateDrill() {
 				return;
 			}
 
-			// Open image picker
 			const result = await ImagePicker.launchImageLibraryAsync({
 				mediaTypes: "images",
 				allowsEditing: false,
-				// aspect: [4, 3],
 				quality: 1,
 			});
 
-			// If user didn't cancel, and assets exist
 			if (!result.canceled && result.assets?.length > 0) {
 				const uri = result.assets[0].uri;
-
-				// Make sure the file exists before setting state
 				const fileInfo = await FileSystem.getInfoAsync(uri);
 				if (!fileInfo.exists) {
 					Alert.alert("Error", "Selected file does not exist.");
 					return;
 				}
-
 				setImageUri(uri);
 			}
 		} catch (error) {
@@ -149,66 +130,48 @@ export default function CreateDrill() {
 	};
 
 	const uploadImageAsync = async (uri) => {
-		try {
-			if (!session?.user) {
-				throw new Error("Unable to get authenticated user.");
-			}
+		if (!session?.user) {
+			throw new Error("Unable to get authenticated user.");
+		}
 
-			// Verify file exists before upload
-			const fileInfo = await FileSystem.getInfoAsync(uri);
-			if (!fileInfo.exists) {
-				throw new Error("Image file not found.");
-			}
+		const fileInfo = await FileSystem.getInfoAsync(uri);
+		if (!fileInfo.exists) {
+			throw new Error("Image file not found.");
+		}
 
-			const userId = session.user.id;
-			const fileName = `${Date.now()}_${uri.substring(
-				uri.lastIndexOf("/") + 1
-			)}`;
-			const filePath = `${userId}/${fileName}`;
+		const userId = session.user.id;
+		const fileName = `${Date.now()}_${uri.substring(
+			uri.lastIndexOf("/") + 1
+		)}`;
+		const filePath = `${userId}/${fileName}`;
 
-			// Read file as base64
-			const base64 = await FileSystem.readAsStringAsync(uri, {
-				encoding: FileSystem.EncodingType.Base64,
+		const base64 = await FileSystem.readAsStringAsync(uri, {
+			encoding: FileSystem.EncodingType.Base64,
+		});
+		const arrayBuffer = decode(base64);
+
+		const { error } = await supabase.storage
+			.from("drill-images")
+			.upload(filePath, arrayBuffer, {
+				contentType: "image/jpeg",
 			});
 
-			// Convert to ArrayBuffer
-			const arrayBuffer = decode(base64);
-
-			// Upload to Supabase
-			const { error } = await supabase.storage
-				.from("drill-images")
-				.upload(filePath, arrayBuffer, {
-					contentType: "image/jpeg",
-				});
-
-			if (error) {
-				console.error("Upload error:", error.message);
-				throw new Error("Failed to upload image.");
-			}
-
-			// Get public URL
-			const { data: publicData } = supabase.storage
-				.from("drill-images")
-				.getPublicUrl(filePath);
-
-			return publicData.publicUrl;
-		} catch (err) {
-			console.error("Upload failed:", err);
-			throw err;
+		if (error) {
+			console.error("Upload error:", error.message);
+			throw new Error("Failed to upload image.");
 		}
+
+		const { data: publicData } = supabase.storage
+			.from("drill-images")
+			.getPublicUrl(filePath);
+
+		return publicData.publicUrl;
 	};
 
 	const handleSubmit = async () => {
 		if (!session?.user) {
 			Alert.alert("Error", "You must be logged in to create a drill.");
 			return;
-		}
-
-		if (session) {
-			await supabase.auth.setSession({
-				access_token: session.access_token,
-				refresh_token: session.refresh_token,
-			});
 		}
 
 		if (
@@ -227,49 +190,18 @@ export default function CreateDrill() {
 		setSaving(true);
 
 		try {
-			// 1️⃣ Check Auth app_metadata for role
-			let isAdmin = session.user.app_metadata?.role === "admin";
-			console.log(isAdmin, "is admin");
-
-			// 2️⃣ If not admin, check database
-			if (!isAdmin) {
-				const { data: userData, error: userError } = await supabase
-					.from("users")
-					.select("role")
-					.eq("id", session.user.id)
-					.maybeSingle();
-
-				console.log("Query result - data:", userData);
-				console.log("Query result - error:", userError);
-
-				if (userError) throw userError;
-
-				// 🔥 ADD THIS - Actually set isAdmin based on the result
-				if (userData?.role === "admin") {
-					isAdmin = true;
-					console.log("Setting isAdmin to true from database");
-				}
-			}
-
-			console.log("Final isAdmin value:", isAdmin);
-
-			// 3️⃣ Handle optional image upload
 			let imageUrl = null;
 			if (imageUri) {
 				let fixedUri = imageUri;
 				let fileExt = imageUri.split(".").pop()?.toLowerCase();
-
 				if (fileExt === "heic") {
 					const jpegUri = imageUri.replace(/\.heic$/i, ".jpg");
 					await FileSystem.copyAsync({ from: imageUri, to: jpegUri });
 					fixedUri = jpegUri;
-					fileExt = "jpg";
 				}
-
 				imageUrl = await uploadImageAsync(fixedUri);
 			}
 
-			// 4️⃣ Insert drill
 			const { error: insertError } = await supabase.from("Drill").insert([
 				{
 					user_id: session.user.id,
@@ -279,15 +211,22 @@ export default function CreateDrill() {
 					difficulty,
 					notes,
 					imageUrl,
-					isPublic: isAdmin, // This should now be true for admin users
+					isPublic: isAdmin ? isPublic : false,
 				},
 			]);
 
 			if (insertError) throw insertError;
 
-			Alert.alert("Success", "Drill created successfully!");
-			resetForm();
-			refreshDrills?.();
+			Alert.alert("Success", "Drill created successfully!", [
+				{
+					text: "OK",
+					onPress: () => {
+						resetForm();
+						refreshDrills?.();
+						onClose?.();
+					},
+				},
+			]);
 		} catch (error) {
 			console.error("Submit error:", error);
 			Alert.alert("Error", error.message || "Something went wrong.");
@@ -303,7 +242,25 @@ export default function CreateDrill() {
 		setDifficulty([]);
 		setNotes("");
 		setImageUri(null);
+		setIsPublic(isAdmin);
 	};
+
+	// While role is loading, show a loading state (optional)
+	if (roleLoading) {
+		return (
+			<View style={styles.container}>
+				<Text>Loading permissions...</Text>
+			</View>
+		);
+	}
+
+	if (roleError) {
+		return (
+			<View style={styles.container}>
+				<Text>Error loading role: {roleError}</Text>
+			</View>
+		);
+	}
 
 	return (
 		<KeyboardAvoidingView
@@ -314,7 +271,6 @@ export default function CreateDrill() {
 			<ScrollView
 				contentContainerStyle={styles.container}
 				keyboardShouldPersistTaps="handled"
-				nestedScrollEnabled={true}
 			>
 				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 					<View>
@@ -325,6 +281,7 @@ export default function CreateDrill() {
 							value={name}
 							onChangeText={setName}
 						/>
+
 						<Text style={styles.label}>Description</Text>
 						<TextInput
 							style={[styles.input, styles.notesInput]}
@@ -340,24 +297,32 @@ export default function CreateDrill() {
 							options={drillTypes}
 							selectedValues={type}
 							onSelect={setType}
-							required={true}
 						/>
-
 						<SelectionButtons
 							title="Skill Focus"
 							options={drillCategories}
 							selectedValues={skillFocus}
 							onSelect={setSkillFocus}
-							required={true}
 						/>
-
 						<SelectionButtons
 							title="Difficulty"
 							options={drillDifficulties}
 							selectedValues={difficulty}
 							onSelect={setDifficulty}
-							required={true}
 						/>
+
+						{/* Admin toggle for public drills */}
+						{isAdmin && (
+							<View style={styles.toggleRow}>
+								<Text style={styles.toggleLabel}>
+									Make Public
+								</Text>
+								<Switch
+									value={isPublic}
+									onValueChange={setIsPublic}
+								/>
+							</View>
+						)}
 
 						<Text style={styles.label}>
 							Upload Image (optional)
@@ -400,17 +365,19 @@ export default function CreateDrill() {
 	);
 }
 
+
 const styles = StyleSheet.create({
 	container: {
-		padding: 20,
-		paddingBottom: 40,
+		flexGrow: 1,
+		padding: 16,
+		backgroundColor: "#fff",
 	},
 	label: {
 		fontSize: 16,
 		fontWeight: "600",
+		color: "#333",
 		marginBottom: 8,
 		marginTop: 16,
-		color: "#333",
 	},
 	input: {
 		borderWidth: 1,
@@ -425,7 +392,7 @@ const styles = StyleSheet.create({
 		textAlignVertical: "top",
 	},
 	selectionContainer: {
-		marginBottom: 20,
+		marginBottom: 16,
 	},
 	buttonRow: {
 		flexDirection: "row",
@@ -433,50 +400,63 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	selectionButton: {
-		borderWidth: 1,
-		borderColor: "#007AFF",
-		borderRadius: 20,
-		paddingHorizontal: 16,
+		paddingHorizontal: 12,
 		paddingVertical: 8,
+		borderRadius: 20,
+		borderWidth: 1,
+		borderColor: "#ddd",
 		backgroundColor: "#fff",
 	},
 	selectedButton: {
 		backgroundColor: "#007AFF",
+		borderColor: "#007AFF",
 	},
 	selectionButtonText: {
-		color: "#007AFF",
 		fontSize: 14,
-		fontWeight: "500",
+		color: "#333",
 	},
 	selectedButtonText: {
 		color: "#fff",
+		fontWeight: "500",
+	},
+	toggleRow: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginTop: 16,
+		marginBottom: 8,
+	},
+	toggleLabel: {
+		fontSize: 16,
+		fontWeight: "600",
+		color: "#333",
+		marginRight: 8,
 	},
 	imageUploadButton: {
-		borderWidth: 1,
-		borderColor: "#007AFF",
-		borderRadius: 8,
+		backgroundColor: "#f0f0f0",
 		padding: 12,
+		borderRadius: 8,
 		alignItems: "center",
-		backgroundColor: "#f8f9fa",
+		marginBottom: 16,
 	},
 	imageUploadButtonText: {
-		color: "#007AFF",
 		fontSize: 16,
+		color: "#007AFF",
 		fontWeight: "500",
 	},
 	previewImage: {
 		width: "100%",
 		height: 200,
 		borderRadius: 8,
-		marginTop: 12,
+		marginBottom: 16,
 	},
 	buttonContainer: {
-		marginTop: 30,
+		marginTop: 20,
+		marginBottom: 40,
 	},
 	button: {
 		backgroundColor: "#007AFF",
-		borderRadius: 8,
 		padding: 16,
+		borderRadius: 8,
 		alignItems: "center",
 	},
 	buttonDisabled: {

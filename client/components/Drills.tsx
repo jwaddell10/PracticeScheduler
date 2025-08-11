@@ -14,13 +14,11 @@ import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
 import { useDrills } from "../hooks/useDrills";
-import { FavoritesContext } from "../context/FavoritesContext"; // Use FavoritesContext instead of useFavorites hook
+import { FavoritesContext } from "../context/FavoritesContext";
 
 export default function Drills() {
 	const navigation = useNavigation();
 	const { drills, loading, error, refreshDrills } = useDrills();
-
-	// Use FavoritesContext instead of useFavorites hook
 	const { favoriteDrillIds, handleFavoriteToggle } =
 		useContext(FavoritesContext);
 
@@ -31,7 +29,6 @@ export default function Drills() {
 		type: [],
 	});
 
-	// Filter options
 	const skillFocusOptions = [
 		"Offense",
 		"Defense",
@@ -44,13 +41,11 @@ export default function Drills() {
 
 	useEffect(() => {
 		const unsubscribe = navigation.addListener("focus", () => {
-			// Refresh drills when screen comes into focus
 			refreshDrills();
 		});
-
-		return unsubscribe; // Clean up the listener
+		return unsubscribe;
 	}, [navigation, refreshDrills]);
-	// Update your useLayoutEffect and FAB navigation calls to pass refreshDrills
+
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			headerRight: () => (
@@ -70,36 +65,11 @@ export default function Drills() {
 							<View style={styles.filterBadge} />
 						)}
 					</TouchableOpacity>
-					<MaterialIcons
-						name="add"
-						size={28}
-						color="#007AFF"
-						style={{ marginRight: 16, marginLeft: 8 }}
-						onPress={() =>
-							navigation.navigate("CreateDrill", {
-								refreshDrills,
-							})
-						}
-					/>
 				</View>
 			),
 		});
-	}, [navigation, selectedFilters, refreshDrills]); // Add refreshDrills to dependencies
+	}, [navigation, selectedFilters]);
 
-	// Also update your FAB button
-	<TouchableOpacity
-		onPress={() =>
-			navigation.navigate("CreateDrill", {
-				refreshDrills,
-			})
-		}
-		style={styles.fab}
-		activeOpacity={0.8}
-	>
-		<MaterialIcons name="add" size={28} color="#fff" />
-	</TouchableOpacity>;
-
-	// Show error if there's one
 	if (error) {
 		return (
 			<SafeAreaProvider>
@@ -127,20 +97,12 @@ export default function Drills() {
 			const newFilters = currentFilters.includes(value)
 				? currentFilters.filter((f) => f !== value)
 				: [...currentFilters, value];
-
-			return {
-				...prev,
-				[filterType]: newFilters,
-			};
+			return { ...prev, [filterType]: newFilters };
 		});
 	};
 
 	const clearAllFilters = () => {
-		setSelectedFilters({
-			skillFocus: [],
-			difficulty: [],
-			type: [],
-		});
+		setSelectedFilters({ skillFocus: [], difficulty: [], type: [] });
 	};
 
 	const filterDrills = (drillsToFilter) => {
@@ -153,54 +115,44 @@ export default function Drills() {
 		}
 
 		return drillsToFilter.filter((drill) => {
-			// Parse data - handle both JSON string arrays and plain strings
 			let drillSkillFocus = [];
 			let drillDifficulty = [];
 			let drillType = [];
 
-			// Handle skillFocus
 			if (drill.skillFocus) {
 				if (typeof drill.skillFocus === "string") {
 					try {
-						// Try parsing as JSON array first
 						const parsed = JSON.parse(drill.skillFocus);
 						drillSkillFocus = Array.isArray(parsed)
 							? parsed.map((s) => s.toLowerCase())
 							: [drill.skillFocus.toLowerCase()];
-					} catch (e) {
-						// If parsing fails, treat as plain string
+					} catch {
 						drillSkillFocus = [drill.skillFocus.toLowerCase()];
 					}
 				}
 			}
 
-			// Handle difficulty
 			if (drill.difficulty) {
 				if (typeof drill.difficulty === "string") {
 					try {
-						// Try parsing as JSON array first
 						const parsed = JSON.parse(drill.difficulty);
 						drillDifficulty = Array.isArray(parsed)
 							? parsed.map((d) => d.toLowerCase())
 							: [drill.difficulty.toLowerCase()];
-					} catch (e) {
-						// If parsing fails, treat as plain string
+					} catch {
 						drillDifficulty = [drill.difficulty.toLowerCase()];
 					}
 				}
 			}
 
-			// Handle type
 			if (drill.type) {
 				if (typeof drill.type === "string") {
 					try {
-						// Try parsing as JSON array first
 						const parsed = JSON.parse(drill.type);
 						drillType = Array.isArray(parsed)
 							? parsed.map((t) => t.toLowerCase())
 							: [drill.type.toLowerCase()];
-					} catch (e) {
-						// If parsing fails, treat as plain string
+					} catch {
 						drillType = [drill.type.toLowerCase()];
 					}
 				}
@@ -236,7 +188,6 @@ export default function Drills() {
 				drill.type?.toLowerCase() === "team" ? "team" : "individual";
 			const categoryKey =
 				drill.category?.toLowerCase() || "uncategorized";
-
 			if (!acc[typeKey][categoryKey]) {
 				acc[typeKey][categoryKey] = [];
 			}
@@ -246,227 +197,113 @@ export default function Drills() {
 		{ team: {}, individual: {} }
 	);
 
-	const renderDrillRow = (drill) => (
-		<View key={drill.id} style={styles.drillCard}>
-			<TouchableOpacity
-				style={styles.drillCardContent}
-				onPress={() => navigation.navigate("DrillDetails", { drill })}
-				activeOpacity={0.7}
-			>
-				<View style={styles.drillTextContainer}>
-					<Text style={styles.drillTitle}>{drill.name}</Text>
-					{drill.notes ? (
-						<Text style={styles.drillNotes} numberOfLines={2}>
-							{drill.notes}
-						</Text>
-					) : null}
-					{(drill.skillFocus || drill.difficulty || drill.type) && (
+	const renderDrillRow = (drill) => {
+		let drillSkillFocus = [];
+		let drillDifficulty = [];
+		let drillType = [];
+
+		// Parse skillFocus
+		if (drill.skillFocus) {
+			try {
+				const parsed = JSON.parse(drill.skillFocus);
+				drillSkillFocus = Array.isArray(parsed) ? parsed : [parsed];
+			} catch {
+				drillSkillFocus = [drill.skillFocus];
+			}
+		}
+
+		// Parse difficulty
+		if (drill.difficulty) {
+			try {
+				const parsed = JSON.parse(drill.difficulty);
+				drillDifficulty = Array.isArray(parsed) ? parsed : [parsed];
+			} catch {
+				drillDifficulty = [drill.difficulty];
+			}
+		}
+
+		// Parse type
+		if (drill.type) {
+			try {
+				const parsed = JSON.parse(drill.type);
+				drillType = Array.isArray(parsed) ? parsed : [parsed];
+			} catch {
+				drillType = [drill.type];
+			}
+		}
+
+		return (
+			<View key={drill.id} style={styles.drillCard}>
+				<TouchableOpacity
+					style={styles.drillCardContent}
+					onPress={() =>
+						navigation.navigate("DrillDetails", { drill })
+					}
+					activeOpacity={0.7}
+				>
+					<View style={styles.drillTextContainer}>
+						<Text style={styles.drillTitle}>{drill.name}</Text>
+						{drill.notes ? (
+							<Text style={styles.drillNotes} numberOfLines={2}>
+								{drill.notes}
+							</Text>
+						) : null}
+
+						{/* TAGS */}
 						<View style={styles.tagsContainer}>
-							{drill.skillFocus &&
-								(() => {
-									try {
-										let skillFocusArray;
-										try {
-											const parsed = JSON.parse(
-												drill.skillFocus
-											);
-											skillFocusArray = Array.isArray(
-												parsed
-											)
-												? parsed
-												: [drill.skillFocus];
-										} catch (e) {
-											skillFocusArray = [
-												drill.skillFocus,
-											];
-										}
-
-										return skillFocusArray
-											.slice(0, 2)
-											.map((skill, index) => (
-												<View
-													key={`skill-${index}`}
-													style={[
-														styles.tag,
-														styles.skillTag,
-													]}
-												>
-													<Text
-														style={styles.tagText}
-													>
-														{skill}
-													</Text>
-												</View>
-											));
-									} catch (e) {
-										return null;
-									}
-								})()}
-
-							{drill.difficulty &&
-								(() => {
-									try {
-										let difficultyArray;
-										try {
-											const parsed = JSON.parse(
-												drill.difficulty
-											);
-											difficultyArray = Array.isArray(
-												parsed
-											)
-												? parsed
-												: [drill.difficulty];
-										} catch (e) {
-											difficultyArray = [
-												drill.difficulty,
-											];
-										}
-
-										return difficultyArray
-											.slice(0, 1)
-											.map((diff, index) => (
-												<View
-													key={`diff-${index}`}
-													style={[
-														styles.tag,
-														styles.difficultyTag,
-													]}
-												>
-													<Text
-														style={styles.tagText}
-													>
-														{diff}
-													</Text>
-												</View>
-											));
-									} catch (e) {
-										return null;
-									}
-								})()}
-
-							{drill.type &&
-								(() => {
-									try {
-										let typeArray;
-										try {
-											const parsed = JSON.parse(
-												drill.type
-											);
-											typeArray = Array.isArray(parsed)
-												? parsed
-												: [drill.type];
-										} catch (e) {
-											typeArray = [drill.type];
-										}
-
-										return typeArray
-											.slice(0, 1)
-											.map((type, index) => (
-												<View
-													key={`type-${index}`}
-													style={[
-														styles.tag,
-														styles.typeTag,
-													]}
-												>
-													<Text
-														style={styles.tagText}
-													>
-														{type}
-													</Text>
-												</View>
-											));
-									} catch (e) {
-										return null;
-									}
-								})()}
-
-							{(() => {
-								try {
-									let skillCount = 0,
-										diffCount = 0,
-										typeCount = 0;
-
-									if (drill.skillFocus) {
-										try {
-											const parsed = JSON.parse(
-												drill.skillFocus
-											);
-											skillCount = Array.isArray(parsed)
-												? parsed.length
-												: 1;
-										} catch (e) {
-											skillCount = 1;
-										}
-									}
-
-									if (drill.difficulty) {
-										try {
-											const parsed = JSON.parse(
-												drill.difficulty
-											);
-											diffCount = Array.isArray(parsed)
-												? parsed.length
-												: 1;
-										} catch (e) {
-											diffCount = 1;
-										}
-									}
-
-									if (drill.type) {
-										try {
-											const parsed = JSON.parse(
-												drill.type
-											);
-											typeCount = Array.isArray(parsed)
-												? parsed.length
-												: 1;
-										} catch (e) {
-											typeCount = 1;
-										}
-									}
-
-									const totalShown =
-										Math.min(2, skillCount) +
-										Math.min(1, diffCount) +
-										Math.min(1, typeCount);
-									const totalTags =
-										skillCount + diffCount + typeCount;
-
-									if (totalTags > totalShown) {
-										return (
-											<Text style={styles.moreTagsText}>
-												+{totalTags - totalShown}
-											</Text>
-										);
-									}
-									return null;
-								} catch (e) {
-									return null;
-								}
-							})()}
+							{drillDifficulty.map((diff, idx) => (
+								<View
+									key={`diff-${idx}`}
+									style={[styles.tag, styles.difficultyTag]}
+								>
+									<Text style={styles.tagText}>
+										{diff.charAt(0).toUpperCase() +
+											diff.slice(1)}
+									</Text>
+								</View>
+							))}
+							{drillSkillFocus.map((skill, idx) => (
+								<View
+									key={`skill-${idx}`}
+									style={[styles.tag, styles.skillTag]}
+								>
+									<Text style={styles.tagText}>
+										{skill.charAt(0).toUpperCase() +
+											skill.slice(1)}
+									</Text>
+								</View>
+							))}
+							{drillType.map((t, idx) => (
+								<View
+									key={`type-${idx}`}
+									style={[styles.tag, styles.typeTag]}
+								>
+									<Text style={styles.tagText}>
+										{t.charAt(0).toUpperCase() + t.slice(1)}
+									</Text>
+								</View>
+							))}
 						</View>
-					)}
-				</View>
-				<MaterialIcons
-					name="arrow-forward-ios"
+					</View>
+					<MaterialIcons
+						name="arrow-forward-ios"
+						size={20}
+						color="#007AFF"
+						style={styles.arrowIcon}
+					/>
+				</TouchableOpacity>
+				<StarButton
+					drillId={drill.id}
+					initialIsFavorited={favoriteDrillIds.has(drill.id)}
 					size={20}
-					color="#007AFF"
-					style={styles.arrowIcon}
+					onToggle={(drillId, isFavorited) => {
+						handleFavoriteToggle(drillId, isFavorited);
+					}}
+					style={styles.starButtonStyle}
 				/>
-			</TouchableOpacity>
-
-			<StarButton
-				drillId={drill.id}
-				initialIsFavorited={favoriteDrillIds.has(drill.id)}
-				size={20}
-				onToggle={(drillId, isFavorited) => {
-					handleFavoriteToggle(drillId, isFavorited);
-				}}
-				style={styles.starButtonStyle}
-			/>
-		</View>
-	);
+			</View>
+		);
+	};
 
 	const renderFilterModal = () => (
 		<Modal
@@ -484,9 +321,8 @@ export default function Drills() {
 						<Text style={styles.clearButton}>Clear All</Text>
 					</TouchableOpacity>
 				</View>
-
 				<ScrollView style={styles.modalContent}>
-					{/* Skill Focus Filters */}
+					{/* Skill Focus */}
 					<View style={styles.filterSection}>
 						<Text style={styles.filterSectionTitle}>
 							Skill Focus
@@ -529,8 +365,7 @@ export default function Drills() {
 							))}
 						</View>
 					</View>
-
-					{/* Difficulty Filters */}
+					{/* Difficulty */}
 					<View style={styles.filterSection}>
 						<Text style={styles.filterSectionTitle}>
 							Difficulty
@@ -573,7 +408,7 @@ export default function Drills() {
 							))}
 						</View>
 					</View>
-					{/* Type Filters */}
+					{/* Type */}
 					<View style={styles.filterSection}>
 						<Text style={styles.filterSectionTitle}>Type</Text>
 						<View style={styles.filterOptionsContainer}>
@@ -610,7 +445,6 @@ export default function Drills() {
 						</View>
 					</View>
 				</ScrollView>
-
 				<View style={styles.modalFooter}>
 					<TouchableOpacity
 						style={styles.applyButton}
@@ -644,7 +478,7 @@ export default function Drills() {
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
 				<View style={styles.container}>
-					{/* Active filters display */}
+					{/* Active filters */}
 					{(selectedFilters.skillFocus.length > 0 ||
 						selectedFilters.difficulty.length > 0 ||
 						selectedFilters.type.length > 0) && (
@@ -705,7 +539,6 @@ export default function Drills() {
 							</ScrollView>
 						</View>
 					)}
-
 					<ScrollView contentContainerStyle={styles.scrollView}>
 						<Text style={styles.header}>
 							Team Drills (
@@ -724,7 +557,6 @@ export default function Drills() {
 								</View>
 							)
 						)}
-
 						<Text style={styles.header}>
 							Individual Drills (
 							{
@@ -746,7 +578,6 @@ export default function Drills() {
 								</View>
 							)
 						)}
-
 						{filteredDrills.length === 0 && (
 							<View style={styles.emptyState}>
 								<MaterialIcons
@@ -768,15 +599,6 @@ export default function Drills() {
 							</View>
 						)}
 					</ScrollView>
-
-					<TouchableOpacity
-						onPress={() => navigation.navigate("CreateDrill")}
-						style={styles.fab}
-						activeOpacity={0.8}
-					>
-						<MaterialIcons name="add" size={28} color="#fff" />
-					</TouchableOpacity>
-
 					{renderFilterModal()}
 				</View>
 			</SafeAreaView>
