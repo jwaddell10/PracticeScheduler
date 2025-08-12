@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useLayoutEffect } from "react";
 import {
 	View,
 	Text,
@@ -20,6 +20,7 @@ import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
 import { supabase } from "../lib/supabase";
 import { useUserRole } from "../hooks/useUserRole"; // ⬅️ import our hook
+import { useNavigation, useRoute } from "@react-navigation/native";
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -40,9 +41,14 @@ const drillDifficulties = [
 	{ label: "Advanced", value: "advanced" },
 ];
 
-export default function CreateDrill({ refreshDrills, onClose }) {
+export default function CreateDrill() {
+	const navigation = useNavigation();
+	const route = useRoute();
 	const session = useSession();
 	const { isAdmin, loading: roleLoading, error: roleError } = useUserRole(); // ⬅️ use the hook
+	
+	// Get refreshDrills and onClose from route params, or use defaults
+	const { refreshDrills, onClose } = (route.params as any) || {};
 
 	const [name, setName] = useState("");
 	const [type, setType] = useState([]);
@@ -52,6 +58,25 @@ export default function CreateDrill({ refreshDrills, onClose }) {
 	const [saving, setSaving] = useState(false);
 	const [imageUri, setImageUri] = useState(null);
 	const [isPublic, setIsPublic] = useState(isAdmin); // default to admin value
+
+	// Set up header with back button and save button
+	useLayoutEffect(() => {
+		navigation.setOptions({
+			headerTitle: "Create Drill",
+			headerLeft: () => (
+				<TouchableOpacity onPress={() => navigation.goBack()}>
+					<Text style={styles.headerButton}>Cancel</Text>
+				</TouchableOpacity>
+			),
+			headerRight: () => (
+				<TouchableOpacity onPress={handleSubmit} disabled={saving}>
+					<Text style={[styles.headerButton, saving && styles.headerButtonDisabled]}>
+						{saving ? "Saving..." : "Save"}
+					</Text>
+				</TouchableOpacity>
+			),
+		});
+	}, [navigation, name, type, skillFocus, difficulty, notes, saving]);
 
 	// Button selection component
 	const SelectionButtons = ({ title, options, selectedValues, onSelect }) => (
@@ -222,8 +247,14 @@ export default function CreateDrill({ refreshDrills, onClose }) {
 					text: "OK",
 					onPress: () => {
 						resetForm();
+						// Call the refresh function passed from parent component
 						refreshDrills?.();
-						onClose?.();
+						// If onClose is provided, use it, otherwise navigate back
+						if (onClose) {
+							onClose();
+						} else {
+							navigation.goBack();
+						}
 					},
 				},
 			]);
@@ -466,5 +497,13 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontSize: 18,
 		fontWeight: "600",
+	},
+	headerButton: {
+		fontSize: 16,
+		color: "#007AFF",
+		fontWeight: "500",
+	},
+	headerButtonDisabled: {
+		color: "#ccc",
 	},
 });

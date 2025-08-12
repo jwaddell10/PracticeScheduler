@@ -52,14 +52,33 @@ export default function YourDrills() {
 		filterDrills,
 	} = useDrillFilters();
 
+	// Smart refresh on focus - only refresh if data is older than 30 seconds
+	const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
+	
 	// Fetch user drills when component mounts
 	useEffect(() => {
 		fetchUserDrills();
 	}, []);
+	
+	// Smart refresh on focus
+	useEffect(() => {
+		const unsubscribe = navigation.addListener("focus", () => {
+			const now = Date.now();
+			const timeSinceLastRefresh = now - lastRefreshTime;
+			
+			// Only refresh if it's been more than 30 seconds since last refresh
+			if (timeSinceLastRefresh > 30000) {
+				fetchUserDrills();
+				setLastRefreshTime(now);
+			}
+		});
+		return unsubscribe;
+	}, [navigation, fetchUserDrills, lastRefreshTime]);
 
 	// Refresh drills after creation
 	const refreshDrills = () => {
 		fetchUserDrills();
+		setLastRefreshTime(Date.now());
 	};
 
 	// Combine user's own drills and favorites

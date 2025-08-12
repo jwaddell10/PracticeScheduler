@@ -8,6 +8,7 @@ import {
 	ActivityIndicator,
 	Modal,
 	Alert,
+	TextInput,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -19,6 +20,7 @@ import { FavoritesContext } from "../context/FavoritesContext";
 export default function Drills() {
 	const navigation = useNavigation();
 	const { drills, loading, error, refreshDrills } = useDrills();
+	console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } =
 		useContext(FavoritesContext);
 
@@ -28,6 +30,7 @@ export default function Drills() {
 		difficulty: [],
 		type: [],
 	});
+	const [searchQuery, setSearchQuery] = useState("");
 
 	const skillFocusOptions = [
 		"Offense",
@@ -39,12 +42,22 @@ export default function Drills() {
 	const difficultyOptions = ["Beginner", "Intermediate", "Advanced"];
 	const typeOptions = ["Team Drill", "Individual"];
 
+	// Smart refresh on focus - only refresh if data is older than 30 seconds
+	const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
+	
 	useEffect(() => {
 		const unsubscribe = navigation.addListener("focus", () => {
-			refreshDrills();
+			const now = Date.now();
+			const timeSinceLastRefresh = now - lastRefreshTime;
+			
+			// Only refresh if it's been more than 30 seconds since last refresh
+			if (timeSinceLastRefresh > 30000) {
+				refreshDrills();
+				setLastRefreshTime(now);
+			}
 		});
 		return unsubscribe;
-	}, [navigation, refreshDrills]);
+	}, [navigation, refreshDrills, lastRefreshTime]);
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
@@ -52,12 +65,23 @@ export default function Drills() {
 				<View style={styles.headerButtons}>
 					<TouchableOpacity
 						onPress={() => setShowFilters(true)}
-						style={styles.headerButton}
+						style={[
+							styles.headerButton,
+							(selectedFilters.skillFocus.length > 0 ||
+								selectedFilters.difficulty.length > 0 ||
+								selectedFilters.type.length > 0) && styles.headerButtonActive
+						]}
 					>
 						<MaterialIcons
 							name="filter-list"
 							size={24}
-							color="#007AFF"
+							color={
+								(selectedFilters.skillFocus.length > 0 ||
+									selectedFilters.difficulty.length > 0 ||
+									selectedFilters.type.length > 0) 
+									? "#fff" 
+									: "#007AFF"
+							}
 						/>
 						{(selectedFilters.skillFocus.length > 0 ||
 							selectedFilters.difficulty.length > 0 ||
@@ -180,18 +204,64 @@ export default function Drills() {
 		});
 	};
 
-	const filteredDrills = filterDrills(drills);
+	// Apply search filter
+	const searchFilteredDrills = drills.filter((drill) => {
+		if (!searchQuery.trim()) return true;
+		const query = searchQuery.toLowerCase();
+		return (
+			drill.name?.toLowerCase().includes(query) ||
+			drill.notes?.toLowerCase().includes(query)
+		);
+	});
+
+	const filteredDrills = filterDrills(searchFilteredDrills);
 
 	const groupedDrills = filteredDrills.reduce(
 		(acc, drill) => {
-			const typeKey =
-				drill.type?.toLowerCase() === "team" ? "team" : "individual";
-			const categoryKey =
-				drill.category?.toLowerCase() || "uncategorized";
-			if (!acc[typeKey][categoryKey]) {
-				acc[typeKey][categoryKey] = [];
+			// Parse the type to handle JSON arrays
+			let drillType = [];
+			if (drill.type) {
+				if (typeof drill.type === "string") {
+					try {
+						const parsed = JSON.parse(drill.type);
+						drillType = Array.isArray(parsed) ? parsed : [parsed];
+					} catch {
+						drillType = [drill.type];
+					}
+				}
 			}
-			acc[typeKey][categoryKey].push(drill);
+
+			// Determine if it's a team drill or individual drill
+			const isTeamDrill = drillType.some((type) => 
+				type.toLowerCase().includes("team")
+			);
+			
+			const typeKey = isTeamDrill ? "team" : "individual";
+			
+			// Get all skill focuses for this drill
+			let skillFocuses = ["General"];
+			if (drill.skillFocus) {
+				try {
+					const parsed = JSON.parse(drill.skillFocus);
+					const skills = Array.isArray(parsed) ? parsed : [parsed];
+					if (skills.length > 0) {
+						skillFocuses = skills.map(skill => skill.toLowerCase());
+					}
+				} catch {
+					if (drill.skillFocus) {
+						skillFocuses = [drill.skillFocus.toLowerCase()];
+					}
+				}
+			}
+			
+			// Add drill to each skill focus category
+			skillFocuses.forEach(skillFocus => {
+				if (!acc[typeKey][skillFocus]) {
+					acc[typeKey][skillFocus] = [];
+				}
+				acc[typeKey][skillFocus].push(drill);
+			});
+			
 			return acc;
 		},
 		{ team: {}, individual: {} }
@@ -478,6 +548,37 @@ export default function Drills() {
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
 				<View style={styles.container}>
+					{/* Search Bar */}
+					<View style={styles.searchContainer}>
+						<View style={styles.searchInputContainer}>
+							<MaterialIcons
+								name="search"
+								size={20}
+								color="#666"
+								style={styles.searchIcon}
+							/>
+							<TextInput
+								style={styles.searchInput}
+								placeholder="Search drills..."
+								value={searchQuery}
+								onChangeText={setSearchQuery}
+								placeholderTextColor="#999"
+							/>
+							{searchQuery.length > 0 && (
+								<TouchableOpacity
+									onPress={() => setSearchQuery("")}
+									style={styles.clearSearchButton}
+								>
+									<MaterialIcons
+										name="close"
+										size={20}
+										color="#666"
+									/>
+								</TouchableOpacity>
+							)}
+						</View>
+					</View>
+
 					{/* Active filters */}
 					{(selectedFilters.skillFocus.length > 0 ||
 						selectedFilters.difficulty.length > 0 ||
@@ -772,7 +873,15 @@ const styles = StyleSheet.create({
 	},
 	headerButton: {
 		position: "relative",
-		padding: 4,
+		padding: 8,
+		borderRadius: 8,
+		backgroundColor: "#f8f9fa",
+		borderWidth: 1,
+		borderColor: "#e0e0e0",
+	},
+	headerButtonActive: {
+		backgroundColor: "#007AFF",
+		borderColor: "#007AFF",
 	},
 	filterBadge: {
 		position: "absolute",
@@ -911,5 +1020,33 @@ const styles = StyleSheet.create({
 		color: "#fff",
 		fontSize: 16,
 		fontWeight: "600",
+	},
+	// Search styles
+	searchContainer: {
+		backgroundColor: "#fff",
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: "#eee",
+	},
+	searchInputContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: "#f8f9fa",
+		borderRadius: 12,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+	},
+	searchIcon: {
+		marginRight: 8,
+	},
+	searchInput: {
+		flex: 1,
+		fontSize: 16,
+		color: "#333",
+		paddingVertical: 4,
+	},
+	clearSearchButton: {
+		padding: 4,
 	},
 });
