@@ -22,6 +22,7 @@ import { supabase } from "../lib/supabase";
 import { useUserRole } from "../hooks/useUserRole"; // ⬅️ import our hook
 import { useDrills } from "../context/DrillsContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
+import theme from "./styles/theme";
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -438,22 +439,23 @@ const styles = StyleSheet.create({
 	container: {
 		flexGrow: 1,
 		padding: 16,
-		backgroundColor: "#fff",
+		backgroundColor: theme.colors.background,
 	},
 	label: {
 		fontSize: 16,
 		fontWeight: "600",
-		color: "#333",
+		color: theme.colors.textPrimary,
 		marginBottom: 8,
 		marginTop: 16,
 	},
 	input: {
 		borderWidth: 1,
-		borderColor: "#ddd",
+		borderColor: theme.colors.border,
 		borderRadius: 8,
 		padding: 12,
 		fontSize: 16,
-		backgroundColor: "#fff",
+		backgroundColor: theme.colors.surface,
+		color: theme.colors.textPrimary,
 	},
 	notesInput: {
 		height: 100,
@@ -472,19 +474,19 @@ const styles = StyleSheet.create({
 		paddingVertical: 8,
 		borderRadius: 20,
 		borderWidth: 1,
-		borderColor: "#ddd",
-		backgroundColor: "#fff",
+		borderColor: theme.colors.border,
+		backgroundColor: theme.colors.surface,
 	},
 	selectedButton: {
-		backgroundColor: "#007AFF",
-		borderColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
+		borderColor: theme.colors.primary,
 	},
 	selectionButtonText: {
 		fontSize: 14,
-		color: "#333",
+		color: theme.colors.textPrimary,
 	},
 	selectedButtonText: {
-		color: "#fff",
+		color: theme.colors.white,
 		fontWeight: "500",
 	},
 	toggleRow: {
@@ -496,11 +498,11 @@ const styles = StyleSheet.create({
 	toggleLabel: {
 		fontSize: 16,
 		fontWeight: "600",
-		color: "#333",
+		color: theme.colors.textPrimary,
 		marginRight: 8,
 	},
 	imageUploadButton: {
-		backgroundColor: "#f0f0f0",
+		backgroundColor: theme.colors.border,
 		padding: 12,
 		borderRadius: 8,
 		alignItems: "center",
@@ -508,7 +510,7 @@ const styles = StyleSheet.create({
 	},
 	imageUploadButtonText: {
 		fontSize: 16,
-		color: "#007AFF",
+		color: theme.colors.primary,
 		fontWeight: "500",
 	},
 	previewImage: {
@@ -522,25 +524,25 @@ const styles = StyleSheet.create({
 		marginBottom: 40,
 	},
 	button: {
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 		padding: 16,
 		borderRadius: 8,
 		alignItems: "center",
 	},
 	buttonDisabled: {
-		backgroundColor: "#ccc",
+		backgroundColor: theme.colors.border,
 	},
 	buttonText: {
-		color: "#fff",
+		color: theme.colors.white,
 		fontSize: 18,
 		fontWeight: "600",
 	},
 	headerButton: {
 		fontSize: 16,
-		color: "#007AFF",
+		color: theme.colors.primary,
 		fontWeight: "500",
 	},
 	headerButtonDisabled: {
-		color: "#ccc",
+		color: theme.colors.textMuted,
 	},
 });

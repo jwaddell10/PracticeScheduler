@@ -16,6 +16,8 @@ import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
 import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
+import theme from "./styles/theme";
+// import theme from "./styles/theme";
 
 export default function Drills() {
 	const navigation = useNavigation();
@@ -60,38 +62,9 @@ export default function Drills() {
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
-			headerRight: () => (
-				<View style={styles.headerButtons}>
-					<TouchableOpacity
-						onPress={() => setShowFilters(true)}
-						style={[
-							styles.headerButton,
-							(selectedFilters.skillFocus.length > 0 ||
-								selectedFilters.difficulty.length > 0 ||
-								selectedFilters.type.length > 0) && styles.headerButtonActive
-						]}
-					>
-						<MaterialIcons
-							name="filter-list"
-							size={24}
-							color={
-								(selectedFilters.skillFocus.length > 0 ||
-									selectedFilters.difficulty.length > 0 ||
-									selectedFilters.type.length > 0) 
-									? "#fff" 
-									: "#007AFF"
-							}
-						/>
-						{(selectedFilters.skillFocus.length > 0 ||
-							selectedFilters.difficulty.length > 0 ||
-							selectedFilters.type.length > 0) && (
-							<View style={styles.filterBadge} />
-						)}
-					</TouchableOpacity>
-				</View>
-			),
+			headerRight: () => null,
 		});
-	}, [navigation, selectedFilters]);
+	}, [navigation]);
 
 	if (error) {
 		return (
@@ -553,7 +526,7 @@ export default function Drills() {
 							<MaterialIcons
 								name="search"
 								size={20}
-								color="#666"
+								color="#94A3B8"
 								style={styles.searchIcon}
 							/>
 							<TextInput
@@ -561,7 +534,7 @@ export default function Drills() {
 								placeholder="Search drills..."
 								value={searchQuery}
 								onChangeText={setSearchQuery}
-								placeholderTextColor="#999"
+								placeholderTextColor="#94A3B8"
 							/>
 							{searchQuery.length > 0 && (
 								<TouchableOpacity
@@ -571,10 +544,36 @@ export default function Drills() {
 									<MaterialIcons
 										name="close"
 										size={20}
-										color="#666"
+										color="#94A3B8"
 									/>
 								</TouchableOpacity>
 							)}
+							<TouchableOpacity
+								onPress={() => setShowFilters(true)}
+								style={[
+									styles.filterButton,
+									(selectedFilters.skillFocus.length > 0 ||
+										selectedFilters.difficulty.length > 0 ||
+										selectedFilters.type.length > 0) && styles.filterButtonActive
+								]}
+							>
+								<MaterialIcons
+									name="filter-list"
+									size={20}
+									color={
+										(selectedFilters.skillFocus.length > 0 ||
+											selectedFilters.difficulty.length > 0 ||
+											selectedFilters.type.length > 0) 
+											? "#FFFFFF"
+											: "#94A3B8"
+									}
+								/>
+								{(selectedFilters.skillFocus.length > 0 ||
+									selectedFilters.difficulty.length > 0 ||
+									selectedFilters.type.length > 0) && (
+									<View style={styles.filterBadge} />
+								)}
+							</TouchableOpacity>
 						</View>
 					</View>
 
@@ -709,7 +708,7 @@ export default function Drills() {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: "#f8f9fa",
+		backgroundColor: "#0F172A",
 	},
 	container: {
 		flex: 1,
@@ -723,7 +722,7 @@ const styles = StyleSheet.create({
 	loadingText: {
 		marginTop: 16,
 		fontSize: 16,
-		color: "#666",
+		color: theme.colors.textMuted,
 	},
 	errorContainer: {
 		flex: 1,
@@ -733,18 +732,18 @@ const styles = StyleSheet.create({
 	},
 	errorText: {
 		fontSize: 16,
-		color: "#ff4444",
+		color: theme.colors.error,
 		textAlign: "center",
 		marginVertical: 16,
 	},
 	retryButton: {
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 		paddingHorizontal: 20,
 		paddingVertical: 10,
 		borderRadius: 8,
 	},
 	retryButtonText: {
-		color: "#fff",
+		color: theme.colors.white,
 		fontSize: 16,
 		fontWeight: "600",
 	},
@@ -755,7 +754,7 @@ const styles = StyleSheet.create({
 	header: {
 		fontSize: 26,
 		fontWeight: "700",
-		color: "#222",
+		color: theme.colors.textPrimary,
 		marginVertical: 12,
 	},
 	section: {
@@ -764,24 +763,26 @@ const styles = StyleSheet.create({
 	categoryTitle: {
 		fontSize: 20,
 		fontWeight: "600",
-		color: "#444",
+		color: theme.colors.textPrimary,
 		textTransform: "capitalize",
 		marginBottom: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: "#ddd",
+		borderBottomColor: theme.colors.border,
 		paddingBottom: 6,
 	},
 	drillCard: {
-		backgroundColor: "white",
+		backgroundColor: theme.colors.surface,
 		borderRadius: 12,
 		marginBottom: 12,
 		flexDirection: "row",
 		alignItems: "center",
-		shadowColor: "#000",
+		shadowColor: theme.colors.surface,
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 3,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
 	},
 	drillCardContent: {
 		flex: 1,
@@ -795,12 +796,12 @@ const styles = StyleSheet.create({
 	drillTitle: {
 		fontSize: 18,
 		fontWeight: "600",
-		color: "#222",
+		color: theme.colors.textPrimary,
 		marginBottom: 4,
 	},
 	drillNotes: {
 		fontSize: 14,
-		color: "#666",
+		color: theme.colors.textMuted,
 		marginBottom: 8,
 	},
 	tagsContainer: {
@@ -809,36 +810,38 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 	},
 	tag: {
-		backgroundColor: "#f0f0f0",
+		backgroundColor: theme.colors.surface,
 		paddingHorizontal: 8,
 		paddingVertical: 4,
 		borderRadius: 12,
 		marginRight: 6,
 		marginBottom: 4,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
 	},
 	skillTag: {
-		backgroundColor: "#e8f5e8",
-		borderColor: "#4caf50",
+		backgroundColor: theme.colors.surface,
+		borderColor: theme.colors.primary,
 		borderWidth: 1,
 	},
 	difficultyTag: {
-		backgroundColor: "#fff3e0",
-		borderColor: "#ff9800",
+		backgroundColor: theme.colors.surface,
+		borderColor: theme.colors.accent,
 		borderWidth: 1,
 	},
 	typeTag: {
-		backgroundColor: "#f3e5f5",
-		borderColor: "#9c27b0",
+		backgroundColor: theme.colors.surface,
+		borderColor: theme.colors.secondary,
 		borderWidth: 1,
 	},
 	tagText: {
 		fontSize: 12,
-		color: "#666",
+		color: theme.colors.white,
 		fontWeight: "500",
 	},
 	moreTagsText: {
 		fontSize: 12,
-		color: "#999",
+		color: theme.colors.textMuted,
 		fontStyle: "italic",
 	},
 	arrowIcon: {
@@ -1022,19 +1025,21 @@ const styles = StyleSheet.create({
 	},
 	// Search styles
 	searchContainer: {
-		backgroundColor: "#fff",
+		backgroundColor: theme.colors.surface,
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: "#eee",
+		borderBottomColor: theme.colors.border,
 	},
 	searchInputContainer: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#f8f9fa",
+		backgroundColor: theme.colors.background,
 		borderRadius: 12,
 		paddingHorizontal: 12,
 		paddingVertical: 8,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
 	},
 	searchIcon: {
 		marginRight: 8,
@@ -1042,10 +1047,28 @@ const styles = StyleSheet.create({
 	searchInput: {
 		flex: 1,
 		fontSize: 16,
-		color: "#333",
+		color: theme.colors.textPrimary,
 		paddingVertical: 4,
 	},
 	clearSearchButton: {
 		padding: 4,
+	},
+	filterButton: {
+		padding: 8,
+		borderRadius: 8,
+		marginLeft: 8,
+		position: "relative",
+	},
+	filterButtonActive: {
+		backgroundColor: "#14B8A6",
+	},
+	filterBadge: {
+		position: "absolute",
+		top: 2,
+		right: 2,
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: "#EF4444",
 	},
 });
