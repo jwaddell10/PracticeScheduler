@@ -48,22 +48,23 @@ export default function CreateDrill() {
 	const session = useSession();
 	const { isAdmin, loading: roleLoading, error: roleError } = useUserRole(); // ⬅️ use the hook
 	
-	// Get refreshDrills and onClose from route params, or use defaults
-	const { refreshDrills, onClose } = (route.params as any) || {};
+	// Get params from route
+	const { mode = 'create', drill: existingDrill, refreshDrills, onClose } = (route.params as any) || {};
+	const isEditMode = mode === 'edit';
 
-	const [name, setName] = useState("");
-	const [type, setType] = useState([]);
-	const [skillFocus, setSkillFocus] = useState([]);
-	const [difficulty, setDifficulty] = useState([]);
-	const [notes, setNotes] = useState("");
+	const [name, setName] = useState(existingDrill?.name || "");
+	const [type, setType] = useState(existingDrill?.type ? JSON.parse(existingDrill.type) : []);
+	const [skillFocus, setSkillFocus] = useState(existingDrill?.skillFocus ? JSON.parse(existingDrill.skillFocus) : []);
+	const [difficulty, setDifficulty] = useState(existingDrill?.difficulty ? JSON.parse(existingDrill.difficulty) : []);
+	const [notes, setNotes] = useState(existingDrill?.notes || "");
 	const [saving, setSaving] = useState(false);
 	const [imageUri, setImageUri] = useState(null);
-	const [isPublic, setIsPublic] = useState(isAdmin); // default to admin value
+	const [isPublic, setIsPublic] = useState(existingDrill?.isPublic ?? isAdmin); // default to admin value
 
 	// Set up header with back button and save button
 	useLayoutEffect(() => {
 		navigation.setOptions({
-			headerTitle: "Create Drill",
+			headerTitle: isEditMode ? "Edit Drill" : "Create Drill",
 			headerLeft: () => (
 				<TouchableOpacity onPress={() => navigation.goBack()}>
 					<Text style={styles.headerButton}>Cancel</Text>
@@ -72,12 +73,12 @@ export default function CreateDrill() {
 			headerRight: () => (
 				<TouchableOpacity onPress={handleSubmit} disabled={saving}>
 					<Text style={[styles.headerButton, saving && styles.headerButtonDisabled]}>
-						{saving ? "Saving..." : "Save"}
+						{saving ? "Saving..." : (isEditMode ? "Update" : "Save")}
 					</Text>
 				</TouchableOpacity>
 			),
 		});
-	}, [navigation, name, type, skillFocus, difficulty, notes, saving]);
+	}, [navigation, name, type, skillFocus, difficulty, notes, saving, isEditMode]);
 
 	// Button selection component
 	const SelectionButtons = ({ title, options, selectedValues, onSelect }) => (
@@ -196,7 +197,7 @@ export default function CreateDrill() {
 
 	const handleSubmit = async () => {
 		if (!session?.user) {
-			Alert.alert("Error", "You must be logged in to create a drill.");
+			Alert.alert("Error", `You must be logged in to ${isEditMode ? 'edit' : 'create'} a drill.`);
 			return;
 		}
 
@@ -216,7 +217,7 @@ export default function CreateDrill() {
 		setSaving(true);
 
 		try {
-			let imageUrl = null;
+			let imageUrl = existingDrill?.imageUrl || null;
 			if (imageUri) {
 				let fixedUri = imageUri;
 				let fileExt = imageUri.split(".").pop()?.toLowerCase();
@@ -228,37 +229,72 @@ export default function CreateDrill() {
 				imageUrl = await uploadImageAsync(fixedUri);
 			}
 
-			const { error: insertError } = await supabase.from("Drill").insert([
-				{
-					user_id: session.user.id,
-					name,
-					type,
-					skillFocus,
-					difficulty,
-					notes,
-					imageUrl,
-					isPublic: isAdmin ? isPublic : false,
-				},
-			]);
+			if (isEditMode) {
+				// Update existing drill
+				const { error: updateError } = await supabase
+					.from("Drill")
+					.update({
+						name,
+						type,
+						skillFocus,
+						difficulty,
+						notes,
+						imageUrl,
+						isPublic: isAdmin ? isPublic : existingDrill.isPublic,
+					})
+					.eq("id", existingDrill.id);
 
-			if (insertError) throw insertError;
+				if (updateError) throw updateError;
 
-			Alert.alert("Success", "Drill created successfully!", [
-				{
-					text: "OK",
-					onPress: () => {
-						resetForm();
-						// Call the refresh function passed from parent component
-						refreshDrills?.();
-						// If onClose is provided, use it, otherwise navigate back
-						if (onClose) {
-							onClose();
-						} else {
-							navigation.goBack();
-						}
+				Alert.alert("Success", "Drill updated successfully!", [
+					{
+						text: "OK",
+						onPress: () => {
+							// Call the refresh function passed from parent component
+							refreshDrills?.();
+							// If onClose is provided, use it, otherwise navigate back
+							if (onClose) {
+								onClose();
+							} else {
+								navigation.goBack();
+							}
+						},
 					},
-				},
-			]);
+				]);
+			} else {
+				// Create new drill
+				const { error: insertError } = await supabase.from("Drill").insert([
+					{
+						user_id: session.user.id,
+						name,
+						type,
+						skillFocus,
+						difficulty,
+						notes,
+						imageUrl,
+						isPublic: isAdmin ? isPublic : false,
+					},
+				]);
+
+				if (insertError) throw insertError;
+
+				Alert.alert("Success", "Drill created successfully!", [
+					{
+						text: "OK",
+						onPress: () => {
+							resetForm();
+							// Call the refresh function passed from parent component
+							refreshDrills?.();
+							// If onClose is provided, use it, otherwise navigate back
+							if (onClose) {
+								onClose();
+							} else {
+								navigation.goBack();
+							}
+						},
+					},
+				]);
+			}
 		} catch (error) {
 			console.error("Submit error:", error);
 			Alert.alert("Error", error.message || "Something went wrong.");

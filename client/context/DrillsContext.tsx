@@ -176,6 +176,14 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 	const updateDrill = async (id: string, updates: Partial<Drill>) => {
 		try {
+			// Set the Supabase session for RLS policies
+			if (session) {
+				await supabase.auth.setSession({
+					access_token: session.access_token,
+					refresh_token: session.refresh_token,
+				});
+			}
+
 			const { data, error: supabaseError } = await supabase
 				.from("Drill")
 				.update(updates)

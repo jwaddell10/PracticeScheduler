@@ -66,6 +66,10 @@ function HomeStackScreen() {
 				component={DrillDetails}
 				options={{ title: "Drill Details" }}
 			/>
+			<HomeStack.Screen
+				name="CreateDrill"
+				component={CreateDrill}
+			/>
 		</HomeStack.Navigator>
 	);
 }
@@ -102,6 +106,10 @@ function FavoriteDrillsStackScreen() {
 			<FavoriteDrillsStack.Screen
 				name="Drill Details"
 				component={DrillDetails}
+			/>
+			<FavoriteDrillsStack.Screen
+				name="CreateDrill"
+				component={CreateDrill}
 			/>
 		</FavoriteDrillsStack.Navigator>
 	);

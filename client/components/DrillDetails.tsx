@@ -66,6 +66,14 @@ export default function DrillDetails({ route }) {
 		return drill.user_id === session?.user?.id;
 	};
 
+	// Check if user can edit this drill
+	const canEditDrill = () => {
+		// Admin can edit any public drill
+		if (isAdmin && drill.isPublic) return true;
+		// User can only edit their own drills
+		return drill.user_id === session?.user?.id;
+	};
+
 	// Handle delete drill
 	const handleDeleteDrill = async () => {
 		if (!canDeleteDrill()) {
@@ -209,23 +217,44 @@ export default function DrillDetails({ route }) {
 					</Text>
 				)}
 
-				{/* Delete Button */}
-				{canDeleteDrill() && (
-					<TouchableOpacity
-						style={styles.deleteButton}
-						onPress={handleDeleteDrill}
-						disabled={isDeleting}
-					>
-						{isDeleting ? (
-							<ActivityIndicator size="small" color="white" />
-						) : (
-							<MaterialIcons name="delete" size={20} color="white" />
-						)}
-						<Text style={styles.deleteButtonText}>
-							{isDeleting ? "Deleting..." : "Delete Drill"}
-						</Text>
-					</TouchableOpacity>
-				)}
+				{/* Action Buttons */}
+				<View style={styles.actionButtonsContainer}>
+					{/* Edit Button */}
+					{canEditDrill() && (
+						<TouchableOpacity
+							style={styles.editButton}
+							onPress={() => navigation.navigate('CreateDrill', { 
+								mode: 'edit', 
+								drill: drill,
+								refreshDrills: () => {
+									// Refresh the drill details
+									navigation.goBack();
+								}
+							})}
+						>
+							<MaterialIcons name="edit" size={20} color="white" />
+							<Text style={styles.editButtonText}>Edit Drill</Text>
+						</TouchableOpacity>
+					)}
+
+					{/* Delete Button */}
+					{canDeleteDrill() && (
+						<TouchableOpacity
+							style={styles.deleteButton}
+							onPress={handleDeleteDrill}
+							disabled={isDeleting}
+						>
+							{isDeleting ? (
+								<ActivityIndicator size="small" color="white" />
+							) : (
+								<MaterialIcons name="delete" size={20} color="white" />
+							)}
+							<Text style={styles.deleteButtonText}>
+								{isDeleting ? "Deleting..." : "Delete Drill"}
+							</Text>
+						</TouchableOpacity>
+					)}
+				</View>
 			</View>
 
 			{/* Full Screen Image Modal */}
@@ -458,6 +487,27 @@ const styles = StyleSheet.create({
 		fontSize: 20,
 		fontWeight: "bold",
 	},
+	// Action buttons container
+	actionButtonsContainer: {
+		marginTop: 24,
+		gap: 12,
+	},
+	// Edit button styles
+	editButton: {
+		backgroundColor: "#007bff",
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+		gap: 8,
+	},
+	editButtonText: {
+		color: "white",
+		fontSize: 16,
+		fontWeight: "600",
+	},
 	// Delete button styles
 	deleteButton: {
 		backgroundColor: "#dc3545",
@@ -467,7 +517,6 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderRadius: 8,
-		marginTop: 24,
 		gap: 8,
 	},
 	deleteButtonText: {
