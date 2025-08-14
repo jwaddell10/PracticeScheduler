@@ -11,47 +11,15 @@ import {
 import { Calendar } from "react-native-calendars";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { supabase } from "../lib/supabase"; // Adjust path as needed
 import { useFavorites } from "../context/FavoritesContext"; // Adjust path as needed
+import { usePractices } from "../context/PracticesContext";
 import theme from "./styles/theme";
 
 export default function HomeScreen() {
 	const navigation = useNavigation();
 	const { favoriteDrills } = useFavorites();
-	const [practices, setPractices] = useState([]);
-	const [loading, setLoading] = useState(true);
+	const { practices, loading, deletePractice } = usePractices();
 	const [selectedDate, setSelectedDate] = useState(null);
-
-	useFocusEffect(
-		useCallback(() => {
-			fetchPractices();
-		}, [])
-	);
-
-	const fetchPractices = async () => {
-		setLoading(true);
-		const { data, error } = await supabase
-			.from("Practice")
-			.select("id, startTime, endTime, drills");
-
-		if (error) {
-			console.error("Supabase error:", error.message);
-			Alert.alert("Error", "Failed to fetch practices.");
-		} else {
-			setPractices(data || []);
-		}
-		setLoading(false);
-	};
-
-	const deletePractice = async (id: string) => {
-		const { error } = await supabase.from("Practice").delete().eq("id", id);
-		if (error) {
-			console.error("Delete error:", error.message);
-			Alert.alert("Error", "Failed to delete practice.");
-		} else {
-			await fetchPractices();
-		}
-	};
 
 	const confirmDelete = (id: string) => {
 		Alert.alert(
@@ -62,7 +30,13 @@ export default function HomeScreen() {
 				{
 					text: "Delete",
 					style: "destructive",
-					onPress: () => deletePractice(id),
+					onPress: async () => {
+						try {
+							await deletePractice(id);
+						} catch (error) {
+							Alert.alert("Error", "Failed to delete practice.");
+						}
+					},
 				},
 			]
 		);

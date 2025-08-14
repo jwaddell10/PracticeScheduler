@@ -17,9 +17,9 @@ import {
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useNavigation, useRoute } from "@react-navigation/native";
-import { supabase } from "../lib/supabase";
 import PracticeDateTimePicker from "./PracticeDateTimePicker";
 import { useDrills } from "../hooks/useDrills";
+import { usePractices } from "../context/PracticesContext";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import theme from "./styles/theme";
 
@@ -36,6 +36,7 @@ interface DrillData {
 const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
+	const { addPractice } = usePractices();
 	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
 	const [drillSelectionModalVisible, setDrillSelectionModalVisible] =
 		useState(false);
@@ -82,29 +83,6 @@ const CreatePractice = () => {
 		return new Date(date.getTime() - tzoffset).toISOString().slice(0, -1);
 	}
 
-	async function insertData(
-		startDate: Date,
-		endDate: Date,
-		drills: string[],
-		notes: string
-	) {
-		const { data, error } = await supabase.from("Practice").insert([
-			{
-				startTime: toLocalISOString(startDate),
-				endTime: toLocalISOString(endDate),
-				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
-				drills: drills,
-				notes: notes || null,
-			},
-		]);
-
-		if (error) {
-			console.error("Error inserting data:", error);
-		} else {
-			console.log("Data inserted successfully:", data);
-		}
-	}
-
 	const handleSubmit = async () => {
 		if (!startDate || !endDate) {
 			alert("Please select valid start and end times");
@@ -115,8 +93,18 @@ const CreatePractice = () => {
 			return;
 		}
 
-		await insertData(startDate, endDate, selectedDrills, notes);
-		navigation.goBack();
+		try {
+			await addPractice({
+				startTime: toLocalISOString(startDate),
+				endTime: toLocalISOString(endDate),
+				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
+				drills: selectedDrills,
+				notes: notes || undefined,
+			});
+			navigation.goBack();
+		} catch (error) {
+			alert("Failed to create practice. Please try again.");
+		}
 	};
 
 	// Format date for header display
@@ -203,7 +191,7 @@ const CreatePractice = () => {
 									</View>
 								)}
 								<PracticeDateTimePicker
-									initialDate={route.params?.selectedDate}
+									initialDate={(route.params as any)?.selectedDate}
 									onDatesChange={handleDatesChange}
 								/>
 

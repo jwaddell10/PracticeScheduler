@@ -1,13 +1,36 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 
-export const FavoritesContext = createContext();
+interface Drill {
+	id: string;
+	name: string;
+	skillFocus?: any;
+	type?: any;
+	difficulty?: any;
+	duration?: number;
+	notes?: string;
+	imageUrl?: string;
+	user_id?: string;
+	isPublic?: boolean;
+}
 
-export const FavoritesProvider = ({ children }) => {
-	const [favoriteDrills, setFavoriteDrills] = useState([]);
-	const [favoriteDrillIds, setFavoriteDrillIds] = useState(new Set());
+interface FavoritesContextType {
+	favoriteDrills: Drill[];
+	favoriteDrillIds: Set<string>;
+	loading: boolean;
+	error: string | null;
+	handleFavoriteToggle: (drillId: string, isFavorited: boolean) => Promise<void>;
+	refreshFavorites: () => void;
+	setFavoriteDrills: React.Dispatch<React.SetStateAction<Drill[]>>;
+}
+
+export const FavoritesContext = createContext<FavoritesContextType | undefined>(undefined);
+
+export const FavoritesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+	const [favoriteDrills, setFavoriteDrills] = useState<Drill[]>([]);
+	const [favoriteDrillIds, setFavoriteDrillIds] = useState<Set<string>>(new Set());
 	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+	const [error, setError] = useState<string | null>(null);
 
 	const fetchFavorites = async () => {
 		try {
@@ -57,7 +80,7 @@ export const FavoritesProvider = ({ children }) => {
 			}
 		} catch (err) {
 			console.error("Error fetching favorites:", err);
-			setError(err.message);
+			setError(err instanceof Error ? err.message : "Unknown error");
 			setFavoriteDrills([]);
 			setFavoriteDrillIds(new Set());
 		} finally {
@@ -65,7 +88,7 @@ export const FavoritesProvider = ({ children }) => {
 		}
 	};
 
-	const handleFavoriteToggle = async (drillId, isFavorited) => {
+	const handleFavoriteToggle = async (drillId: string, isFavorited: boolean) => {
 		try {
 			// Calculate the new IDs array first
 			const currentIds = Array.from(favoriteDrillIds);
