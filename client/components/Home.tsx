@@ -20,7 +20,13 @@ export default function HomeScreen() {
 	const navigation = useNavigation();
 	const { favoriteDrills } = useFavorites();
 	const { practices, loading, deletePractice } = usePractices();
+	const { refreshAllDrills } = useDrills();
 	const [selectedDate, setSelectedDate] = useState(null);
+
+	// Pre-fetch drills when Home component mounts
+	useEffect(() => {
+		refreshAllDrills();
+	}, []);
 
 	const confirmDelete = (id: string) => {
 		Alert.alert(

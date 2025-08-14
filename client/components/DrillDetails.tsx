@@ -9,17 +9,30 @@ import {
 	TouchableOpacity,
 	Modal,
 	Dimensions,
+	Alert,
 } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { useUserRole } from "../hooks/useUserRole";
+import { useSession } from "../context/SessionContext";
+import { useDrills } from "../context/DrillsContext";
+import theme from "./styles/theme";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function DrillDetails({ route }) {
 	const { drill } = route.params;
-	console.log(drill, 'drill in drill details')
+	const navigation = useNavigation();
+	const { isAdmin } = useUserRole();
+	const { deleteDrill } = useDrills();
+	const session = useSession();
+	
+	// console.log(drill, 'drill in drill details')
 	const [imageLoading, setImageLoading] = useState(true);
 	const [imageError, setImageError] = useState(false);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [modalImageLoading, setModalImageLoading] = useState(true);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	// console.log(drill, "drill");
 
@@ -43,6 +56,46 @@ export default function DrillDetails({ route }) {
 			// If parsing fails, treat as regular string
 			return capitalize(data);
 		}
+	};
+
+	// Check if user can delete this drill
+	const canDeleteDrill = () => {
+		// Admin can delete any drill
+		if (isAdmin) return true;
+		// User can only delete their own drills
+		return drill.user_id === session?.user?.id;
+	};
+
+	// Handle delete drill
+	const handleDeleteDrill = async () => {
+		if (!canDeleteDrill()) {
+			Alert.alert("Permission Denied", "You don't have permission to delete this drill.");
+			return;
+		}
+
+		Alert.alert(
+			"Delete Drill",
+			"Are you sure you want to delete this drill? This action cannot be undone.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{
+					text: "Delete",
+					style: "destructive",
+					onPress: async () => {
+						try {
+							setIsDeleting(true);
+							await deleteDrill(drill.id);
+							Alert.alert("Success", "Drill deleted successfully.");
+							navigation.goBack();
+						} catch (error) {
+							Alert.alert("Error", "Failed to delete drill. Please try again.");
+						} finally {
+							setIsDeleting(false);
+						}
+					},
+				},
+			]
+		);
 	};
 
 	const handleImagePress = () => {
@@ -154,6 +207,24 @@ export default function DrillDetails({ route }) {
 					<Text style={styles.noDescription}>
 						No description available for this drill.
 					</Text>
+				)}
+
+				{/* Delete Button */}
+				{canDeleteDrill() && (
+					<TouchableOpacity
+						style={styles.deleteButton}
+						onPress={handleDeleteDrill}
+						disabled={isDeleting}
+					>
+						{isDeleting ? (
+							<ActivityIndicator size="small" color="white" />
+						) : (
+							<MaterialIcons name="delete" size={20} color="white" />
+						)}
+						<Text style={styles.deleteButtonText}>
+							{isDeleting ? "Deleting..." : "Delete Drill"}
+						</Text>
+					</TouchableOpacity>
 				)}
 			</View>
 
@@ -386,5 +457,22 @@ const styles = StyleSheet.create({
 		color: "white",
 		fontSize: 20,
 		fontWeight: "bold",
+	},
+	// Delete button styles
+	deleteButton: {
+		backgroundColor: "#dc3545",
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+		marginTop: 24,
+		gap: 8,
+	},
+	deleteButtonText: {
+		color: "white",
+		fontSize: 16,
+		fontWeight: "600",
 	},
 });
