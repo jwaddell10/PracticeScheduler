@@ -18,7 +18,7 @@ import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import PracticeDateTimePicker from "./PracticeDateTimePicker";
-import { useDrills } from "../hooks/useDrills";
+import { useDrills } from "../context/DrillsContext";
 import { usePractices } from "../context/PracticesContext";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import theme from "./styles/theme";
@@ -51,7 +51,7 @@ const CreatePractice = () => {
 	const [notes, setNotes] = useState(""); // Added notes state
 
 	const {
-		drills: drillsData,
+		publicDrills: drillsData,
 		loading: drillsLoading,
 		error: drillsError,
 	} = useDrills();

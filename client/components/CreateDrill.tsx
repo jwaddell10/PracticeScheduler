@@ -20,6 +20,7 @@ import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
 import { supabase } from "../lib/supabase";
 import { useUserRole } from "../hooks/useUserRole"; // ⬅️ import our hook
+import { useDrills } from "../context/DrillsContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 
 const drillTypes = [

@@ -13,6 +13,7 @@ import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFavorites } from "../context/FavoritesContext"; // Adjust path as needed
 import { usePractices } from "../context/PracticesContext";
+import { useDrills } from "../context/DrillsContext";
 import theme from "./styles/theme";
 
 export default function HomeScreen() {

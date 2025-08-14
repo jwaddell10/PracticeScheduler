@@ -11,9 +11,9 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { FavoritesContext } from "../context/FavoritesContext";
+import { useFavorites } from "../context/FavoritesContext";
 import { useSession } from "../context/SessionContext";
-import { useDrills } from "../hooks/useDrills";
+import { useDrills } from "../context/DrillsContext";
 import StarButton from "../components/StarButton";
 import { useDrillFilters } from "../hooks/useDrillFilters";
 import DrillFilterModal from "../components/DrillFilterModal";
@@ -27,10 +27,10 @@ export default function YourDrills() {
 		loading: favoritesLoading,
 		error: favoritesError,
 		handleFavoriteToggle,
-	} = useContext(FavoritesContext);
+	} = useFavorites();
 
 	const {
-		drills: userDrills,
+		userDrills,
 		loading: userDrillsLoading,
 		error: userDrillsError,
 		fetchUserDrills,

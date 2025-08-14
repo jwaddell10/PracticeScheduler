@@ -14,15 +14,14 @@ import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
-import { useDrills } from "../hooks/useDrills";
-import { FavoritesContext } from "../context/FavoritesContext";
+import { useDrills } from "../context/DrillsContext";
+import { useFavorites } from "../context/FavoritesContext";
 
 export default function Drills() {
 	const navigation = useNavigation();
-	const { drills, loading, error, refreshDrills } = useDrills();
+	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
 	console.log(drills, 'drills')
-	const { favoriteDrillIds, handleFavoriteToggle } =
-		useContext(FavoritesContext);
+	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
 
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState({
