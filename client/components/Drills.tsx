@@ -16,13 +16,13 @@ import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
 import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
+import DrillFilterModal from "./DrillFilterModal";
 import theme from "./styles/theme";
-// import theme from "./styles/theme";
 
 export default function Drills() {
 	const navigation = useNavigation();
 	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
-	console.log(drills, 'drills')
+	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
 
 	const [showFilters, setShowFilters] = useState(false);
@@ -347,159 +347,7 @@ export default function Drills() {
 		);
 	};
 
-	const renderFilterModal = () => (
-		<Modal
-			visible={showFilters}
-			animationType="slide"
-			presentationStyle="pageSheet"
-		>
-			<SafeAreaView style={styles.modalContainer}>
-				<View style={styles.modalHeader}>
-					<TouchableOpacity onPress={() => setShowFilters(false)}>
-						<Text style={styles.cancelButton}>Cancel</Text>
-					</TouchableOpacity>
-					<Text style={styles.modalTitle}>Filter Drills</Text>
-					<TouchableOpacity onPress={clearAllFilters}>
-						<Text style={styles.clearButton}>Clear All</Text>
-					</TouchableOpacity>
-				</View>
-				<ScrollView style={styles.modalContent}>
-					{/* Skill Focus */}
-					<View style={styles.filterSection}>
-						<Text style={styles.filterSectionTitle}>
-							Skill Focus
-						</Text>
-						<View style={styles.filterOptionsContainer}>
-							{skillFocusOptions.map((option) => (
-								<TouchableOpacity
-									key={option}
-									style={[
-										styles.filterOption,
-										selectedFilters.skillFocus.includes(
-											option
-										) && styles.filterOptionSelected,
-									]}
-									onPress={() =>
-										toggleFilter("skillFocus", option)
-									}
-								>
-									<Text
-										style={[
-											styles.filterOptionText,
-											selectedFilters.skillFocus.includes(
-												option
-											) &&
-												styles.filterOptionTextSelected,
-										]}
-									>
-										{option}
-									</Text>
-									{selectedFilters.skillFocus.includes(
-										option
-									) && (
-										<MaterialIcons
-											name="check"
-											size={20}
-											color="#007AFF"
-										/>
-									)}
-								</TouchableOpacity>
-							))}
-						</View>
-					</View>
-					{/* Difficulty */}
-					<View style={styles.filterSection}>
-						<Text style={styles.filterSectionTitle}>
-							Difficulty
-						</Text>
-						<View style={styles.filterOptionsContainer}>
-							{difficultyOptions.map((option) => (
-								<TouchableOpacity
-									key={option}
-									style={[
-										styles.filterOption,
-										selectedFilters.difficulty.includes(
-											option
-										) && styles.filterOptionSelected,
-									]}
-									onPress={() =>
-										toggleFilter("difficulty", option)
-									}
-								>
-									<Text
-										style={[
-											styles.filterOptionText,
-											selectedFilters.difficulty.includes(
-												option
-											) &&
-												styles.filterOptionTextSelected,
-										]}
-									>
-										{option}
-									</Text>
-									{selectedFilters.difficulty.includes(
-										option
-									) && (
-										<MaterialIcons
-											name="check"
-											size={20}
-											color="#007AFF"
-										/>
-									)}
-								</TouchableOpacity>
-							))}
-						</View>
-					</View>
-					{/* Type */}
-					<View style={styles.filterSection}>
-						<Text style={styles.filterSectionTitle}>Type</Text>
-						<View style={styles.filterOptionsContainer}>
-							{typeOptions.map((option) => (
-								<TouchableOpacity
-									key={option}
-									style={[
-										styles.filterOption,
-										selectedFilters.type.includes(option) &&
-											styles.filterOptionSelected,
-									]}
-									onPress={() => toggleFilter("type", option)}
-								>
-									<Text
-										style={[
-											styles.filterOptionText,
-											selectedFilters.type.includes(
-												option
-											) &&
-												styles.filterOptionTextSelected,
-										]}
-									>
-										{option}
-									</Text>
-									{selectedFilters.type.includes(option) && (
-										<MaterialIcons
-											name="check"
-											size={20}
-											color="#007AFF"
-										/>
-									)}
-								</TouchableOpacity>
-							))}
-						</View>
-					</View>
-				</ScrollView>
-				<View style={styles.modalFooter}>
-					<TouchableOpacity
-						style={styles.applyButton}
-						onPress={() => setShowFilters(false)}
-					>
-						<Text style={styles.applyButtonText}>
-							Apply Filters ({filteredDrills.length} drills)
-						</Text>
-					</TouchableOpacity>
-				</View>
-			</SafeAreaView>
-		</Modal>
-	);
+
 
 	if (loading) {
 		return (
@@ -698,7 +546,17 @@ export default function Drills() {
 							</View>
 						)}
 					</ScrollView>
-					{renderFilterModal()}
+					<DrillFilterModal
+				visible={showFilters}
+				onClose={() => setShowFilters(false)}
+				selectedFilters={selectedFilters}
+				skillFocusOptions={skillFocusOptions}
+				difficultyOptions={difficultyOptions}
+				typeOptions={typeOptions}
+				toggleFilter={toggleFilter}
+				clearAllFilters={clearAllFilters}
+				filteredCount={filteredDrills.length}
+			/>
 				</View>
 			</SafeAreaView>
 		</SafeAreaProvider>
@@ -708,7 +566,7 @@ export default function Drills() {
 const styles = StyleSheet.create({
 	safeArea: {
 		flex: 1,
-		backgroundColor: "#0F172A",
+		backgroundColor: theme.colors.background,
 	},
 	container: {
 		flex: 1,
@@ -920,87 +778,6 @@ const styles = StyleSheet.create({
 	removeFilterButton: {
 		padding: 2,
 	},
-	// Modal styles
-	modalContainer: {
-		flex: 1,
-		backgroundColor: "#fff",
-	},
-	modalHeader: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		paddingHorizontal: 16,
-		paddingVertical: 12,
-		borderBottomWidth: 1,
-		borderBottomColor: "#eee",
-	},
-	modalTitle: {
-		fontSize: 18,
-		fontWeight: "600",
-		color: "#222",
-	},
-	cancelButton: {
-		fontSize: 16,
-		color: "#007AFF",
-	},
-	clearButton: {
-		fontSize: 16,
-		color: "#FF3B30",
-	},
-	modalContent: {
-		flex: 1,
-		padding: 16,
-	},
-	filterSection: {
-		marginBottom: 32,
-	},
-	filterSectionTitle: {
-		fontSize: 20,
-		fontWeight: "600",
-		color: "#222",
-		marginBottom: 16,
-	},
-	filterOptionsContainer: {
-		gap: 8,
-	},
-	filterOption: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		alignItems: "center",
-		padding: 16,
-		backgroundColor: "#f8f9fa",
-		borderRadius: 12,
-		borderWidth: 1,
-		borderColor: "#eee",
-	},
-	filterOptionSelected: {
-		backgroundColor: "#e3f2fd",
-		borderColor: "#007AFF",
-	},
-	filterOptionText: {
-		fontSize: 16,
-		color: "#222",
-		fontWeight: "500",
-	},
-	filterOptionTextSelected: {
-		color: "#007AFF",
-	},
-	modalFooter: {
-		padding: 16,
-		borderTopWidth: 1,
-		borderTopColor: "#eee",
-	},
-	applyButton: {
-		backgroundColor: "#007AFF",
-		paddingVertical: 16,
-		borderRadius: 12,
-		alignItems: "center",
-	},
-	applyButtonText: {
-		color: "#fff",
-		fontSize: 16,
-		fontWeight: "600",
-	},
 	// Empty state styles
 	emptyState: {
 		alignItems: "center",
@@ -1008,18 +785,18 @@ const styles = StyleSheet.create({
 	},
 	emptyStateText: {
 		fontSize: 16,
-		color: "#666",
+		color: theme.colors.textMuted,
 		marginTop: 16,
 		marginBottom: 24,
 	},
 	clearFiltersButton: {
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 		paddingHorizontal: 24,
 		paddingVertical: 12,
 		borderRadius: 8,
 	},
 	clearFiltersButtonText: {
-		color: "#fff",
+		color: theme.colors.white,
 		fontSize: 16,
 		fontWeight: "600",
 	},
@@ -1060,7 +837,7 @@ const styles = StyleSheet.create({
 		position: "relative",
 	},
 	filterButtonActive: {
-		backgroundColor: "#14B8A6",
+		backgroundColor: theme.colors.primary,
 	},
 	filterBadge: {
 		position: "absolute",
@@ -1069,6 +846,6 @@ const styles = StyleSheet.create({
 		width: 8,
 		height: 8,
 		borderRadius: 4,
-		backgroundColor: "#EF4444",
+		backgroundColor: theme.colors.error,
 	},
 });

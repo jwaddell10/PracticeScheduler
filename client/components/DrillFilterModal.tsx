@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
+import theme from "./styles/theme";
 
 export default function DrillFilterModal({
 	visible,
@@ -75,7 +76,7 @@ export default function DrillFilterModal({
 										<MaterialIcons
 											name="check"
 											size={20}
-											color="#007AFF"
+											color={theme.colors.white}
 										/>
 									)}
 								</TouchableOpacity>
@@ -119,7 +120,7 @@ export default function DrillFilterModal({
 										<MaterialIcons
 											name="check"
 											size={20}
-											color="#007AFF"
+											color={theme.colors.white}
 										/>
 									)}
 								</TouchableOpacity>
@@ -156,7 +157,7 @@ export default function DrillFilterModal({
 										<MaterialIcons
 											name="check"
 											size={20}
-											color="#007AFF"
+											color={theme.colors.white}
 										/>
 									)}
 								</TouchableOpacity>
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
   // Modal styles
   modalContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -193,24 +194,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   modalTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#222',
+    color: theme.colors.textPrimary,
   },
   cancelButton: {
     fontSize: 16,
-    color: '#007AFF',
+    color: theme.colors.primary,
   },
   clearButton: {
     fontSize: 16,
-    color: '#FF3B30',
+    color: theme.colors.error,
   },
   modalContent: {
     flex: 1,
     padding: 16,
+    backgroundColor: theme.colors.background,
   },
   filterSection: {
     marginBottom: 32,
@@ -218,7 +221,7 @@ const styles = StyleSheet.create({
   filterSectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#222',
+    color: theme.colors.textPrimary,
     marginBottom: 16,
   },
   filterOptionsContainer: {
@@ -229,51 +232,52 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: theme.colors.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: theme.colors.border,
   },
   filterOptionSelected: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
   },
   filterOptionText: {
     fontSize: 16,
-    color: '#222',
+    color: theme.colors.textPrimary,
     fontWeight: '500',
   },
   filterOptionTextSelected: {
-    color: '#007AFF',
+    color: theme.colors.white,
   },
   modalFooter: {
     padding: 16,
     borderTopWidth: 1,
-    borderTopColor: '#eee',
+    borderTopColor: theme.colors.border,
+    backgroundColor: theme.colors.surface,
   },
   applyButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: theme.colors.primary,
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
   },
   applyButtonText: {
-    color: '#fff',
+    color: theme.colors.white,
     fontSize: 16,
     fontWeight: '600',
   },
   // Active filters styles
   activeFiltersContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border,
   },
   activeFilter: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e3f2fd',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -281,7 +285,7 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: theme.colors.white,
     fontWeight: '500',
     marginRight: 4,
   },
