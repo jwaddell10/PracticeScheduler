@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet, Platform, TextInput } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import theme from "./styles/theme";
 
@@ -23,63 +23,56 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 	};
 
 	const [startDate, setStartDate] = useState<Date>(initializeDate());
-	const [endDate, setEndDate] = useState<Date>(() => {
-		const date = initializeDate();
-		const endDate = new Date(date);
-		endDate.setHours(date.getHours() + 1);
-		return endDate;
-	});
+	const [duration, setDuration] = useState<number>(60); // Default 60 minutes
 
 	useEffect(() => {
+		const endDate = new Date(startDate);
+		endDate.setMinutes(startDate.getMinutes() + duration);
 		onDatesChange(startDate, endDate);
-	}, [startDate, endDate]);
+	}, [startDate, duration]);
 
-	const onChange =
-		(type: "start" | "end") => (_event: any, selectedDate?: Date) => {
-			if (selectedDate) {
-				if (type === "start") {
-					setStartDate(selectedDate);
-					if (endDate <= selectedDate) {
-						const newEnd = new Date(selectedDate);
-						newEnd.setHours(selectedDate.getHours() + 1);
-						setEndDate(newEnd);
-					}
-				} else {
-					if (selectedDate > startDate) {
-						setEndDate(selectedDate);
-					} else {
-						const newEnd = new Date(startDate);
-						newEnd.setHours(startDate.getHours() + 1);
-						setEndDate(newEnd);
-					}
-				}
-			}
-		};
+	const onChangeStart = (_event: any, selectedDate?: Date) => {
+		if (selectedDate) {
+			setStartDate(selectedDate);
+		}
+	};
+
+	const onChangeDuration = (text: string) => {
+		const newDuration = parseInt(text) || 0;
+		if (newDuration > 0) {
+			setDuration(newDuration);
+		}
+	};
 
 	return (
 		<View>
 			<View style={styles.section}>
-				<Text style={styles.label}>Start Time</Text>
-				<DateTimePicker
-					value={startDate}
-					mode="datetime"
-					display="default" // <- native-style, no spinner
-					onChange={onChange("start")}
-					themeVariant="dark"
-					style={styles.datePicker}
-				/>
+				<View style={styles.startTimeContainer}>
+					<Text style={styles.label}>Start Time</Text>
+					<DateTimePicker
+						value={startDate}
+						mode="datetime"
+						display="default"
+						onChange={onChangeStart}
+						themeVariant="dark"
+						style={styles.datePicker}
+					/>
+				</View>
 			</View>
 
 			<View style={styles.section}>
-				<Text style={styles.label}>End Time</Text>
-				<DateTimePicker
-					value={endDate}
-					mode="datetime"
-					display="default" // <- native-style, no spinner
-					onChange={onChange("end")}
-					themeVariant="dark"
-					style={styles.datePicker}
-				/>
+				<View style={styles.durationContainer}>
+					<Text style={styles.label}>Duration (minutes)</Text>
+					<TextInput
+						style={styles.durationInput}
+						value={duration.toString()}
+						onChangeText={onChangeDuration}
+						keyboardType="numeric"
+						placeholder="60"
+						placeholderTextColor={theme.colors.textMuted}
+						keyboardAppearance="dark"
+					/>
+				</View>
 			</View>
 		</View>
 	);
@@ -96,9 +89,31 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 	},
 	datePicker: {
-		width: "100%",
+		width: 200,
 		backgroundColor: Platform.OS === "android" ? "#1E293B" : "transparent",
 		borderRadius: 12,
+	},
+	startTimeContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+	},
+	durationContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "space-between",
+	},
+	durationInput: {
+		backgroundColor: theme.colors.surface,
+		borderWidth: 1,
+		borderColor: theme.colors.textMuted,
+		borderRadius: 12,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		fontSize: 16,
+		color: theme.colors.textPrimary,
+		textAlign: "center",
+		width: 100,
 	},
 });
 

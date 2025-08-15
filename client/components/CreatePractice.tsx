@@ -14,6 +14,7 @@ import {
 	Modal,
 	Image, // Added Image import
 	TextInput,
+	Alert,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -24,7 +25,9 @@ import { usePractices } from "../context/PracticesContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useSession } from "../context/SessionContext";
 import { useDrillFilters } from "../hooks/useDrillFilters";
+import { useUserRole } from "../hooks/useUserRole";
 import DrillFilterModal from "./DrillFilterModal";
+import DrillDetails from "./DrillDetails";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
@@ -43,13 +46,16 @@ const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const { addPractice } = usePractices();
+	const { role: userRole } = useUserRole();
 	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
 	const [drillSelectionModalVisible, setDrillSelectionModalVisible] =
 		useState(false);
 	const [questionModalVisible, setQuestionModalVisible] = useState(false);
 	const [selectedDrillForDetails, setSelectedDrillForDetails] =
 		useState<DrillData | null>(null);
-	const [drillSourceToggle, setDrillSourceToggle] = useState<'public' | 'user'>('public');
+	const [drillSourceToggle, setDrillSourceToggle] = useState<'public' | 'user'>(
+		userRole === 'premium' ? 'public' : 'user'
+	);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showFilters, setShowFilters] = useState(false);
 
@@ -57,6 +63,7 @@ const CreatePractice = () => {
 	const [startDate, setStartDate] = useState<Date | null>(null);
 	const [endDate, setEndDate] = useState<Date | null>(null);
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
+	const [drillDurations, setDrillDurations] = useState<{ [key: string]: number }>({});
 	const [notes, setNotes] = useState(""); // Added notes state
 
 	const {
@@ -85,6 +92,11 @@ const CreatePractice = () => {
 	} = useFavorites();
 
 	const session = useSession();
+
+	// Monitor modal state changes
+	useEffect(() => {
+		console.log('questionModalVisible changed to:', questionModalVisible);
+	}, [questionModalVisible]);
 
 	// Update local state when hook data changes
 	useEffect(() => {
@@ -225,12 +237,26 @@ const CreatePractice = () => {
 			return;
 		}
 
+		// Convert drillDurations object to array format for database storage
+		const drillDurationArray: number[] = [];
+		selectedDrills.forEach(drillName => {
+			// Find the duration for this drill, prioritizing non-zero values
+			let drillDuration = 0;
+			Object.entries(drillDurations).forEach(([key, value]) => {
+				if (key === drillName && value > 0) {
+					drillDuration = value;
+				}
+			});
+			drillDurationArray.push(drillDuration);
+		});
+
 		try {
 			await addPractice({
 				startTime: toLocalISOString(startDate),
 				endTime: toLocalISOString(endDate),
 				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
 				drills: selectedDrills,
+				drillDuration: drillDurationArray,
 				notes: notes || undefined,
 			});
 			navigation.goBack();
@@ -257,6 +283,27 @@ const CreatePractice = () => {
 		setSelectedDrills((prev) =>
 			prev.filter((drill) => drill !== drillToRemove)
 		);
+		// Remove drill duration when drill is removed
+		const newDrillDurations = { ...drillDurations };
+		delete newDrillDurations[drillToRemove];
+		setDrillDurations(newDrillDurations);
+	};
+
+	const updateDrillDuration = (drillName: string, duration: number) => {
+		setDrillDurations(prev => ({
+			...prev,
+			[drillName]: duration
+		}));
+	};
+
+	const getTotalDrillDuration = () => {
+		return Object.values(drillDurations).reduce((total, duration) => total + duration, 0);
+	};
+
+	const isDurationValid = () => {
+		if (!startDate || !endDate) return false;
+		const totalDuration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+		return getTotalDrillDuration() === totalDuration;
 	};
 
 	// Handle question modal close - reopen drill selection modal
@@ -272,6 +319,17 @@ const CreatePractice = () => {
 		setSelectedDrillForDetails(drillObject || null);
 		setDrillSelectionModalVisible(false);
 		setQuestionModalVisible(true);
+	};
+
+	// Handle drill details open from drill selection modal
+	const handleDrillDetailsOpen = (drill: DrillData) => {
+		console.log('Opening drill details for:', drill.name);
+		console.log('Drill data:', drill);
+		setSelectedDrillForDetails(drill);
+		setDrillSelectionModalVisible(false); // Close drill selection modal first
+		setQuestionModalVisible(true);
+		console.log('Modal should be visible now');
+		console.log('questionModalVisible state:', questionModalVisible);
 	};
 
 	// Helper function to capitalize first letter
@@ -308,10 +366,11 @@ const CreatePractice = () => {
 						keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
 					>
 						<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-							<ScrollView
-								contentContainerStyle={styles.scrollView}
-								keyboardShouldPersistTaps="handled"
-							>
+							<View style={{ flex: 1 }}>
+								<ScrollView
+									contentContainerStyle={styles.scrollView}
+									keyboardShouldPersistTaps="handled"
+								>
 								{formatSelectedDate() && (
 									<View style={styles.headerContainer}>
 										<Text style={styles.headerTitle}>
@@ -348,6 +407,13 @@ const CreatePractice = () => {
 										</Text>
 									</TouchableOpacity>
 
+									{/* Duration Validation Error */}
+									{selectedDrills.length > 0 && !isDurationValid() && (
+										<Text style={styles.validationText}>
+											⚠️ Drill durations ({getTotalDrillDuration()} min) must equal practice duration ({startDate && endDate ? Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : 0} min)
+										</Text>
+									)}
+
 									{/* Display Selected Drills */}
 									{selectedDrills.length > 0 && (
 										<View
@@ -370,6 +436,19 @@ const CreatePractice = () => {
 														>
 															{drill}
 														</Text>
+														<View style={styles.drillDurationContainer}>
+															<Text style={styles.durationLabel}>Duration:</Text>
+															<TextInput
+																style={styles.drillDurationInput}
+																value={drillDurations[drill]?.toString() || ""}
+																onChangeText={(text) => updateDrillDuration(drill, parseInt(text) || 0)}
+																keyboardType="numeric"
+																placeholder="0"
+																placeholderTextColor={theme.colors.textMuted}
+																keyboardAppearance="dark"
+															/>
+															<Text style={styles.durationUnit}>min</Text>
+														</View>
 														<TouchableOpacity
 															onPress={() =>
 																removeDrill(
@@ -415,37 +494,39 @@ const CreatePractice = () => {
 													Select Drills
 												</Text>
 												
-												{/* Drill Source Toggle */}
-												<View style={styles.toggleContainer}>
-													<TouchableOpacity
-														style={[
-															styles.toggleButton,
-															drillSourceToggle === 'public' && styles.toggleButtonActive
-														]}
-														onPress={() => setDrillSourceToggle('public')}
-													>
-														<Text style={[
-															styles.toggleButtonText,
-															drillSourceToggle === 'public' && styles.toggleButtonTextActive
-														]}>
-															Drills
-														</Text>
-													</TouchableOpacity>
-													<TouchableOpacity
-														style={[
-															styles.toggleButton,
-															drillSourceToggle === 'user' && styles.toggleButtonActive
-														]}
-														onPress={() => setDrillSourceToggle('user')}
-													>
-														<Text style={[
-															styles.toggleButtonText,
-															drillSourceToggle === 'user' && styles.toggleButtonTextActive
-														]}>
-															Your Drills
-														</Text>
-													</TouchableOpacity>
-												</View>
+												{/* Drill Source Toggle - Only show for premium users */}
+												{userRole === 'premium' && (
+													<View style={styles.toggleContainer}>
+														<TouchableOpacity
+															style={[
+																styles.toggleButton,
+																drillSourceToggle === 'public' && styles.toggleButtonActive
+															]}
+															onPress={() => setDrillSourceToggle('public')}
+														>
+															<Text style={[
+																styles.toggleButtonText,
+																drillSourceToggle === 'public' && styles.toggleButtonTextActive
+															]}>
+																Drills
+															</Text>
+														</TouchableOpacity>
+														<TouchableOpacity
+															style={[
+																styles.toggleButton,
+																drillSourceToggle === 'user' && styles.toggleButtonActive
+															]}
+															onPress={() => setDrillSourceToggle('user')}
+														>
+															<Text style={[
+																styles.toggleButtonText,
+																drillSourceToggle === 'user' && styles.toggleButtonTextActive
+															]}>
+																Your Drills
+															</Text>
+														</TouchableOpacity>
+													</View>
+												)}
 												
 												{/* Search Bar */}
 												<View style={styles.searchContainer}>
@@ -517,31 +598,48 @@ const CreatePractice = () => {
 																		{drills.map((drill) => {
 																			const selected = selectedDrills.includes(drill.name);
 																			return (
-																				<TouchableOpacity
+																				<View
 																					key={drill.id}
 																					style={[
 																						styles.drillItem,
 																						selected && styles.drillItemSelected,
 																					]}
-																					onPress={() => {
-																						if (selected) {
-																							setSelectedDrills((prev) =>
-																								prev.filter((d) => d !== drill.name)
-																							);
-																						} else {
-																							setSelectedDrills((prev) => [...prev, drill.name]);
-																						}
-																					}}
 																				>
-																					<Text
-																						style={[
-																							styles.drillItemText,
-																							selected && styles.drillItemTextSelected,
-																						]}
+																					<TouchableOpacity
+																						style={styles.drillItemContent}
+																						onPress={() => {
+																							if (selected) {
+																								setSelectedDrills((prev) =>
+																									prev.filter((d) => d !== drill.name)
+																								);
+																							} else {
+																								setSelectedDrills((prev) => [...prev, drill.name]);
+																							}
+																						}}
 																					>
-																						{drill.name}
-																					</Text>
-																				</TouchableOpacity>
+																						<Text
+																							style={[
+																								styles.drillItemText,
+																								selected && styles.drillItemTextSelected,
+																							]}
+																						>
+																							{drill.name}
+																						</Text>
+																					</TouchableOpacity>
+																					<TouchableOpacity
+																						style={styles.questionIcon}
+																						onPress={() => {
+																							console.log('Question icon clicked for drill:', drill.name);
+																							handleDrillDetailsOpen(drill);
+																						}}
+																					>
+																						<MaterialIcons
+																							name="help-outline"
+																							size={20}
+																							color={selected ? theme.colors.white : theme.colors.textMuted}
+																						/>
+																					</TouchableOpacity>
+																				</View>
 																			);
 																		})}
 																	</View>
@@ -581,241 +679,217 @@ const CreatePractice = () => {
 											handleQuestionModalClose
 										}
 									>
+										{/* Debug: Add a visible indicator */}
+										{console.log('Modal rendering, visible:', questionModalVisible)}
 										<View style={styles.modalBackdrop}>
-											<View
-												style={[
-													styles.modalContent,
-													{
-														maxWidth: "90%",
-														maxHeight: "80%",
-													},
-												]}
-											>
-												{selectedDrillForDetails && (
-													<ScrollView
-														style={{ flex: 1 }}
-													>
-														{/* Drill Name */}
-														<Text
-															style={[
-																styles.modalTitle,
-																{
-																	marginBottom: 20,
-																},
-															]}
-														>
-															{
-																selectedDrillForDetails.name
-															}
-														</Text>
+																						<View style={styles.modalContent}>
+												<Text style={styles.modalTitle}>
+													Drill Details
+												</Text>
+												
+												{/* Drill Details Content */}
+												<ScrollView
+													style={{ maxHeight: 400 }}
+													showsVerticalScrollIndicator={false}
+												>
+													<View style={{ padding: 20 }}>
+														{selectedDrillForDetails ? (
+															<>
+																{/* Drill Name */}
+																<Text
+																	style={[
+																		styles.modalTitle,
+																		{
+																			marginBottom: 20,
+																		},
+																	]}
+																>
+																	{selectedDrillForDetails.name}
+																</Text>
 
-														{/* Drill Image */}
-														{selectedDrillForDetails.imageUrl && (
-															<View
-																style={{
-																	marginBottom: 20,
-																	alignItems:
-																		"center",
-																}}
-															>
-																<Image
-																	source={{
-																		uri: selectedDrillForDetails.imageUrl,
-																	}}
-																	style={{
-																		width: 250,
-																		height: 200,
-																		borderRadius: 8,
-																		resizeMode:
-																			"cover",
-																	}}
-																/>
-															</View>
-														)}
+																{/* Drill Image */}
+																{selectedDrillForDetails.imageUrl && (
+																	<View
+																		style={{
+																			marginBottom: 20,
+																			alignItems: "center",
+																		}}
+																	>
+																		<Image
+																			source={{
+																				uri: selectedDrillForDetails.imageUrl,
+																			}}
+																			style={{
+																				width: 250,
+																				height: 200,
+																				borderRadius: 8,
+																				resizeMode: "cover",
+																			}}
+																		/>
+																	</View>
+																)}
 
-														{/* Drill Details */}
-														<View
-															style={{
-																marginBottom: 20,
-															}}
-														>
-															<View
-																style={{
-																	flexDirection:
-																		"row",
-																	marginBottom: 8,
-																}}
-															>
-																<Text
-																	style={{
-																		fontWeight:
-																			"bold",
-																		flex: 1,
-																		color: theme
-																			.colors
-																			.textPrimary,
-																	}}
-																>
-																	Skill Focus:
-																</Text>
-																<Text
-																	style={{
-																		flex: 2,
-																		color: theme
-																			.colors
-																			.textPrimary,
-																	}}
-																>
-																	{formatArrayData(
-																		selectedDrillForDetails.skillFocus
-																	)}
-																</Text>
-															</View>
-
-															<View
-																style={{
-																	flexDirection:
-																		"row",
-																	marginBottom: 8,
-																}}
-															>
-																<Text
-																	style={{
-																		fontWeight:
-																			"bold",
-																		flex: 1,
-																		color: theme
-																			.colors
-																			.textPrimary,
-																	}}
-																>
-																	Type:
-																</Text>
-																<Text
-																	style={{
-																		flex: 2,
-																		color: theme
-																			.colors
-																			.textPrimary,
-																	}}
-																>
-																	{formatArrayData(
-																		selectedDrillForDetails.type
-																	)}
-																</Text>
-															</View>
-
-															<View
-																style={{
-																	flexDirection:
-																		"row",
-																	marginBottom: 8,
-																}}
-															>
-																<Text
-																	style={{
-																		fontWeight:
-																			"bold",
-																		flex: 1,
-																		color: theme
-																			.colors
-																			.textPrimary,
-																	}}
-																>
-																	Difficulty:
-																</Text>
-																<Text
-																	style={{
-																		flex: 2,
-																		color: theme
-																			.colors
-																			.textPrimary,
-																	}}
-																>
-																	{formatArrayData(
-																		selectedDrillForDetails.difficulty
-																	)}
-																</Text>
-															</View>
-
-															{selectedDrillForDetails.duration && (
+																{/* Drill Details */}
 																<View
 																	style={{
-																		flexDirection:
-																			"row",
-																		marginBottom: 8,
+																		marginBottom: 20,
 																	}}
 																>
-																	<Text
+																	<View
 																		style={{
-																			fontWeight:
-																				"bold",
-																			flex: 1,
-																			color: theme
-																				.colors
-																				.textPrimary,
+																			flexDirection: "row",
+																			marginBottom: 8,
 																		}}
 																	>
-																		Duration:
-																	</Text>
-																	<Text
-																		style={{
-																			flex: 2,
-																			color: theme
-																				.colors
-																				.textPrimary,
-																		}}
-																	>
-																		{
-																			selectedDrillForDetails.duration
-																		}{" "}
-																		min
-																	</Text>
-																</View>
-															)}
-														</View>
+																		<Text
+																			style={{
+																				fontWeight: "bold",
+																				flex: 1,
+																				color: theme.colors.textPrimary,
+																			}}
+																		>
+																			Skill Focus:
+																		</Text>
+																		<Text
+																			style={{
+																				flex: 2,
+																				color: theme.colors.textPrimary,
+																			}}
+																		>
+																			{formatArrayData(
+																				selectedDrillForDetails.skillFocus
+																			)}
+																		</Text>
+																	</View>
 
-														{/* Description/Notes */}
-														{selectedDrillForDetails.notes &&
-														selectedDrillForDetails.notes.trim() !==
-															"" ? (
-															<>
-																<Text
-																	style={{
-																		fontWeight:
-																			"bold",
-																		fontSize: 16,
-																		marginBottom: 8,
-																	}}
-																>
-																	Description
-																</Text>
-																<Text
-																	style={{
-																		lineHeight: 20,
-																		color: "#666",
-																	}}
-																>
-																	{
-																		selectedDrillForDetails.notes
-																	}
-																</Text>
+																	<View
+																		style={{
+																			flexDirection: "row",
+																			marginBottom: 8,
+																		}}
+																	>
+																		<Text
+																			style={{
+																				fontWeight: "bold",
+																				flex: 1,
+																				color: theme.colors.textPrimary,
+																			}}
+																		>
+																			Type:
+																		</Text>
+																		<Text
+																			style={{
+																				flex: 2,
+																				color: theme.colors.textPrimary,
+																			}}
+																		>
+																			{formatArrayData(
+																				selectedDrillForDetails.type
+																			)}
+																		</Text>
+																	</View>
+
+																	<View
+																		style={{
+																			flexDirection: "row",
+																			marginBottom: 8,
+																		}}
+																	>
+																		<Text
+																			style={{
+																				fontWeight: "bold",
+																				flex: 1,
+																				color: theme.colors.textPrimary,
+																			}}
+																		>
+																			Difficulty:
+																		</Text>
+																		<Text
+																			style={{
+																				flex: 2,
+																				color: theme.colors.textPrimary,
+																			}}
+																		>
+																			{formatArrayData(
+																				selectedDrillForDetails.difficulty
+																			)}
+																		</Text>
+																	</View>
+
+																	{selectedDrillForDetails.duration && (
+																		<View
+																			style={{
+																				flexDirection: "row",
+																				marginBottom: 8,
+																			}}
+																		>
+																			<Text
+																				style={{
+																					fontWeight: "bold",
+																					flex: 1,
+																					color: theme.colors.textPrimary,
+																				}}
+																			>
+																				Duration:
+																			</Text>
+																			<Text
+																				style={{
+																					flex: 2,
+																					color: theme.colors.textPrimary,
+																				}}
+																			>
+																				{selectedDrillForDetails.duration} min
+																			</Text>
+																		</View>
+																	)}
+																</View>
+
+																{/* Description/Notes */}
+																{selectedDrillForDetails.notes &&
+																selectedDrillForDetails.notes.trim() !== "" ? (
+																	<>
+																		<Text
+																			style={{
+																				fontWeight: "bold",
+																				fontSize: 16,
+																				marginBottom: 8,
+																				color: theme.colors.textPrimary,
+																			}}
+																		>
+																			Description
+																		</Text>
+																		<Text
+																			style={{
+																				lineHeight: 20,
+																				color: theme.colors.textMuted,
+																			}}
+																		>
+																			{selectedDrillForDetails.notes}
+																		</Text>
+																	</>
+																) : (
+																	<Text
+																		style={{
+																			fontStyle: "italic",
+																			color: theme.colors.textMuted,
+																		}}
+																	>
+																		No description available for this drill.
+																	</Text>
+																)}
 															</>
 														) : (
-															<Text
-																style={{
-																	fontStyle:
-																		"italic",
-																	color: "#999",
-																}}
-															>
-																No description
-																available for
-																this drill.
+															<Text style={{ 
+																color: theme.colors.textMuted, 
+																fontSize: 16, 
+																textAlign: 'center',
+																fontStyle: 'italic'
+															}}>
+																No drill data available
 															</Text>
 														)}
-													</ScrollView>
-												)}
+													</View>
+												</ScrollView>
 
 												<TouchableOpacity
 													style={
@@ -838,17 +912,26 @@ const CreatePractice = () => {
 									</Modal>
 								</View>
 
-								{/* Submit Button */}
+							</ScrollView>
+							
+							{/* Sticky Submit Button */}
+							<View style={styles.stickyButtonContainer}>
 								<TouchableOpacity
 									style={styles.submitButton}
-									onPress={handleSubmit}
+									onPress={isDurationValid() ? handleSubmit : () => {
+										Alert.alert(
+											"Duration Mismatch",
+											`Total drill duration (${getTotalDrillDuration()} min) must equal practice duration (${startDate && endDate ? Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : 0} min)`
+										);
+									}}
 									activeOpacity={0.8}
 								>
 									<Text style={styles.submitButtonText}>
 										Create Practice
 									</Text>
 								</TouchableOpacity>
-							</ScrollView>
+							</View>
+							</View>
 						</TouchableWithoutFeedback>
 					</KeyboardAvoidingView>
 				</GestureHandlerRootView>
@@ -877,7 +960,7 @@ const styles = StyleSheet.create({
 	},
 	scrollView: {
 		padding: 16,
-		paddingBottom: 32,
+		paddingBottom: 100, // Increased to account for sticky button
 		flexGrow: 1,
 	},
 	headerContainer: {
@@ -963,6 +1046,39 @@ const styles = StyleSheet.create({
 		marginTop: 8,
 		textAlign: "center",
 	},
+	drillDurationContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		marginRight: 8,
+	},
+	durationLabel: {
+		color: theme.colors.textMuted,
+		fontSize: 14,
+		marginRight: 4,
+	},
+	drillDurationInput: {
+		backgroundColor: theme.colors.background,
+		borderWidth: 1,
+		borderColor: theme.colors.textMuted,
+		borderRadius: 6,
+		paddingHorizontal: 8,
+		paddingVertical: 4,
+		fontSize: 14,
+		color: theme.colors.textPrimary,
+		textAlign: "center",
+		width: 50,
+	},
+	durationUnit: {
+		color: theme.colors.textMuted,
+		fontSize: 12,
+		marginLeft: 4,
+	},
+	validationText: {
+		color: '#FF6B6B',
+		fontSize: 14,
+		marginBottom: 8,
+		fontWeight: '500',
+	},
 	draggableItem: {
 		paddingVertical: 12,
 		paddingHorizontal: 16,
@@ -1017,13 +1133,29 @@ const styles = StyleSheet.create({
 		fontWeight: "700",
 		fontSize: 18,
 	},
+	stickyButtonContainer: {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		backgroundColor: theme.colors.background,
+		paddingHorizontal: 16,
+		paddingVertical: 16,
+		borderTopWidth: 1,
+		borderTopColor: theme.colors.textMuted,
+	},
 	modalContent: {
 		backgroundColor: theme.colors.surface,
 		padding: 20,
 		borderRadius: 12,
-		flex: 1, // Takes available space
-		marginHorizontal: 10, // Small margins on sides
-		marginVertical: 50, // Margins on top/bottom
+		maxHeight: '80%',
+		marginHorizontal: 10,
+		marginVertical: 50,
+		shadowColor: theme.colors.surface,
+		shadowOffset: { width: 0, height: 4 },
+		shadowOpacity: 0.3,
+		shadowRadius: 8,
+		elevation: 5,
 	},
 	modalTitle: {
 		fontSize: 20,
@@ -1035,16 +1167,18 @@ const styles = StyleSheet.create({
 	drillItem: {
 		flexDirection: "row",
 		justifyContent: "space-between",
-		paddingVertical: 12,
-		paddingHorizontal: 16,
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: "white",
+		paddingVertical: 16,
+		paddingHorizontal: 20,
+		borderRadius: 12,
+		borderWidth: 2,
+		borderColor: theme.colors.primary,
 		backgroundColor: theme.colors.surface,
-		marginBottom: 10,
+		marginBottom: 16,
 	},
 	drillItemSelected: {
 		backgroundColor: theme.colors.primary,
+		borderColor: theme.colors.primary,
+		borderWidth: 3,
 	},
 	drillItemText: {
 		color: theme.colors.textPrimary,
@@ -1053,6 +1187,15 @@ const styles = StyleSheet.create({
 	},
 	drillItemTextSelected: {
 		color: "#fff", // Fixed: White text for selected items
+	},
+	drillItemContent: {
+		flex: 1,
+		justifyContent: 'center',
+	},
+	questionIcon: {
+		padding: 8,
+		justifyContent: 'center',
+		alignItems: 'center',
 	},
 	closeModalButton: {
 		marginTop: 16,
@@ -1100,7 +1243,7 @@ const styles = StyleSheet.create({
 		padding: 4,
 		marginBottom: 16,
 		borderWidth: 1,
-		borderColor: theme.colors.border,
+		borderColor: theme.colors.primary,
 	},
 	toggleButton: {
 		flex: 1,
@@ -1133,7 +1276,7 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 12,
 		paddingVertical: 8,
 		borderWidth: 1,
-		borderColor: theme.colors.border,
+		borderColor: theme.colors.primary,
 	},
 	searchIcon: {
 		marginRight: 8,
