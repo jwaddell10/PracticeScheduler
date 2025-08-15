@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
 		color: theme.colors.textMuted,
 	},
 	upgradeButton: {
-		backgroundColor: "purple", // Match PRO button
+		backgroundColor: theme.colors.proPurple, // Match PRO button
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderRadius: 8,
