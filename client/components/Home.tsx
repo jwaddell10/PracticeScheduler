@@ -18,7 +18,7 @@ export default function HomeScreen() {
 	const navigation = useNavigation();
 	const { favoriteDrills } = useFavorites();
 	const { practices } = usePractices();
-	const { refreshAllDrills } = useDrills();
+	const { refreshAllDrills, userDrills } = useDrills();
 	const [selectedDate, setSelectedDate] = useState(null);
 
 	// Pre-fetch drills when Home component mounts
@@ -71,7 +71,7 @@ export default function HomeScreen() {
 						color="#14B8A6"
 					/>
 					<Text style={styles.statNumber}>
-						{favoriteDrills.length}
+						{userDrills.length}
 					</Text>
 					<Text style={styles.statLabel}>Your Drills</Text>
 				</TouchableOpacity>
