@@ -528,13 +528,9 @@ export default function YourDrills() {
 							onPress={() => setShowCreateDrill(false)}
 							style={styles.modalCloseButton}
 						>
-							<MaterialIcons
-								name="close"
-								size={24}
-								color="#007AFF"
-							/>
+							<Text style={styles.closeButtonText}>✕</Text>
 						</TouchableOpacity>
-						<Text style={styles.modalTitle}>Create New Drill</Text>
+						<Text style={styles.modalTitle}>Create Drill</Text>
 						<View style={{ width: 24 }} />
 					</View>
 					<CreateDrill
@@ -543,6 +539,7 @@ export default function YourDrills() {
 							setShowCreateDrill(false);
 						}}
 						onClose={() => setShowCreateDrill(false)}
+						isModal={true}
 					/>
 				</View>
 			</Modal>
@@ -822,4 +819,9 @@ const styles = StyleSheet.create({
 	},
 	modalTitle: { fontSize: 18, fontWeight: "600", color: theme.colors.textPrimary },
 	modalCloseButton: { padding: 4 },
+	closeButtonText: { 
+		fontSize: 20, 
+		color: theme.colors.primary, 
+		fontWeight: "500" 
+	},
 });

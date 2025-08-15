@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
@@ -13,7 +13,11 @@ export default function UpgradeToPremiumBanner() {
 	const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
 	const handleUpgrade = () => {
-		navigation.navigate("Premium");
+		Alert.alert(
+			"Coming Soon!",
+			"Premium features are currently in development. Stay tuned for updates!",
+			[{ text: "OK", style: "default" }]
+		);
 	};
 
 	return (

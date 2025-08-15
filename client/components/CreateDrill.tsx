@@ -43,14 +43,25 @@ const drillDifficulties = [
 	{ label: "Advanced", value: "advanced" },
 ];
 
-export default function CreateDrill() {
+interface CreateDrillProps {
+	refreshDrills?: () => void;
+	onClose?: () => void;
+	isModal?: boolean;
+}
+
+export default function CreateDrill(props?: CreateDrillProps) {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const session = useSession();
-	const { isAdmin, loading: roleLoading, error: roleError } = useUserRole(); // ⬅️ use the hook
+	const { isAdmin, loading: roleLoading, error: roleError, role } = useUserRole(); // ⬅️ use the hook
 	
 	// Get params from route
-	const { mode = 'create', drill: existingDrill, refreshDrills, onClose } = (route.params as any) || {};
+	const { mode = 'create', drill: existingDrill } = (route.params as any) || {};
+	
+	// Use props if available (for modal usage), otherwise use route params
+	const refreshDrills = props?.refreshDrills || (route.params as any)?.refreshDrills;
+	const onClose = props?.onClose || (route.params as any)?.onClose;
+	const isModal = props?.isModal || (route.params as any)?.isModal || false;
 	const isEditMode = mode === 'edit';
 
 	const [name, setName] = useState(existingDrill?.name || "");
@@ -62,24 +73,26 @@ export default function CreateDrill() {
 	const [imageUri, setImageUri] = useState(null);
 	const [isPublic, setIsPublic] = useState(existingDrill?.isPublic ?? isAdmin); // default to admin value
 
-	// Set up header with back button and save button
+	// Set up header with back button and save button (only when not in modal)
 	useLayoutEffect(() => {
-		navigation.setOptions({
-			headerTitle: isEditMode ? "Edit Drill" : "Create Drill",
-			headerLeft: () => (
-				<TouchableOpacity onPress={() => navigation.goBack()}>
-					<Text style={styles.headerButton}>Cancel</Text>
-				</TouchableOpacity>
-			),
-			headerRight: () => (
-				<TouchableOpacity onPress={handleSubmit} disabled={saving}>
-					<Text style={[styles.headerButton, saving && styles.headerButtonDisabled]}>
-						{saving ? "Saving..." : (isEditMode ? "Update" : "Save")}
-					</Text>
-				</TouchableOpacity>
-			),
-		});
-	}, [navigation, name, type, skillFocus, difficulty, notes, saving, isEditMode]);
+		if (!isModal) {
+			navigation.setOptions({
+				headerTitle: isEditMode ? "Edit Drill" : "Create Drill",
+				headerLeft: () => (
+					<TouchableOpacity onPress={() => navigation.goBack()}>
+						<Text style={styles.headerButton}>Cancel</Text>
+					</TouchableOpacity>
+				),
+				headerRight: () => (
+					<TouchableOpacity onPress={handleSubmit} disabled={saving}>
+						<Text style={[styles.headerButton, saving && styles.headerButtonDisabled]}>
+							{saving ? "Saving..." : (isEditMode ? "Update" : "Save")}
+						</Text>
+					</TouchableOpacity>
+				),
+			});
+		}
+	}, [navigation, name, type, skillFocus, difficulty, notes, saving, isEditMode, isModal]);
 
 	// Button selection component
 	const SelectionButtons = ({ title, options, selectedValues, onSelect }) => (
@@ -393,43 +406,67 @@ export default function CreateDrill() {
 							</View>
 						)}
 
-						<Text style={styles.label}>
-							Upload Image (optional)
-						</Text>
-						<TouchableOpacity
-							style={styles.imageUploadButton}
-							onPress={pickImage}
-						>
-							<Text style={styles.imageUploadButtonText}>
-								{imageUri ? "Change Image" : "Pick an Image"}
-							</Text>
-						</TouchableOpacity>
-
-						{imageUri && (
-							<Image
-								source={{ uri: imageUri }}
-								style={styles.previewImage}
-								resizeMode="cover"
-							/>
-						)}
-
-						<View style={styles.buttonContainer}>
-							<TouchableOpacity
-								style={[
-									styles.button,
-									saving && styles.buttonDisabled,
-								]}
-								onPress={handleSubmit}
-								disabled={saving}
-							>
-								<Text style={styles.buttonText}>
-									{saving ? "Saving..." : "Create Drill"}
+						{/* Only show image upload for premium users */}
+						{role === 'premium' || role === 'Premium' ? (
+							<>
+								<Text style={styles.label}>
+									Upload Image (optional)
 								</Text>
-							</TouchableOpacity>
-						</View>
+								<TouchableOpacity
+									style={styles.imageUploadButton}
+									onPress={pickImage}
+								>
+									<Text style={styles.imageUploadButtonText}>
+										{imageUri ? "Change Image" : "Pick an Image"}
+									</Text>
+								</TouchableOpacity>
+
+								{imageUri && (
+									<Image
+										source={{ uri: imageUri }}
+										style={styles.previewImage}
+										resizeMode="cover"
+									/>
+								)}
+							</>
+						) : (
+							<View style={styles.premiumFeatureContainer}>
+								<Text style={styles.premiumFeatureText}>
+									Add images to your drills with Premium
+								</Text>
+								<TouchableOpacity
+									style={styles.upgradeButton}
+									onPress={() => {
+										Alert.alert(
+											"Coming Soon!",
+											"Premium features are currently in development. Stay tuned for updates!",
+											[{ text: "OK", style: "default" }]
+										);
+									}}
+								>
+									<Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+								</TouchableOpacity>
+							</View>
+						)}
 					</View>
 				</TouchableWithoutFeedback>
 			</ScrollView>
+			
+			{/* Sticky button at bottom */}
+			<View style={styles.stickyButtonContainer}>
+				<TouchableOpacity
+					style={[
+						styles.button,
+						saving && styles.buttonDisabled,
+					]}
+					onPress={handleSubmit}
+					disabled={saving}
+				>
+					<Text style={styles.buttonText}>
+						{saving ? "Saving..." : "Create Drill"}
+					</Text>
+				</TouchableOpacity>
+			</View>
 		</KeyboardAvoidingView>
 	);
 }
@@ -439,6 +476,7 @@ const styles = StyleSheet.create({
 	container: {
 		flexGrow: 1,
 		padding: 16,
+		paddingBottom: 100, // Add space for sticky button
 		backgroundColor: theme.colors.background,
 	},
 	label: {
@@ -523,6 +561,16 @@ const styles = StyleSheet.create({
 		marginTop: 20,
 		marginBottom: 40,
 	},
+	stickyButtonContainer: {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		backgroundColor: theme.colors.background,
+		padding: 16,
+		borderTopWidth: 1,
+		borderTopColor: theme.colors.border,
+	},
 	button: {
 		backgroundColor: theme.colors.primary,
 		padding: 16,
@@ -544,5 +592,33 @@ const styles = StyleSheet.create({
 	},
 	headerButtonDisabled: {
 		color: theme.colors.textMuted,
+	},
+	premiumFeatureContainer: {
+		backgroundColor: theme.colors.surface,
+		borderRadius: 12,
+		padding: 16,
+		marginTop: 16,
+		marginBottom: 16,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+		alignItems: "center",
+	},
+	premiumFeatureText: {
+		fontSize: 16,
+		color: theme.colors.textMuted,
+		marginBottom: 12,
+		textAlign: "center",
+	},
+	upgradeButton: {
+		backgroundColor: '#8B5CF6',
+		paddingVertical: 12,
+		paddingHorizontal: 20,
+		borderRadius: 8,
+		alignItems: "center",
+	},
+	upgradeButtonText: {
+		color: theme.colors.white,
+		fontSize: 16,
+		fontWeight: "600",
 	},
 });

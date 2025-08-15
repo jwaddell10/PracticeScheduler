@@ -3,6 +3,7 @@ import { NavigationContainer, DefaultTheme } from "@react-navigation/native";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { MaterialIcons } from "@expo/vector-icons";
+import { View } from "react-native";
 
 import HomeScreen from "./components/Home";
 import CreatePractice from "./components/CreatePractice";
@@ -18,9 +19,11 @@ import Practices from "./components/Practices";
 
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
+import { useUserRole } from "./hooks/useUserRole";
 
 import theme from "./components/styles/theme"; // Make sure this path is correct
 import YourDrills from "./components/YourDrills";
+import UpgradeToPremiumBanner from "./components/UpgradeToPremiumBanner";
 
 // ----- Custom Navigation Theme -----
 const navigationTheme = {
@@ -75,8 +78,26 @@ function HomeStackScreen() {
 	);
 }
 
+// Component to show upgrade banner for free users
+function DrillsUpgradeScreen() {
+	return (
+		<View style={{ flex: 1, backgroundColor: theme.colors.background, padding: 20 }}>
+			<View style={{ flex: 1, justifyContent: 'center' }}>
+				<UpgradeToPremiumBanner />
+			</View>
+		</View>
+	);
+}
+
 const DrillStack = createNativeStackNavigator();
 function DrillStackScreen() {
+	const { role, loading } = useUserRole();
+	
+	// Show upgrade screen for free users, drills for premium users
+	const DrillsComponent = (!loading && role !== 'premium' && role !== 'Premium') 
+		? DrillsUpgradeScreen 
+		: Drills;
+
 	return (
 		<DrillStack.Navigator
 			screenOptions={{
@@ -84,7 +105,7 @@ function DrillStackScreen() {
 				headerTintColor: theme.colors.textPrimary,
 			}}
 		>
-			<DrillStack.Screen name="Drills" component={Drills} />
+			<DrillStack.Screen name="Drills" component={DrillsComponent} />
 			<DrillStack.Screen name="DrillDetails" component={DrillDetails} />
 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} />
 		</DrillStack.Navigator>
