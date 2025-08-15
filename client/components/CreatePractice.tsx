@@ -13,6 +13,7 @@ import {
 	Button,
 	Modal,
 	Image, // Added Image import
+	TextInput,
 } from "react-native";
 import { SafeAreaView, SafeAreaProvider } from "react-native-safe-area-context";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -20,7 +21,12 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import PracticeDateTimePicker from "./PracticeDateTimePicker";
 import { useDrills } from "../context/DrillsContext";
 import { usePractices } from "../context/PracticesContext";
+import { useFavorites } from "../context/FavoritesContext";
+import { useSession } from "../context/SessionContext";
+import { useDrillFilters } from "../hooks/useDrillFilters";
+import DrillFilterModal from "./DrillFilterModal";
 import AntDesign from "@expo/vector-icons/AntDesign";
+import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
 
 interface DrillData {
@@ -43,6 +49,9 @@ const CreatePractice = () => {
 	const [questionModalVisible, setQuestionModalVisible] = useState(false);
 	const [selectedDrillForDetails, setSelectedDrillForDetails] =
 		useState<DrillData | null>(null);
+	const [drillSourceToggle, setDrillSourceToggle] = useState<'public' | 'user'>('public');
+	const [searchQuery, setSearchQuery] = useState("");
+	const [showFilters, setShowFilters] = useState(false);
 
 	const [drills, setDrills] = useState<DrillData[]>([]);
 	const [startDate, setStartDate] = useState<Date | null>(null);
@@ -51,18 +60,141 @@ const CreatePractice = () => {
 	const [notes, setNotes] = useState(""); // Added notes state
 
 	const {
+		selectedFilters,
+		skillFocusOptions,
+		difficultyOptions,
+		typeOptions,
+		toggleFilter,
+		clearAllFilters,
+		hasActiveFilters,
+		filterDrills,
+	} = useDrillFilters();
+
+	const {
 		publicDrills: drillsData,
+		userDrills,
 		loading: drillsLoading,
 		error: drillsError,
 	} = useDrills();
 
+	const {
+		favoriteDrills,
+		favoriteDrillIds,
+		loading: favoritesLoading,
+		error: favoritesError,
+	} = useFavorites();
+
+	const session = useSession();
+
 	// Update local state when hook data changes
 	useEffect(() => {
-		if (drillsData && drillsData.length > 0) {
-			setAvailableDrills(drillsData.map((d: any) => d.name));
-			setDrills(drillsData);
+		let currentDrills: any[] = [];
+		
+		if (drillSourceToggle === 'public' && drillsData && drillsData.length > 0) {
+			currentDrills = drillsData;
+		} else if (drillSourceToggle === 'user') {
+			// Combine user's own drills and favorites
+			const combined = [];
+			const seenIds = new Set();
+
+			if (userDrills) {
+				userDrills.forEach((drill) => {
+					if (drill.user_id === session?.user?.id) {
+						combined.push(drill);
+						seenIds.add(drill.id);
+					}
+				});
+			}
+
+			if (favoriteDrills) {
+				favoriteDrills.forEach((drill) => {
+					if (
+						drill.user_id !== session?.user?.id &&
+						!seenIds.has(drill.id)
+					) {
+						combined.push(drill);
+						seenIds.add(drill.id);
+					}
+				});
+			}
+			currentDrills = combined;
 		}
-	}, [drillsData]);
+
+		// Apply filters
+		const filteredDrills = filterDrills(currentDrills);
+
+		// Apply search filter
+		const searchFilteredDrills = searchQuery.trim() === "" 
+			? filteredDrills 
+			: filteredDrills.filter((drill) => {
+				const searchLower = searchQuery.toLowerCase();
+				return (
+					drill.name?.toLowerCase().includes(searchLower) ||
+					drill.skillFocus?.toLowerCase().includes(searchLower) ||
+					drill.type?.toLowerCase().includes(searchLower) ||
+					drill.difficulty?.toLowerCase().includes(searchLower) ||
+					drill.notes?.toLowerCase().includes(searchLower)
+				);
+			});
+
+		setAvailableDrills(searchFilteredDrills.map((d: any) => d.name));
+		setDrills(searchFilteredDrills);
+	}, [drillsData, userDrills, favoriteDrills, drillSourceToggle, session?.user?.id, selectedFilters, searchQuery]);
+
+	// Organize drills by type and skill focus
+	const organizeDrills = (drills: any[]) => {
+		const organized = {};
+		
+		drills.forEach((drill) => {
+			// Parse type
+			let drillType = ["Individual"];
+			if (drill.type) {
+				try {
+					const parsed = JSON.parse(drill.type);
+					drillType = Array.isArray(parsed) ? parsed : [parsed];
+				} catch {
+					drillType = [drill.type];
+				}
+			}
+			
+			// Determine if it's a team drill or individual drill
+			const isTeamDrill = drillType.some((type) => 
+				type.toLowerCase().includes("team")
+			);
+			const typeKey = isTeamDrill ? "team" : "individual";
+			
+			// Parse skill focus
+			let skillFocuses = ["General"];
+			if (drill.skillFocus) {
+				try {
+					const parsed = JSON.parse(drill.skillFocus);
+					const skills = Array.isArray(parsed) ? parsed : [parsed];
+					if (skills.length > 0) {
+						skillFocuses = skills.map(skill => skill.toLowerCase());
+					}
+				} catch {
+					if (drill.skillFocus) {
+						skillFocuses = [drill.skillFocus.toLowerCase()];
+					}
+				}
+			}
+			
+			// Add drill to each skill focus category
+			skillFocuses.forEach(skillFocus => {
+				if (!organized[typeKey]) {
+					organized[typeKey] = {};
+				}
+				if (!organized[typeKey][skillFocus]) {
+					organized[typeKey][skillFocus] = [];
+				}
+				organized[typeKey][skillFocus].push(drill);
+			});
+		});
+		
+		return organized;
+	};
+
+	const organizedDrills = organizeDrills(drills);
 
 	// Handle loading and error states if needed
 	if (drillsLoading) {
@@ -200,13 +332,21 @@ const CreatePractice = () => {
 									<Text style={styles.label}>
 										Selected Drills
 									</Text>
-									<Button
+									<TouchableOpacity
 										onPress={() =>
 											setDrillSelectionModalVisible(true)
 										}
-										title="Add Drills"
-										color={theme.colors.primary}
-									/>
+										style={styles.addDrillsButton}
+									>
+										<AntDesign 
+											name="plus" 
+											size={20} 
+											color={theme.colors.white} 
+										/>
+										<Text style={styles.addDrillsButtonText}>
+											Add Drills
+										</Text>
+									</TouchableOpacity>
 
 									{/* Display Selected Drills */}
 									{selectedDrills.length > 0 && (
@@ -274,84 +414,140 @@ const CreatePractice = () => {
 												<Text style={styles.modalTitle}>
 													Select Drills
 												</Text>
+												
+												{/* Drill Source Toggle */}
+												<View style={styles.toggleContainer}>
+													<TouchableOpacity
+														style={[
+															styles.toggleButton,
+															drillSourceToggle === 'public' && styles.toggleButtonActive
+														]}
+														onPress={() => setDrillSourceToggle('public')}
+													>
+														<Text style={[
+															styles.toggleButtonText,
+															drillSourceToggle === 'public' && styles.toggleButtonTextActive
+														]}>
+															Drills
+														</Text>
+													</TouchableOpacity>
+													<TouchableOpacity
+														style={[
+															styles.toggleButton,
+															drillSourceToggle === 'user' && styles.toggleButtonActive
+														]}
+														onPress={() => setDrillSourceToggle('user')}
+													>
+														<Text style={[
+															styles.toggleButtonText,
+															drillSourceToggle === 'user' && styles.toggleButtonTextActive
+														]}>
+															Your Drills
+														</Text>
+													</TouchableOpacity>
+												</View>
+												
+												{/* Search Bar */}
+												<View style={styles.searchContainer}>
+													<View style={styles.searchInputContainer}>
+														<MaterialIcons
+															name="search"
+															size={20}
+															color={theme.colors.textMuted}
+															style={styles.searchIcon}
+														/>
+														<TextInput
+															style={styles.searchInput}
+															placeholder="Search drills..."
+															value={searchQuery}
+															onChangeText={setSearchQuery}
+															placeholderTextColor={theme.colors.textMuted}
+														/>
+														{searchQuery.length > 0 && (
+															<TouchableOpacity
+																onPress={() => setSearchQuery("")}
+																style={styles.clearSearchButton}
+															>
+																<MaterialIcons
+																	name="close"
+																	size={20}
+																	color={theme.colors.textMuted}
+																/>
+															</TouchableOpacity>
+														)}
+														<TouchableOpacity
+															onPress={() => setShowFilters(true)}
+															style={[
+																styles.filterButton,
+																hasActiveFilters() && styles.filterButtonActive,
+															]}
+														>
+															<MaterialIcons
+																name="filter-list"
+																size={20}
+																color={hasActiveFilters() ? theme.colors.white : theme.colors.textMuted}
+															/>
+															{hasActiveFilters() && <View style={styles.filterBadge} />}
+														</TouchableOpacity>
+													</View>
+												</View>
+												
 												<ScrollView
-													style={{ maxHeight: 300 }}
+													style={{ maxHeight: 400 }}
+													showsVerticalScrollIndicator={false}
 												>
-													{availableDrills.map(
-														(drill, index) => {
-															const selected =
-																selectedDrills.includes(
-																	drill
-																);
-															return (
-																<TouchableOpacity
-																	key={index}
-																	style={[
-																		styles.drillItem,
-																		selected &&
-																			styles.drillItemSelected,
-																	]}
-																	onPress={() => {
-																		if (
-																			selected
-																		) {
-																			setSelectedDrills(
-																				(
-																					prev
-																				) =>
-																					prev.filter(
-																						(
-																							d
-																						) =>
-																							d !==
-																							drill
-																					)
+													{Object.keys(organizedDrills).length === 0 ? (
+														<View style={styles.emptyState}>
+															<Text style={styles.emptyStateText}>
+																No drills found
+															</Text>
+														</View>
+													) : (
+														Object.entries(organizedDrills).map(([type, skillFocusGroups]) => (
+															<View key={type} style={styles.section}>
+																<Text style={styles.header}>
+																	{type.replace(/\b\w/g, (c) => c.toUpperCase())} Drills (
+																	{Object.values(skillFocusGroups).flat().length})
+																</Text>
+																{Object.entries(skillFocusGroups).map(([skillFocus, drills]) => (
+																	<View key={`${type}-${skillFocus}`} style={styles.section}>
+																		<Text style={styles.categoryTitle}>
+																			{skillFocus.replace(/\b\w/g, (c) => c.toUpperCase())} ({drills.length})
+																		</Text>
+																		{drills.map((drill) => {
+																			const selected = selectedDrills.includes(drill.name);
+																			return (
+																				<TouchableOpacity
+																					key={drill.id}
+																					style={[
+																						styles.drillItem,
+																						selected && styles.drillItemSelected,
+																					]}
+																					onPress={() => {
+																						if (selected) {
+																							setSelectedDrills((prev) =>
+																								prev.filter((d) => d !== drill.name)
+																							);
+																						} else {
+																							setSelectedDrills((prev) => [...prev, drill.name]);
+																						}
+																					}}
+																				>
+																					<Text
+																						style={[
+																							styles.drillItemText,
+																							selected && styles.drillItemTextSelected,
+																						]}
+																					>
+																						{drill.name}
+																					</Text>
+																				</TouchableOpacity>
 																			);
-																		} else {
-																			setSelectedDrills(
-																				(
-																					prev
-																				) => [
-																					...prev,
-																					drill,
-																				]
-																			);
-																		}
-																	}}
-																>
-																	<Text
-																		style={[
-																			styles.drillItemText,
-																			selected &&
-																				styles.drillItemTextSelected,
-																		]}
-																	>
-																		{drill}
-																	</Text>
-																	<TouchableOpacity
-																		onPress={() =>
-																			handleDrillQuestionClick(
-																				drill
-																			)
-																		}
-																	>
-																		<AntDesign
-																			name="questioncircleo"
-																			size={
-																				24
-																			}
-																			color={
-																				selected
-																					? "#fff"
-																					: theme
-																							.colors
-																							.secondary
-																			}
-																		/>
-																	</TouchableOpacity>
-																</TouchableOpacity>
-															);
-														}
+																		})}
+																	</View>
+																))}
+															</View>
+														))
 													)}
 												</ScrollView>
 												<TouchableOpacity
@@ -656,6 +852,19 @@ const CreatePractice = () => {
 						</TouchableWithoutFeedback>
 					</KeyboardAvoidingView>
 				</GestureHandlerRootView>
+
+				{/* Drill Filter Modal */}
+				<DrillFilterModal
+					visible={showFilters}
+					onClose={() => setShowFilters(false)}
+					selectedFilters={selectedFilters}
+					skillFocusOptions={skillFocusOptions}
+					difficultyOptions={difficultyOptions}
+					typeOptions={typeOptions}
+					toggleFilter={toggleFilter}
+					clearAllFilters={clearAllFilters}
+					filteredCount={drills.length}
+				/>
 			</SafeAreaView>
 		</SafeAreaProvider>
 	);
@@ -861,6 +1070,127 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: "rgba(0, 0, 0, 0.5)",
 		padding: 20, // Add padding instead of using margins in modalContent
+	},
+	addDrillsButton: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "center",
+		backgroundColor: theme.colors.primary,
+		paddingVertical: 12,
+		paddingHorizontal: 20,
+		borderRadius: 12,
+		marginTop: 8,
+		marginBottom: 16,
+		shadowColor: theme.colors.primary,
+		shadowOpacity: 0.3,
+		shadowOffset: { width: 0, height: 3 },
+		shadowRadius: 6,
+		elevation: 4,
+	},
+	addDrillsButtonText: {
+		color: theme.colors.white,
+		fontWeight: "600",
+		fontSize: 16,
+		marginLeft: 8,
+	},
+	toggleContainer: {
+		flexDirection: "row",
+		backgroundColor: theme.colors.background,
+		borderRadius: 12,
+		padding: 4,
+		marginBottom: 16,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+	},
+	toggleButton: {
+		flex: 1,
+		paddingVertical: 8,
+		paddingHorizontal: 16,
+		borderRadius: 8,
+		alignItems: "center",
+	},
+	toggleButtonActive: {
+		backgroundColor: theme.colors.primary,
+	},
+	toggleButtonText: {
+		color: theme.colors.textMuted,
+		fontWeight: "500",
+		fontSize: 14,
+	},
+	toggleButtonTextActive: {
+		color: theme.colors.white,
+		fontWeight: "600",
+	},
+	// Search styles
+	searchContainer: {
+		marginBottom: 16,
+	},
+	searchInputContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: theme.colors.background,
+		borderRadius: 12,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+	},
+	searchIcon: {
+		marginRight: 8,
+	},
+	searchInput: {
+		flex: 1,
+		fontSize: 16,
+		color: theme.colors.textPrimary,
+		paddingVertical: 4,
+	},
+	clearSearchButton: {
+		padding: 4,
+	},
+	filterButton: {
+		padding: 8,
+		borderRadius: 8,
+		marginLeft: 8,
+		position: "relative",
+	},
+	filterButtonActive: {
+		backgroundColor: theme.colors.primary,
+	},
+	filterBadge: {
+		position: "absolute",
+		top: 2,
+		right: 2,
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: theme.colors.error,
+	},
+	// Organization styles
+	header: {
+		fontSize: 26,
+		fontWeight: "700",
+		color: theme.colors.textPrimary,
+		marginVertical: 12,
+	},
+	categoryTitle: {
+		fontSize: 20,
+		fontWeight: "600",
+		color: theme.colors.textPrimary,
+		textTransform: "capitalize",
+		marginBottom: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: theme.colors.border,
+		paddingBottom: 6,
+	},
+	emptyState: {
+		alignItems: "center",
+		paddingVertical: 48,
+	},
+	emptyStateText: {
+		fontSize: 16,
+		color: theme.colors.textMuted,
+		marginTop: 16,
+		textAlign: "center",
 	},
 });
 
