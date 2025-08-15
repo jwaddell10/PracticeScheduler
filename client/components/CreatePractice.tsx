@@ -98,6 +98,11 @@ const CreatePractice = () => {
 		console.log('questionModalVisible changed to:', questionModalVisible);
 	}, [questionModalVisible]);
 
+	// Monitor filter modal state changes
+	useEffect(() => {
+		console.log('showFilters changed to:', showFilters);
+	}, [showFilters]);
+
 	// Update local state when hook data changes
 	useEffect(() => {
 		let currentDrills: any[] = [];
@@ -557,7 +562,11 @@ const CreatePractice = () => {
 															</TouchableOpacity>
 														)}
 														<TouchableOpacity
-															onPress={() => setShowFilters(true)}
+															onPress={() => {
+																console.log('Filter button pressed, setting showFilters to true');
+																setDrillSelectionModalVisible(false); // Close drill selection modal first
+																setShowFilters(true);
+															}}
 															style={[
 																styles.filterButton,
 																hasActiveFilters() && styles.filterButtonActive,
@@ -939,7 +948,10 @@ const CreatePractice = () => {
 				{/* Drill Filter Modal */}
 				<DrillFilterModal
 					visible={showFilters}
-					onClose={() => setShowFilters(false)}
+					onClose={() => {
+						setShowFilters(false);
+						setDrillSelectionModalVisible(true); // Reopen drill selection modal
+					}}
 					selectedFilters={selectedFilters}
 					skillFocusOptions={skillFocusOptions}
 					difficultyOptions={difficultyOptions}
@@ -947,6 +959,7 @@ const CreatePractice = () => {
 					toggleFilter={toggleFilter}
 					clearAllFilters={clearAllFilters}
 					filteredCount={drills.length}
+					extraTopPadding={true}
 				/>
 			</SafeAreaView>
 		</SafeAreaProvider>

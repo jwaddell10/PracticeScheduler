@@ -25,14 +25,13 @@ const CustomCancelButton = ({ onPress }) => (
 		style={{
 			backgroundColor: '#FF3B30',
 			paddingVertical: 12,
+			paddingHorizontal: 16,
 			borderRadius: 8,
 			minHeight: 44,
-			position: 'absolute',
-			left: 0,
-			right: 0,
-			bottom: 0,
 			justifyContent: 'center',
 			alignItems: 'center',
+			marginHorizontal: 16,
+			marginBottom: 8,
 		}}
 		activeOpacity={0.8}
 	>
@@ -351,9 +350,9 @@ export default function PracticeDetails({ route }) {
 								display="spinner"
 								modalStyleIOS={{
 									backgroundColor: theme.colors.surface,
-									height: '25%',
+									height: '35%',
 									alignSelf: 'center',
-									marginTop: '200%',
+									marginTop: '150%',
 									borderRadius: 12,
 								}}
 								buttonTextColorIOS={theme.colors.white}
