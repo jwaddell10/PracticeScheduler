@@ -14,6 +14,7 @@ import PremiumScreen from "./components/PremiumFeaturesScreen";
 import Auth from "./components/Auth";
 import Account from "./components/Account";
 import Modal from "./components/Modal";
+import Practices from "./components/Practices";
 
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
@@ -115,6 +116,25 @@ function FavoriteDrillsStackScreen() {
 	);
 }
 
+const PracticesStack = createNativeStackNavigator();
+function PracticesStackScreen() {
+	return (
+		<PracticesStack.Navigator
+			screenOptions={{
+				headerStyle: { backgroundColor: theme.colors.surface },
+				headerTintColor: theme.colors.textPrimary,
+			}}
+		>
+			<PracticesStack.Screen name="Practices" component={Practices} />
+			<PracticesStack.Screen name="Practice" component={CreatePractice} />
+			<PracticesStack.Screen
+				name="Practice Details"
+				component={PracticeDetails}
+			/>
+		</PracticesStack.Navigator>
+	);
+}
+
 // ----- Bottom Tab Navigator -----
 const Tab = createBottomTabNavigator();
 
@@ -139,6 +159,9 @@ export default function Navigation() {
 							switch (route.name) {
 								case "HomeTab":
 									iconName = "home";
+									break;
+								case "PracticesTab":
+									iconName = "event";
 									break;
 								case "DrillsTab":
 									iconName = "fitness-center";
@@ -170,6 +193,11 @@ export default function Navigation() {
 								name="HomeTab"
 								component={HomeStackScreen}
 								options={{ title: "Home" }}
+							/>
+							<Tab.Screen
+								name="PracticesTab"
+								component={PracticesStackScreen}
+								options={{ title: "Practices" }}
 							/>
 							<Tab.Screen
 								name="DrillsTab"
