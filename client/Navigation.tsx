@@ -47,7 +47,7 @@ function HomeStackScreen() {
 			<HomeStack.Screen name="Home" component={HomeScreen} />
 			<HomeStack.Screen name="Practice" component={CreatePractice} />
 			<HomeStack.Screen
-				name="PracticeDetails"
+				name="Practice Details"
 				component={PracticeDetails}
 			/>
 			<HomeStack.Screen

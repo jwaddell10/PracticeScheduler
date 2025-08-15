@@ -75,7 +75,7 @@ export default function HomeScreen() {
 	const renderPracticeItem = ({ item }) => (
 		<TouchableOpacity
 			onPress={() =>
-				navigation.navigate("PracticeDetails", { practiceId: item.id })
+				navigation.navigate("Practice Details", { practiceId: item.id })
 			}
 			style={styles.practiceItem}
 		>
