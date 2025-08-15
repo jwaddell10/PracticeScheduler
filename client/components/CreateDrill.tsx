@@ -406,8 +406,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 							</View>
 						)}
 
-						{/* Only show image upload for premium users */}
-						{role === 'premium' || role === 'Premium' ? (
+						{/* Only show image upload for premium users or admins */}
+						{role === 'premium' || role === 'Premium' || isAdmin ? (
 							<>
 								<Text style={styles.label}>
 									Upload Image (optional)

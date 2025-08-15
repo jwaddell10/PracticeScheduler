@@ -91,10 +91,10 @@ function DrillsUpgradeScreen() {
 
 const DrillStack = createNativeStackNavigator();
 function DrillStackScreen() {
-	const { role, loading } = useUserRole();
+	const { role, loading, isAdmin } = useUserRole();
 	
-	// Show upgrade screen for free users, drills for premium users
-	const DrillsComponent = (!loading && role !== 'premium' && role !== 'Premium') 
+	// Show upgrade screen for free users, drills for premium users or admins
+	const DrillsComponent = (!loading && role !== 'premium' && role !== 'Premium' && !isAdmin) 
 		? DrillsUpgradeScreen 
 		: Drills;
 
