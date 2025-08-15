@@ -27,7 +27,10 @@ const CustomCancelButton = ({ onPress }) => (
 			paddingVertical: 12,
 			borderRadius: 8,
 			minHeight: 44,
-			flex: 1,
+			position: 'absolute',
+			left: 0,
+			right: 0,
+			bottom: 0,
 			justifyContent: 'center',
 			alignItems: 'center',
 		}}
@@ -78,15 +81,28 @@ export default function PracticeDetails({ route }) {
 			setPractice(data);
 			// Parse the stored datetime as local time (not UTC)
 			setStartDate(new Date(data.startTime.replace("Z", "")));
-			setDuration(data.duration || 60);
+			// Calculate duration from startTime and endTime if available, otherwise use default
+			if (data.startTime && data.endTime) {
+				const start = new Date(data.startTime.replace("Z", ""));
+				const end = new Date(data.endTime.replace("Z", ""));
+				const diffMinutes = Math.round((end - start) / (1000 * 60));
+				setDuration(diffMinutes > 0 ? diffMinutes : 60);
+			} else {
+				setDuration(60); // Default duration
+			}
 			setNotes(data.notes || "");
 			setDrills(data.drills || []);
 			
-			// Initialize drill durations
+			// Initialize drill durations from JSONB array format
 			const initialDurations = {};
 			if (data.drills) {
 				data.drills.forEach((drill, index) => {
-					initialDurations[index] = data.drillDurations?.[index] || Math.floor(data.duration / data.drills.length);
+					// Handle JSONB array format from database
+					const storedDuration = data.drillDuration && Array.isArray(data.drillDuration)
+						? data.drillDuration[index]
+						: Math.floor(data.duration / data.drills.length);
+					const drillKey = `${drill}-${index}`;
+					initialDurations[drillKey] = storedDuration || 0;
 				});
 			}
 			setDrillDurations(initialDurations);
@@ -108,14 +124,64 @@ export default function PracticeDetails({ route }) {
 			startSaved: startTimeString,
 		});
 
+		// Calculate total drill duration for validation
+		let totalDrillDuration = 0;
+		for (const [key, value] of Object.entries(drillDurations)) {
+			if ((value as number) > 0) {
+				totalDrillDuration += value as number;
+			}
+		}
+
+		// Validate that drill durations sum to practice duration
+		if (totalDrillDuration !== duration) {
+			Alert.alert(
+				"Duration Mismatch", 
+				`Total drill duration (${totalDrillDuration} min) must equal practice duration (${duration} min). Please adjust the drill durations.`
+			);
+			setSaving(false);
+			return;
+		}
+
+		// Convert drillDurations object to array format for JSONB storage
+		const drillDurationArray = drills.map((drill, index) => {
+			// Find the duration by searching all keys that start with the drill name
+			let duration = 0;
+			let foundKey = '';
+			
+			// First, try to find a key with a non-zero duration
+			for (const [key, value] of Object.entries(drillDurations)) {
+				if (key.startsWith(`${drill}-`) && (value as number) > 0) {
+					duration = value as number;
+					foundKey = key;
+					console.log(`Found non-zero duration for ${drill} using key ${key}: ${duration}`);
+					break;
+				}
+			}
+			
+			// If no non-zero duration found, use the first key with index 0
+			if (duration === 0) {
+				for (const [key, value] of Object.entries(drillDurations)) {
+					if (key === `${drill}-0`) {
+						duration = value as number;
+						foundKey = key;
+						console.log(`Found duration for ${drill} using key ${key}: ${duration}`);
+						break;
+					}
+				}
+			}
+			
+			console.log(`Drill ${drill} at index ${index}: final duration = ${duration} (from key: ${foundKey})`);
+			return duration;
+		});
+		console.log('Final drillDurationArray:', drillDurationArray);
+
 		const { error } = await supabase
 			.from("Practice")
 			.update({
 				startTime: startTimeString,
-				duration: duration,
 				notes,
 				drills,
-				drillDurations: drillDurations,
+				drillDuration: drillDurationArray,
 			})
 			.eq("id", practiceId);
 
@@ -156,7 +222,34 @@ export default function PracticeDetails({ route }) {
 	}
 
 	const renderDrill = ({ item, index, drag, isActive }) => {
-		const drillDuration = drillDurations[index] || 0;
+		// Find the duration using the same logic as the save function
+		let drillDuration = 0;
+		let drillKey = '';
+		
+		// First, try to find a key with a non-zero duration
+		for (const [key, value] of Object.entries(drillDurations)) {
+			if (key.startsWith(`${item}-`) && (value as number) > 0) {
+				drillDuration = value as number;
+				drillKey = key;
+				break;
+			}
+		}
+		
+		// If no non-zero duration found, use the first key with index 0
+		if (drillDuration === 0) {
+			for (const [key, value] of Object.entries(drillDurations)) {
+				if (key === `${item}-0`) {
+					drillDuration = value as number;
+					drillKey = key;
+					break;
+				}
+			}
+		}
+		
+		// If still no key found, create a default one
+		if (!drillKey) {
+			drillKey = `${item}-0`;
+		}
 		const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
 		const isDurationValid = totalDrillDuration === duration;
 		
@@ -175,6 +268,7 @@ export default function PracticeDetails({ route }) {
 					</Text>
 					<View style={styles.durationInputContainer}>
 						<TextInput
+							key={`drill-duration-${drillKey}`}
 							style={[
 								styles.durationInput,
 								isActive && { color: theme.colors.white, borderColor: theme.colors.white }
@@ -182,10 +276,15 @@ export default function PracticeDetails({ route }) {
 							value={drillDuration.toString()}
 							onChangeText={(text) => {
 								const newDuration = parseInt(text) || 0;
-								setDrillDurations(prev => ({
-									...prev,
-									[index]: newDuration
-								}));
+								console.log(`Updating drill ${drillKey} duration to: ${newDuration}`);
+								setDrillDurations(prev => {
+									const updated = {
+										...prev,
+										[drillKey]: newDuration
+									};
+									console.log('Updated drillDurations:', updated);
+									return updated;
+								});
 							}}
 							keyboardType="numeric"
 							placeholder="0"
@@ -296,8 +395,11 @@ export default function PracticeDetails({ route }) {
 								value={notes}
 								onChangeText={handleNotesChange}
 								placeholder="Add notes about this practice..."
-								placeholderTextColor="#aaa"
+								placeholderTextColor={theme.colors.textMuted}
+								returnKeyType="done"
 								onSubmitEditing={Keyboard.dismiss}
+								blurOnSubmit={true}
+								keyboardAppearance="dark"
 							/>
 
 							<Text style={[styles.label, { marginTop: 24 }]}>
@@ -329,19 +431,35 @@ export default function PracticeDetails({ route }) {
 				</ScrollView>
 
 				<View style={styles.stickyButtonContainer}>
-					<TouchableOpacity
-						style={[
-							styles.saveButton,
-							saving && styles.saveButtonDisabled,
-						]}
-						onPress={saveChanges}
-						disabled={saving}
-						activeOpacity={0.8}
-					>
-						<Text style={styles.saveButtonText}>
-							{saving ? "Saving..." : "Save Changes"}
-						</Text>
-					</TouchableOpacity>
+					{(() => {
+						const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
+						const isDurationValid = totalDrillDuration === duration;
+						const isDisabled = saving || !isDurationValid;
+						
+						return (
+							<TouchableOpacity
+								style={[
+									styles.saveButton,
+									isDisabled && styles.saveButtonDisabled,
+								]}
+								onPress={() => {
+									if (isDisabled && !saving) {
+										Alert.alert(
+											"Duration Mismatch", 
+											`Total drill duration (${totalDrillDuration} min) must equal practice duration (${duration} min). Please adjust the drill durations.`
+										);
+									} else {
+										saveChanges();
+									}
+								}}
+								activeOpacity={0.8}
+							>
+								<Text style={styles.saveButtonText}>
+									{saving ? "Saving..." : "Save Changes"}
+								</Text>
+							</TouchableOpacity>
+						);
+					})()}
 				</View>
 			</View>
 		</GestureHandlerRootView>
