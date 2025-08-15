@@ -8,6 +8,8 @@ import {
 	TouchableOpacity,
 	StyleSheet,
 	Modal,
+	TextInput,
+	ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
@@ -19,6 +21,7 @@ import { useDrillFilters } from "../hooks/useDrillFilters";
 import DrillFilterModal from "../components/DrillFilterModal";
 import ActiveFiltersBar from "../components/ActiveFiltersBar";
 import CreateDrill from "./CreateDrill";
+import theme from "./styles/theme";
 
 export default function YourDrills() {
 	const {
@@ -40,6 +43,7 @@ export default function YourDrills() {
 	const navigation = useNavigation();
 	const [showFilters, setShowFilters] = useState(false);
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
+	const [searchQuery, setSearchQuery] = useState("");
 
 	const {
 		selectedFilters,
@@ -121,27 +125,84 @@ export default function YourDrills() {
 	const combinedDrills = combineDrills();
 	const filteredDrills = filterDrills(combinedDrills || []);
 
+	// Apply search filter
+	const searchFilteredDrills = searchQuery.trim() === "" 
+		? filteredDrills 
+		: filteredDrills.filter((drill) => {
+			const searchLower = searchQuery.toLowerCase();
+			return (
+				drill.name?.toLowerCase().includes(searchLower) ||
+				drill.skillFocus?.toLowerCase().includes(searchLower) ||
+				drill.type?.toLowerCase().includes(searchLower) ||
+				drill.difficulty?.toLowerCase().includes(searchLower) ||
+				drill.notes?.toLowerCase().includes(searchLower)
+			);
+		});
+
+	// Organize drills by type and skill focus
+	const organizeDrills = (drills) => {
+		const organized = {};
+		
+		drills.forEach((drill) => {
+			// Parse type
+			let drillType = ["Individual"];
+			if (drill.type) {
+				try {
+					const parsed = JSON.parse(drill.type);
+					drillType = Array.isArray(parsed) ? parsed : [parsed];
+				} catch {
+					drillType = [drill.type];
+				}
+			}
+			
+			// Determine if it's a team drill or individual drill
+			const isTeamDrill = drillType.some((type) => 
+				type.toLowerCase().includes("team")
+			);
+			const typeKey = isTeamDrill ? "team" : "individual";
+			
+			// Parse skill focus
+			let skillFocuses = ["General"];
+			if (drill.skillFocus) {
+				try {
+					const parsed = JSON.parse(drill.skillFocus);
+					const skills = Array.isArray(parsed) ? parsed : [parsed];
+					if (skills.length > 0) {
+						skillFocuses = skills.map(skill => skill.toLowerCase());
+					}
+				} catch {
+					if (drill.skillFocus) {
+						skillFocuses = [drill.skillFocus.toLowerCase()];
+					}
+				}
+			}
+			
+			// Add drill to each skill focus category
+			skillFocuses.forEach(skillFocus => {
+				if (!organized[typeKey]) {
+					organized[typeKey] = {};
+				}
+				if (!organized[typeKey][skillFocus]) {
+					organized[typeKey][skillFocus] = [];
+				}
+				organized[typeKey][skillFocus].push(drill);
+			});
+		});
+		
+		return organized;
+	};
+
+	const organizedDrills = organizeDrills(searchFilteredDrills);
+
 	const loading = favoritesLoading || userDrillsLoading;
 	const error = favoritesError || userDrillsError;
 
-	// Keep filter button in header
+	// Remove header filter button since we'll add it to search bar
 	useLayoutEffect(() => {
 		navigation.setOptions({
-			headerRight: () => (
-				<TouchableOpacity
-					onPress={() => setShowFilters(true)}
-					style={styles.headerButton}
-				>
-					<MaterialIcons
-						name="filter-list"
-						size={24}
-						color="#007AFF"
-					/>
-					{hasActiveFilters() && <View style={styles.filterBadge} />}
-				</TouchableOpacity>
-			),
+			headerRight: () => null,
 		});
-	}, [navigation, hasActiveFilters]);
+	}, [navigation]);
 
 	const formatArrayValue = (value) => {
 		if (
@@ -361,26 +422,90 @@ export default function YourDrills() {
 				hasActiveFilters={hasActiveFilters}
 			/>
 
-			<FlatList
-				data={filteredDrills}
-				renderItem={renderDrill}
-				keyExtractor={(item) => item.id}
+			{/* Search Bar */}
+			<View style={styles.searchContainer}>
+				<View style={styles.searchInputContainer}>
+					<MaterialIcons
+						name="search"
+						size={20}
+						color={theme.colors.textMuted}
+						style={styles.searchIcon}
+					/>
+					<TextInput
+						style={styles.searchInput}
+						placeholder="Search your drills..."
+						value={searchQuery}
+						onChangeText={setSearchQuery}
+						placeholderTextColor={theme.colors.textMuted}
+					/>
+					{searchQuery.length > 0 && (
+						<TouchableOpacity
+							onPress={() => setSearchQuery("")}
+							style={styles.clearSearchButton}
+						>
+							<MaterialIcons
+								name="close"
+								size={20}
+								color={theme.colors.textMuted}
+							/>
+						</TouchableOpacity>
+					)}
+					<TouchableOpacity
+						onPress={() => setShowFilters(true)}
+						style={[
+							styles.filterButton,
+							hasActiveFilters() && styles.filterButtonActive,
+						]}
+					>
+						<MaterialIcons
+							name="filter-list"
+							size={20}
+							color={hasActiveFilters() ? theme.colors.white : theme.colors.textMuted}
+						/>
+						{hasActiveFilters() && <View style={styles.filterBadge} />}
+					</TouchableOpacity>
+				</View>
+			</View>
+
+			<ScrollView
+				style={styles.scrollView}
 				showsVerticalScrollIndicator={false}
 				contentContainerStyle={styles.listContent}
-				ListHeaderComponent={() => (
-					<View style={styles.headerContainer}>
-						<Text style={styles.headerTitle}>
-							My Drills & Favorites ({filteredDrills.length}
-							{hasActiveFilters() &&
-								` of ${combinedDrills.length}`}
-							)
-						</Text>
-					</View>
+			>
+				<View style={styles.headerContainer}>
+					<Text style={styles.headerTitle}>
+						My Drills & Favorites ({searchFilteredDrills.length}
+						{(hasActiveFilters() || searchQuery.trim() !== "") &&
+							` of ${combinedDrills.length}`}
+						)
+					</Text>
+				</View>
+
+				{Object.keys(organizedDrills).length === 0 ? (
+					hasActiveFilters() || searchQuery.trim() !== "" ? renderEmptyFiltered : null
+				) : (
+					Object.entries(organizedDrills).map(([type, skillFocusGroups]) => (
+						<View key={type} style={styles.section}>
+							<Text style={styles.header}>
+								{type.replace(/\b\w/g, (c) => c.toUpperCase())} Drills (
+								{Object.values(skillFocusGroups).flat().length})
+							</Text>
+							{Object.entries(skillFocusGroups).map(([skillFocus, drills]) => (
+								<View key={`${type}-${skillFocus}`} style={styles.section}>
+									<Text style={styles.categoryTitle}>
+										{skillFocus.replace(/\b\w/g, (c) => c.toUpperCase())} ({drills.length})
+									</Text>
+									{drills.map((drill) => (
+										<View key={drill.id}>
+											{renderDrill({ item: drill })}
+										</View>
+									))}
+								</View>
+							))}
+						</View>
+					))
 				)}
-				ListEmptyComponent={
-					hasActiveFilters() ? renderEmptyFiltered : null
-				}
-			/>
+			</ScrollView>
 
 			{/* Floating Action Button */}
 			<TouchableOpacity
@@ -431,20 +556,20 @@ export default function YourDrills() {
 				typeOptions={typeOptions}
 				toggleFilter={toggleFilter}
 				clearAllFilters={clearAllFilters}
-				filteredCount={filteredDrills.length}
+				filteredCount={searchFilteredDrills.length}
 			/>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: { flex: 1, backgroundColor: "#fff" },
+	container: { flex: 1, backgroundColor: theme.colors.background },
 	loadingContainer: {
 		flex: 1,
 		justifyContent: "center",
 		alignItems: "center",
 	},
-	loadingText: { marginTop: 10, fontSize: 16, color: "#666" },
+	loadingText: { marginTop: 10, fontSize: 16, color: theme.colors.textMuted },
 	errorContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -454,13 +579,13 @@ const styles = StyleSheet.create({
 	errorText: {
 		marginTop: 10,
 		fontSize: 16,
-		color: "#ff4444",
+		color: theme.colors.error,
 		textAlign: "center",
 	},
 	headerButton: {
 		padding: 8,
 		borderRadius: 20,
-		backgroundColor: "#f8f9fa",
+		backgroundColor: theme.colors.surface,
 		position: "relative",
 	},
 	filterBadge: {
@@ -470,24 +595,48 @@ const styles = StyleSheet.create({
 		width: 8,
 		height: 8,
 		borderRadius: 4,
-		backgroundColor: "#ff4444",
+		backgroundColor: theme.colors.error,
+	},
+	scrollView: {
+		flex: 1,
 	},
 	listContent: { flexGrow: 1, paddingHorizontal: 16, paddingBottom: 80 }, // leave space for FAB
 	headerContainer: { paddingVertical: 16 },
-	headerTitle: { fontSize: 18, fontWeight: "600", color: "#333" },
+	section: {
+		marginBottom: 24,
+	},
+	categoryTitle: {
+		fontSize: 20,
+		fontWeight: "600",
+		color: theme.colors.textPrimary,
+		textTransform: "capitalize",
+		marginBottom: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: theme.colors.border,
+		paddingBottom: 6,
+	},
+	headerTitle: { fontSize: 18, fontWeight: "600", color: theme.colors.textPrimary },
+	header: {
+		fontSize: 26,
+		fontWeight: "700",
+		color: theme.colors.textPrimary,
+		marginVertical: 12,
+	},
 	drillCard: {
 		flexDirection: "row",
-		backgroundColor: "#fff",
+		backgroundColor: theme.colors.surface,
 		borderRadius: 12,
 		marginBottom: 16,
 		elevation: 2,
-		shadowColor: "#000",
+		shadowColor: theme.colors.surface,
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		overflow: "hidden",
+		borderWidth: 1,
+		borderColor: theme.colors.border,
 	},
-	drillImage: { width: 100, height: 120, backgroundColor: "#f5f5f5" },
+	drillImage: { width: 100, height: 120, backgroundColor: theme.colors.border },
 	placeholderImage: { justifyContent: "center", alignItems: "center" },
 	drillContent: { flex: 1, padding: 12 },
 	drillHeader: {
@@ -507,7 +656,7 @@ const styles = StyleSheet.create({
 		flex: 1,
 		fontSize: 16,
 		fontWeight: "600",
-		color: "#333",
+		color: theme.colors.textPrimary,
 		lineHeight: 20,
 	},
 	badgeContainer: {
@@ -519,42 +668,48 @@ const styles = StyleSheet.create({
 	publicBadge: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#E3F2FD",
+		backgroundColor: theme.colors.surface,
 		paddingHorizontal: 6,
 		paddingVertical: 2,
 		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: theme.colors.primary,
 	},
 	publicBadgeText: {
 		fontSize: 10,
-		color: "#2196F3",
+		color: theme.colors.white,
 		fontWeight: "500",
 		marginLeft: 2,
 	},
 	adminBadge: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#E8F5E8",
+		backgroundColor: theme.colors.surface,
 		paddingHorizontal: 6,
 		paddingVertical: 2,
 		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: theme.colors.primary,
 	},
 	adminBadgeText: {
 		fontSize: 10,
-		color: "#4CAF50",
+		color: theme.colors.white,
 		fontWeight: "500",
 		marginLeft: 2,
 	},
 	myDrillBadge: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#FFF3E0",
+		backgroundColor: theme.colors.surface,
 		paddingHorizontal: 6,
 		paddingVertical: 2,
 		borderRadius: 10,
+		borderWidth: 1,
+		borderColor: theme.colors.accent,
 	},
 	myDrillBadgeText: {
 		fontSize: 10,
-		color: "#FF9800",
+		color: theme.colors.white,
 		fontWeight: "500",
 		marginLeft: 2,
 	},
@@ -565,10 +720,10 @@ const styles = StyleSheet.create({
 		alignItems: "flex-start",
 		marginBottom: 4,
 	},
-	infoLabel: { fontSize: 12, fontWeight: "600", color: "#666", minWidth: 60 },
-	infoText: { flex: 1, fontSize: 12, color: "#333" },
+	infoLabel: { fontSize: 12, fontWeight: "600", color: theme.colors.textMuted, minWidth: 60 },
+	infoText: { flex: 1, fontSize: 12, color: theme.colors.textPrimary },
 	notesContainer: { marginTop: 4 },
-	notesText: { fontSize: 12, color: "#666", lineHeight: 16, marginTop: 2 },
+	notesText: { fontSize: 12, color: theme.colors.textMuted, lineHeight: 16, marginTop: 2 },
 	emptyFilteredContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -578,35 +733,83 @@ const styles = StyleSheet.create({
 	emptyFilteredText: {
 		fontSize: 18,
 		fontWeight: "600",
-		color: "#666",
+		color: theme.colors.textMuted,
 		marginTop: 16,
 		textAlign: "center",
 	},
 	clearFiltersButton: {
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 		paddingHorizontal: 20,
 		paddingVertical: 10,
 		borderRadius: 8,
 		marginTop: 16,
 	},
-	clearFiltersButtonText: { color: "#fff", fontSize: 14, fontWeight: "600" },
+	clearFiltersButtonText: { color: theme.colors.white, fontSize: 14, fontWeight: "600" },
+	// Search styles
+	searchContainer: {
+		backgroundColor: theme.colors.surface,
+		paddingHorizontal: 16,
+		paddingVertical: 12,
+		borderBottomWidth: 1,
+		borderBottomColor: theme.colors.border,
+	},
+	searchInputContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		backgroundColor: theme.colors.background,
+		borderRadius: 12,
+		paddingHorizontal: 12,
+		paddingVertical: 8,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+	},
+	searchIcon: {
+		marginRight: 8,
+	},
+	searchInput: {
+		flex: 1,
+		fontSize: 16,
+		color: theme.colors.textPrimary,
+		paddingVertical: 4,
+	},
+	clearSearchButton: {
+		padding: 4,
+	},
+	filterButton: {
+		padding: 8,
+		borderRadius: 8,
+		marginLeft: 8,
+		position: "relative",
+	},
+	filterButtonActive: {
+		backgroundColor: theme.colors.primary,
+	},
+	filterBadge: {
+		position: "absolute",
+		top: 2,
+		right: 2,
+		width: 8,
+		height: 8,
+		borderRadius: 4,
+		backgroundColor: theme.colors.error,
+	},
 	fab: {
 		position: "absolute",
 		bottom: 20,
 		right: 20,
-		backgroundColor: "#007AFF",
+		backgroundColor: theme.colors.primary,
 		width: 56,
 		height: 56,
 		borderRadius: 28,
 		alignItems: "center",
 		justifyContent: "center",
 		elevation: 5,
-		shadowColor: "#000",
+		shadowColor: theme.colors.surface,
 		shadowOffset: { width: 0, height: 2 },
 		shadowOpacity: 0.3,
 		shadowRadius: 3,
 	},
-	modalContainer: { flex: 1, backgroundColor: "#fff" },
+	modalContainer: { flex: 1, backgroundColor: theme.colors.background },
 	modalHeader: {
 		flexDirection: "row",
 		alignItems: "center",
@@ -614,9 +817,9 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 16,
 		paddingVertical: 12,
 		borderBottomWidth: 1,
-		borderBottomColor: "#e0e0e0",
-		backgroundColor: "#f8f9fa",
+		borderBottomColor: theme.colors.border,
+		backgroundColor: theme.colors.surface,
 	},
-	modalTitle: { fontSize: 18, fontWeight: "600", color: "#333" },
+	modalTitle: { fontSize: 18, fontWeight: "600", color: theme.colors.textPrimary },
 	modalCloseButton: { padding: 4 },
 });
