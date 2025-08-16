@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+import { useNavigation } from "@react-navigation/native";
+import { exportPracticeToPDF } from "../util/pdfExport";
 import {
 	View,
 	Text,
@@ -42,10 +44,12 @@ const CustomCancelButton = ({ onPress }) => (
 );
 
 export default function PracticeDetails({ route }) {
+	const navigation = useNavigation();
 	const { practiceId } = route.params;
 	const [practice, setPractice] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
+	const [isEditing, setIsEditing] = useState(false);
 
 	const [startDate, setStartDate] = useState(new Date());
 	const [duration, setDuration] = useState(60); // Duration in minutes
@@ -53,6 +57,9 @@ export default function PracticeDetails({ route }) {
 	const [showStartPicker, setShowStartPicker] = useState(false);
 	const [drills, setDrills] = useState([]);
 	const [drillDurations, setDrillDurations] = useState({});
+
+	// Store original values for cancel functionality
+	const [originalValues, setOriginalValues] = useState({});
 
 	useEffect(() => {
 		fetchPracticeDetails();
@@ -107,6 +114,78 @@ export default function PracticeDetails({ route }) {
 			setDrillDurations(initialDurations);
 		}
 		setLoading(false);
+	};
+
+	const deletePractice = async () => {
+		try {
+			const { error } = await supabase
+				.from("Practice")
+				.delete()
+				.eq("id", practiceId);
+
+			if (error) {
+				console.error("Error deleting practice:", error);
+				Alert.alert("Error", "Failed to delete practice.");
+			} else {
+				Alert.alert("Success", "Practice deleted!", [
+					{
+						text: "OK",
+						onPress: () => {
+							// Navigate back to previous screen
+							if (route.params?.onDelete) {
+								route.params.onDelete();
+							}
+							navigation.goBack();
+						}
+					}
+				]);
+			}
+		} catch (error) {
+			console.error("Error deleting practice:", error);
+			Alert.alert("Error", "Failed to delete practice.");
+		}
+	};
+
+	const confirmDelete = () => {
+		Alert.alert(
+			"Delete Practice",
+			"Are you sure you want to delete this practice? This action cannot be undone.",
+			[
+				{ text: "Cancel", style: "cancel" },
+				{ text: "Delete", style: "destructive", onPress: deletePractice }
+			]
+		);
+	};
+
+	const startEditing = () => {
+		// Store current values as original values
+		setOriginalValues({
+			startDate: new Date(startDate),
+			duration,
+			notes,
+			drills: [...drills],
+			drillDurations: { ...drillDurations }
+		});
+		setIsEditing(true);
+	};
+
+	const cancelEditing = () => {
+		// Restore original values
+		setStartDate(originalValues.startDate || new Date());
+		setDuration(originalValues.duration || 60);
+		setNotes(originalValues.notes || "");
+		setDrills(originalValues.drills || []);
+		setDrillDurations(originalValues.drillDurations || {});
+		setIsEditing(false);
+	};
+
+	const handleSharePDF = async () => {
+		try {
+			await exportPracticeToPDF(practice);
+		} catch (error) {
+			console.error('Error sharing PDF:', error);
+			Alert.alert("Error", "Failed to share PDF");
+		}
 	};
 
 
@@ -198,6 +277,7 @@ export default function PracticeDetails({ route }) {
 				notes,
 				drills,
 			}));
+			setIsEditing(false); // Exit edit mode after successful save
 		}
 	};
 
@@ -323,19 +403,27 @@ export default function PracticeDetails({ route }) {
 						accessible={false}
 					>
 						<View>
-							<Text style={styles.title}>Practice Details</Text>
+							<Text style={styles.title}>{practice.title || "Practice"}</Text>
 
 							<Text style={styles.label}>Start Time</Text>
-							<TouchableOpacity
-								onPress={toggleStartPicker}
-								style={styles.dateTouchable}
-								activeOpacity={0.7}
-							>
-								<Text style={styles.dateText}>
-									{startDate.toLocaleString()}
-								</Text>
-								<MaterialIcons name="edit" size={18} color="#007AFF" />
-							</TouchableOpacity>
+							{isEditing ? (
+								<TouchableOpacity
+									onPress={toggleStartPicker}
+									style={styles.dateTouchable}
+									activeOpacity={0.7}
+								>
+									<Text style={styles.dateText}>
+										{startDate.toLocaleString()}
+									</Text>
+									<MaterialIcons name="edit" size={18} color="#007AFF" />
+								</TouchableOpacity>
+							) : (
+								<View style={styles.readOnlyField}>
+									<Text style={styles.readOnlyText}>
+										{startDate.toLocaleString()}
+									</Text>
+								</View>
+							)}
 							<DateTimePickerModal
 								isVisible={showStartPicker}
 								mode="datetime"
@@ -364,47 +452,63 @@ export default function PracticeDetails({ route }) {
 							/>
 
 							<Text style={styles.label}>Duration (minutes)</Text>
-							<View style={styles.durationInputWrapper}>
+							{isEditing ? (
+								<View style={styles.durationInputWrapper}>
+									<TextInput
+										style={styles.practiceDurationInput}
+										value={duration.toString()}
+										onChangeText={(text) => {
+											const newDuration = parseInt(text) || 0;
+											setDuration(newDuration);
+										}}
+										keyboardType="numeric"
+										placeholder="60"
+										placeholderTextColor={theme.colors.textMuted}
+										returnKeyType="done"
+										onSubmitEditing={Keyboard.dismiss}
+										blurOnSubmit={true}
+										keyboardAppearance="dark"
+									/>
+									<Text style={styles.durationLabel}>minutes</Text>
+								</View>
+							) : (
+								<View style={styles.readOnlyField}>
+									<Text style={styles.readOnlyText}>
+										{duration} minutes
+									</Text>
+								</View>
+							)}
+
+							<View style={styles.notesHeader}>
+								<Text style={styles.label}>Notes</Text>
+							</View>
+
+							{isEditing ? (
 								<TextInput
-									style={styles.practiceDurationInput}
-									value={duration.toString()}
-									onChangeText={(text) => {
-										const newDuration = parseInt(text) || 0;
-										setDuration(newDuration);
-									}}
-									keyboardType="numeric"
-									placeholder="60"
+									style={styles.notesInput}
+									multiline
+									numberOfLines={4}
+									value={notes}
+									onChangeText={handleNotesChange}
+									placeholder="Add notes about this practice..."
 									placeholderTextColor={theme.colors.textMuted}
 									returnKeyType="done"
 									onSubmitEditing={Keyboard.dismiss}
 									blurOnSubmit={true}
 									keyboardAppearance="dark"
 								/>
-								<Text style={styles.durationLabel}>minutes</Text>
-							</View>
-
-							<View style={styles.notesHeader}>
-								<Text style={styles.label}>Notes</Text>
-							</View>
-
-							<TextInput
-								style={styles.notesInput}
-								multiline
-								numberOfLines={4}
-								value={notes}
-								onChangeText={handleNotesChange}
-								placeholder="Add notes about this practice..."
-								placeholderTextColor={theme.colors.textMuted}
-								returnKeyType="done"
-								onSubmitEditing={Keyboard.dismiss}
-								blurOnSubmit={true}
-								keyboardAppearance="dark"
-							/>
+							) : (
+								<View style={styles.readOnlyField}>
+									<Text style={styles.readOnlyText}>
+										{notes || "No notes added"}
+									</Text>
+								</View>
+							)}
 
 							<Text style={[styles.label, { marginTop: 24 }]}>
-								Drills (hold and drag to reorder)
+								Drills {isEditing && "(hold and drag to reorder)"}
 							</Text>
-							{(() => {
+							{isEditing && (() => {
 								const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
 								const isDurationValid = totalDrillDuration === duration;
 								
@@ -417,48 +521,115 @@ export default function PracticeDetails({ route }) {
 								}
 								return null;
 							})()}
-							<DraggableFlatList
-								data={drills}
-								onDragEnd={({ data }) => handleDrillsReorder(data)}
-								keyExtractor={(item, index) => `${item}-${index}`}
-								renderItem={renderDrill}
-								containerStyle={styles.drillListContainer}
-								scrollEnabled={false}
-							/>
+							{isEditing ? (
+								<DraggableFlatList
+									data={drills}
+									onDragEnd={({ data }) => handleDrillsReorder(data)}
+									keyExtractor={(item, index) => `${item}-${index}`}
+									renderItem={renderDrill}
+									containerStyle={styles.drillListContainer}
+									scrollEnabled={false}
+								/>
+							) : (
+								<View style={styles.readOnlyDrillsContainer}>
+									{drills.map((drill, index) => {
+										// Find the duration using the same logic as the save function
+										let drillDuration = 0;
+										for (const [key, value] of Object.entries(drillDurations)) {
+											if (key.startsWith(`${drill}-`) && (value as number) > 0) {
+												drillDuration = value as number;
+												break;
+											}
+										}
+										if (drillDuration === 0) {
+											for (const [key, value] of Object.entries(drillDurations)) {
+												if (key === `${drill}-0`) {
+													drillDuration = value as number;
+													break;
+												}
+											}
+										}
+										
+										return (
+											<View key={`${drill}-${index}`} style={styles.readOnlyDrillItem}>
+												<Text style={styles.readOnlyDrillText}>{drill}</Text>
+												<Text style={styles.readOnlyDrillDuration}>{drillDuration} min</Text>
+											</View>
+										);
+									})}
+								</View>
+							)}
 						</View>
 					</TouchableWithoutFeedback>
 				</ScrollView>
 
 				<View style={styles.stickyButtonContainer}>
-					{(() => {
-						const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
-						const isDurationValid = totalDrillDuration === duration;
-						const isDisabled = saving || !isDurationValid;
-						
-						return (
+					{isEditing ? (
+						// Edit mode: Save and Cancel buttons
+						<>
+							{(() => {
+								const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
+								const isDurationValid = totalDrillDuration === duration;
+								const isDisabled = saving || !isDurationValid;
+								
+								return (
+									<TouchableOpacity
+										style={[
+											styles.saveButton,
+											isDisabled && styles.saveButtonDisabled,
+										]}
+										onPress={() => {
+											if (isDisabled && !saving) {
+												Alert.alert(
+													"Duration Mismatch", 
+													`Total drill duration (${totalDrillDuration} min) must equal practice duration (${duration} min). Please adjust the drill durations.`
+												);
+											} else {
+												saveChanges();
+											}
+										}}
+										activeOpacity={0.8}
+									>
+										<Text style={styles.saveButtonText}>
+											{saving ? "Saving..." : "Save Changes"}
+										</Text>
+									</TouchableOpacity>
+								);
+							})()}
 							<TouchableOpacity
-								style={[
-									styles.saveButton,
-									isDisabled && styles.saveButtonDisabled,
-								]}
-								onPress={() => {
-									if (isDisabled && !saving) {
-										Alert.alert(
-											"Duration Mismatch", 
-											`Total drill duration (${totalDrillDuration} min) must equal practice duration (${duration} min). Please adjust the drill durations.`
-										);
-									} else {
-										saveChanges();
-									}
-								}}
+								style={styles.cancelButton}
+								onPress={cancelEditing}
 								activeOpacity={0.8}
 							>
-								<Text style={styles.saveButtonText}>
-									{saving ? "Saving..." : "Save Changes"}
-								</Text>
+								<Text style={styles.cancelButtonText}>Cancel</Text>
 							</TouchableOpacity>
-						);
-					})()}
+						</>
+					) : (
+						// Read-only mode: Edit, Share, and Delete buttons
+						<View style={styles.buttonRow}>
+							<TouchableOpacity
+								style={[styles.editButton, styles.thirdWidthButton]}
+								onPress={startEditing}
+								activeOpacity={0.8}
+							>
+								<Text style={styles.editButtonText}>Edit</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[styles.shareButton, styles.thirdWidthButton]}
+								onPress={handleSharePDF}
+								activeOpacity={0.8}
+							>
+								<Text style={styles.shareButtonText}>Share</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[styles.deleteButton, styles.thirdWidthButton]}
+								onPress={confirmDelete}
+								activeOpacity={0.8}
+							>
+								<Text style={styles.deleteButtonText}>Delete</Text>
+							</TouchableOpacity>
+						</View>
+					)}
 				</View>
 			</View>
 		</GestureHandlerRootView>
@@ -475,7 +646,7 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		padding: 20,
-		paddingBottom: 100, // Extra padding to account for sticky button
+		paddingBottom: 120, // Extra padding to account for sticky button
 	},
 	containerCentered: {
 		flex: 1,
@@ -645,6 +816,119 @@ const styles = StyleSheet.create({
 		backgroundColor: theme.colors.border 
 	},
 	saveButtonText: { 
+		color: theme.colors.white, 
+		fontWeight: "700", 
+		fontSize: 18 
+	},
+	// Read-only styles
+	readOnlyField: {
+		borderBottomWidth: 1,
+		borderColor: theme.colors.border,
+		paddingVertical: 10,
+		marginBottom: 16,
+	},
+	readOnlyText: {
+		fontSize: 16,
+		color: theme.colors.textPrimary,
+	},
+	readOnlyDrillsContainer: {
+		maxHeight: 280,
+	},
+	readOnlyDrillItem: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingVertical: 14,
+		paddingHorizontal: 20,
+		marginVertical: 6,
+		backgroundColor: theme.colors.surface,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+	},
+	readOnlyDrillText: { 
+		fontSize: 16, 
+		color: theme.colors.textPrimary,
+		flex: 1,
+	},
+	readOnlyDrillDuration: {
+		fontSize: 14,
+		color: theme.colors.textMuted,
+	},
+	// Button styles
+	editButton: {
+		backgroundColor: theme.colors.primary,
+		paddingVertical: 16,
+		borderRadius: 12,
+		alignItems: "center",
+		marginBottom: 8,
+		shadowColor: theme.colors.primary,
+		shadowOffset: { width: 0, height: 5 },
+		shadowOpacity: 0.4,
+		shadowRadius: 6,
+		elevation: 5,
+	},
+	editButtonText: { 
+		color: theme.colors.white, 
+		fontWeight: "700", 
+		fontSize: 18 
+	},
+	deleteButton: {
+		backgroundColor: "#FF3B30",
+		paddingVertical: 16,
+		borderRadius: 12,
+		alignItems: "center",
+		shadowColor: "#FF3B30",
+		shadowOffset: { width: 0, height: 5 },
+		shadowOpacity: 0.4,
+		shadowRadius: 6,
+		elevation: 5,
+	},
+	deleteButtonText: { 
+		color: theme.colors.white, 
+		fontWeight: "700", 
+		fontSize: 18 
+	},
+	cancelButton: {
+		backgroundColor: theme.colors.border,
+		paddingVertical: 16,
+		borderRadius: 12,
+		alignItems: "center",
+		marginTop: 8,
+	},
+	cancelButtonText: { 
+		color: theme.colors.textPrimary, 
+		fontWeight: "700", 
+		fontSize: 18 
+	},
+	// Button row styles
+	buttonRow: {
+		flexDirection: 'row',
+		gap: 12,
+	},
+	halfWidthButton: {
+		flex: 1,
+		marginBottom: 0,
+		marginTop: 0,
+	},
+	thirdWidthButton: {
+		flex: 1,
+		marginBottom: 0,
+		marginTop: 0,
+	},
+	shareButton: {
+		backgroundColor: theme.colors.secondary,
+		paddingVertical: 16,
+		borderRadius: 12,
+		alignItems: "center",
+		marginBottom: 0,
+		shadowColor: theme.colors.secondary,
+		shadowOffset: { width: 0, height: 5 },
+		shadowOpacity: 0.4,
+		shadowRadius: 6,
+		elevation: 5,
+	},
+	shareButtonText: { 
 		color: theme.colors.white, 
 		fontWeight: "700", 
 		fontSize: 18 

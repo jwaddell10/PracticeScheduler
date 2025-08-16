@@ -4,6 +4,7 @@ import { Alert } from "react-native";
 
 interface Practice {
 	id: string;
+	title?: string;
 	startTime: string;
 	endTime: string;
 	drills: string[];
@@ -45,7 +46,7 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 			
 			const { data, error: supabaseError } = await supabase
 				.from("Practice")
-				.select("id, startTime, endTime, drills, drillDuration, notes, teamId")
+				.select("id, title, startTime, endTime, drills, drillDuration, notes, teamId")
 				.order("startTime", { ascending: true });
 
 			if (supabaseError) {

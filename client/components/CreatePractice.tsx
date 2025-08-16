@@ -65,6 +65,7 @@ const CreatePractice = () => {
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [drillDurations, setDrillDurations] = useState<{ [key: string]: number }>({});
 	const [notes, setNotes] = useState(""); // Added notes state
+	const [title, setTitle] = useState(""); // Added title state
 
 	const {
 		selectedFilters,
@@ -257,6 +258,7 @@ const CreatePractice = () => {
 
 		try {
 			await addPractice({
+				title: title || "Practice",
 				startTime: toLocalISOString(startDate),
 				endTime: toLocalISOString(endDate),
 				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
@@ -386,6 +388,19 @@ const CreatePractice = () => {
 										</Text>
 									</View>
 								)}
+								{/* Practice Title */}
+								<View style={styles.section}>
+									<Text style={styles.label}>Practice Title</Text>
+									<TextInput
+										style={styles.titleInput}
+										value={title}
+										onChangeText={setTitle}
+										placeholder="Enter practice title..."
+										placeholderTextColor={theme.colors.textMuted}
+										keyboardAppearance="dark"
+									/>
+								</View>
+
 								<PracticeDateTimePicker
 									initialDate={(route.params as any)?.selectedDate}
 									onDatesChange={handleDatesChange}
@@ -1015,6 +1030,16 @@ const styles = StyleSheet.create({
 		fontWeight: "600",
 		color: theme.colors.textPrimary,
 		marginBottom: 12,
+	},
+	titleInput: {
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+		borderRadius: 8,
+		paddingHorizontal: 12,
+		paddingVertical: 12,
+		fontSize: 16,
+		color: theme.colors.textPrimary,
+		backgroundColor: theme.colors.background,
 	},
 	selectedDrillsContainer: {
 		marginTop: 16,

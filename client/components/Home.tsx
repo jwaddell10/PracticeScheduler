@@ -12,6 +12,7 @@ import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFavorites } from "../context/FavoritesContext"; // Adjust path as needed
 import { usePractices } from "../context/PracticesContext";
 import { useDrills } from "../context/DrillsContext";
+import UpcomingPractices from "./UpcomingPractices";
 import theme from "./styles/theme";
 
 export default function HomeScreen() {
@@ -79,7 +80,7 @@ export default function HomeScreen() {
 				{/* Practices */}
 				<TouchableOpacity
 					style={styles.statCard}
-					onPress={() => navigation.navigate("PracticesTab")}
+					onPress={() => navigation.navigate("Practices")}
 				>
 					<MaterialIcons
 						name="event"
@@ -102,6 +103,9 @@ export default function HomeScreen() {
 					<Text style={styles.statLabel}>Library</Text>
 				</TouchableOpacity>
 			</View>
+
+			{/* Upcoming Practices */}
+			<UpcomingPractices limit={3} />
 
 			<Calendar
 				markedDates={getMarkedDates()}
