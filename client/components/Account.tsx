@@ -5,7 +5,7 @@ import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
-import { useUserRole } from "../hooks/useUserRole";
+import { useUserRole } from "../context/UserRoleContext";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 
 export default function Account({ session }: { session: Session | null }) {

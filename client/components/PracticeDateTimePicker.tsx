@@ -33,7 +33,15 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 
 	const onChangeStart = (_event: any, selectedDate?: Date) => {
 		if (selectedDate) {
-			setStartDate(selectedDate);
+			const now = new Date();
+			// Prevent selecting past dates
+			if (selectedDate <= now) {
+				// If user selects a past date, set it to current time + 1 hour
+				const futureDate = new Date(now.getTime() + 60 * 60 * 1000); // 1 hour from now
+				setStartDate(futureDate);
+			} else {
+				setStartDate(selectedDate);
+			}
 		}
 	};
 
@@ -54,6 +62,7 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 						mode="datetime"
 						display="default"
 						onChange={onChangeStart}
+						minimumDate={new Date()} // Prevent selecting past dates
 						themeVariant="dark"
 						style={styles.datePicker}
 					/>

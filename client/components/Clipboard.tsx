@@ -27,6 +27,11 @@ const CLIPBOARD_STORAGE_KEY = "practice_clipboard";
 export default function Clipboard() {
 	const { clipboardDrills, refreshClipboard, updateClipboardStatus } = useClipboard();
 
+	// Ensure clipboard is loaded when component mounts
+	React.useEffect(() => {
+		refreshClipboard();
+	}, []);
+
 	const handleRemoveDrillFromClipboard = async (drillId: string) => {
 		try {
 			await removeDrillFromClipboard(drillId);

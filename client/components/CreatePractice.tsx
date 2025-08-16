@@ -25,7 +25,7 @@ import { usePractices } from "../context/PracticesContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useSession } from "../context/SessionContext";
 import { useDrillFilters } from "../hooks/useDrillFilters";
-import { useUserRole } from "../hooks/useUserRole";
+import { useUserRole } from "../context/UserRoleContext";
 import DrillFilterModal from "./DrillFilterModal";
 import DrillDetails from "./DrillDetails";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -255,6 +255,14 @@ const CreatePractice = () => {
 			alert("Please select valid start and end times");
 			return;
 		}
+		
+		// Check if the practice is in the past
+		const now = new Date();
+		if (startDate <= now) {
+			alert("Cannot create a practice in the past. Please select a future date and time.");
+			return;
+		}
+		
 		if (endDate <= startDate) {
 			alert("End time must be after start time");
 			return;

@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useUserRole } from "../hooks/useUserRole";
+import { useUserRole } from "../context/UserRoleContext";
 import { useSession } from "../context/SessionContext";
 import { useDrills } from "../context/DrillsContext";
 import theme from "./styles/theme";

@@ -284,13 +284,7 @@ export default function PracticeDetails({ route }) {
 	const handleDrillsReorder = (newOrder) => setDrills(newOrder);
 	const handleNotesChange = (text) => setNotes(text);
 
-	if (loading) {
-		return (
-			<View style={styles.containerCentered}>
-				<ActivityIndicator size="large" color="#007AFF" />
-			</View>
-		);
-	}
+
 
 	if (!practice) {
 		return (

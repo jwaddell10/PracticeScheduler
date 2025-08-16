@@ -16,7 +16,9 @@ import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
 import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { useUserRole } from "../context/UserRoleContext";
 import DrillFilterModal from "./DrillFilterModal";
+import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
 
@@ -25,6 +27,7 @@ export default function Drills() {
 	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
 	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
+	const { role } = useUserRole();
 
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState({
@@ -291,25 +294,17 @@ export default function Drills() {
 
 
 
-	if (loading) {
-		return (
-			<SafeAreaProvider>
-				<SafeAreaView style={styles.safeArea}>
-					<View style={styles.loadingContainer}>
-						<ActivityIndicator size="large" color="#007AFF" />
-						<Text style={styles.loadingText}>
-							Loading drills...
-						</Text>
-					</View>
-				</SafeAreaView>
-			</SafeAreaProvider>
-		);
-	}
+
 
 	return (
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
 				<View style={styles.container}>
+					{/* Show upgrade banner for free users */}
+					{role === "free" && (
+						<UpgradeToPremiumBanner />
+					)}
+					
 					{/* Search Bar */}
 					<View style={styles.searchContainer}>
 						<View style={styles.searchInputContainer}>

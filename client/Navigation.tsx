@@ -20,11 +20,13 @@ import Clipboard from "./components/Clipboard";
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { ClipboardProvider } from "./context/ClipboardContext";
-import { useUserRole } from "./hooks/useUserRole";
+import { UserRoleProvider, useUserRole } from "./context/UserRoleContext";
 
 import theme from "./components/styles/theme"; // Make sure this path is correct
 import YourDrills from "./components/YourDrills";
 import UpgradeToPremiumBanner from "./components/UpgradeToPremiumBanner";
+
+
 
 // ----- Custom Navigation Theme -----
 const navigationTheme = {
@@ -162,7 +164,8 @@ export default function Navigation() {
 		<NavigationContainer theme={navigationTheme}>
 			<FavoritesProvider>
 				<ClipboardProvider>
-					<Tab.Navigator
+					<UserRoleProvider>
+						<Tab.Navigator
 					screenOptions={({ route }) => ({
 						headerShown: false,
 						tabBarStyle: {
@@ -213,19 +216,19 @@ export default function Navigation() {
 								options={{ title: "Home" }}
 							/>
 							<Tab.Screen
-								name="ClipboardTab"
-								component={ClipboardStackScreen}
-								options={{ title: "Clipboard" }}
+								name="FavoriteTab"
+								component={FavoriteDrillsStackScreen}
+								options={{ title: "Your Drills" }}
 							/>
 							<Tab.Screen
 								name="DrillsTab"
 								component={DrillStackScreen}
-								options={{ title: "Drills" }}
+								options={{ title: "Drill Library" }}
 							/>
 							<Tab.Screen
-								name="FavoriteTab"
-								component={FavoriteDrillsStackScreen}
-								options={{ title: "Your Drills" }}
+								name="ClipboardTab"
+								component={ClipboardStackScreen}
+								options={{ title: "Clipboard" }}
 							/>
 							<Tab.Screen
 								name="AccountTab"
@@ -240,7 +243,8 @@ export default function Navigation() {
 							options={{ title: "Profile" }}
 						/>
 					)}
-				</Tab.Navigator>
+										</Tab.Navigator>
+					</UserRoleProvider>
 				</ClipboardProvider>
 			</FavoritesProvider>
 		</NavigationContainer>

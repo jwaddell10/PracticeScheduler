@@ -24,7 +24,7 @@ import ActiveFiltersBar from "../components/ActiveFiltersBar";
 import CreateDrill from "./CreateDrill";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
-import { useUserRole } from "../hooks/useUserRole";
+import { useUserRole } from "../context/UserRoleContext";
 
 export default function YourDrills() {
 	const {
@@ -44,7 +44,7 @@ export default function YourDrills() {
 
 	const session = useSession();
 	const navigation = useNavigation();
-	const { role } = useUserRole();
+	const { role, loading: roleLoading } = useUserRole();
 	const [showFilters, setShowFilters] = useState(false);
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
@@ -93,6 +93,8 @@ export default function YourDrills() {
 
 
 
+
+
 	// Combine user's own drills and favorites based on active tab
 	const combineDrills = () => {
 		const combined = [];
@@ -100,7 +102,7 @@ export default function YourDrills() {
 
 		if (activeTab === "myDrills") {
 			// Show only user's created drills
-			if (userDrills) {
+			if (userDrills && userDrills.length > 0) {
 				userDrills.forEach((drill) => {
 					if (drill.user_id === session?.user?.id) {
 						combined.push({
@@ -112,9 +114,9 @@ export default function YourDrills() {
 					}
 				});
 			}
-		} else if (activeTab === "favorites" && (role === "admin" || role === "premium")) {
+		} else if (activeTab === "favorites" && (role === "admin" || role === "premium" || role === "Premium")) {
 			// Show only favorited drills from drill library (for premium/admin users)
-			if (favoriteDrills) {
+			if (favoriteDrills && favoriteDrills.length > 0) {
 				favoriteDrills.forEach((drill) => {
 					if (
 						drill.user_id !== session?.user?.id &&
@@ -215,7 +217,7 @@ export default function YourDrills() {
 		reorderedDrills.individual = organizedDrills.individual;
 	}
 
-	const loading = favoritesLoading || userDrillsLoading;
+	const loading = favoritesLoading || userDrillsLoading || roleLoading;
 	const error = favoritesError || userDrillsError;
 
 	// Remove header filter button since we'll add it to search bar
@@ -261,11 +263,12 @@ export default function YourDrills() {
 		return "Not specified";
 	};
 
-	if (loading) {
+	// Show loading state only for errors, not for initial loading
+	if (error) {
 		return (
-			<View style={styles.loadingContainer}>
-				<ActivityIndicator size="large" color="#007AFF" />
-				<Text style={styles.loadingText}>Loading your drills...</Text>
+			<View style={styles.errorContainer}>
+				<MaterialIcons name="error" size={48} color="#ff4444" />
+				<Text style={styles.errorText}>Error: {error}</Text>
 			</View>
 		);
 	}
@@ -315,40 +318,6 @@ export default function YourDrills() {
 				hasActiveFilters={hasActiveFilters}
 			/>
 
-			{/* Tab Toggle */}
-			<View style={styles.tabContainer}>
-				<TouchableOpacity
-					style={[
-						styles.tabButton,
-						activeTab === "myDrills" && styles.activeTabButton
-					]}
-					onPress={() => setActiveTab("myDrills")}
-				>
-					<Text style={[
-						styles.tabButtonText,
-						activeTab === "myDrills" && styles.activeTabButtonText
-					]}>
-						My Drills
-					</Text>
-				</TouchableOpacity>
-				{(role === "admin" || role === "premium") && (
-					<TouchableOpacity
-						style={[
-							styles.tabButton,
-							activeTab === "favorites" && styles.activeTabButton
-						]}
-						onPress={() => setActiveTab("favorites")}
-					>
-						<Text style={[
-							styles.tabButtonText,
-							activeTab === "favorites" && styles.activeTabButtonText
-						]}>
-							Favorites
-						</Text>
-					</TouchableOpacity>
-				)}
-			</View>
-
 			{/* Search Bar */}
 			<View style={styles.searchContainer}>
 				<View style={styles.searchInputContainer}>
@@ -393,6 +362,40 @@ export default function YourDrills() {
 					</TouchableOpacity>
 				</View>
 			</View>
+
+			{/* Tab Toggle - Only show for premium/admin users */}
+			{(role === "admin" || role === "premium" || role === "Premium") && (
+				<View style={styles.tabContainer}>
+					<TouchableOpacity
+						style={[
+							styles.tabButton,
+							activeTab === "myDrills" && styles.activeTabButton
+						]}
+						onPress={() => setActiveTab("myDrills")}
+					>
+						<Text style={[
+							styles.tabButtonText,
+							activeTab === "myDrills" && styles.activeTabButtonText
+						]}>
+							My Drills
+						</Text>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={[
+							styles.tabButton,
+							activeTab === "favorites" && styles.activeTabButton
+						]}
+						onPress={() => setActiveTab("favorites")}
+					>
+						<Text style={[
+							styles.tabButtonText,
+							activeTab === "favorites" && styles.activeTabButtonText
+						]}>
+							Favorites
+						</Text>
+					</TouchableOpacity>
+				</View>
+			)}
 
 			<ScrollView
 				style={styles.scrollView}

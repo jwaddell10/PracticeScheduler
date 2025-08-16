@@ -5,6 +5,8 @@ import {
 	ScrollView,
 	StyleSheet,
 	TouchableOpacity,
+	Modal,
+	Alert,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
@@ -18,19 +20,23 @@ import theme from "./styles/theme";
 export default function HomeScreen() {
 	const navigation = useNavigation();
 	const { favoriteDrills } = useFavorites();
-	const { practices } = usePractices();
+	const { practices, deletePractice } = usePractices();
 	const { refreshAllDrills, userDrills } = useDrills();
 	const [selectedDate, setSelectedDate] = useState(null);
+	const [showAllPractices, setShowAllPractices] = useState(false);
 
 	// Pre-fetch drills when Home component mounts
 	useEffect(() => {
 		refreshAllDrills();
 	}, []);
 
-	// Get upcoming practices count (practices with startTime in the future)
-	const upcomingPracticesCount = practices.filter(
-		(practice) => new Date(practice.startTime) > new Date()
-	).length;
+	// Get upcoming practices (practices with startTime in the future)
+	const upcomingPractices = practices
+		.filter((practice) => new Date(practice.startTime) > new Date())
+		.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
+
+	// Get upcoming practices count
+	const upcomingPracticesCount = upcomingPractices.length;
 
 	const getMarkedDates = () => {
 		const marks = {};
@@ -80,7 +86,7 @@ export default function HomeScreen() {
 				{/* Practices */}
 				<TouchableOpacity
 					style={styles.statCard}
-					onPress={() => navigation.navigate("Practices")}
+					onPress={() => setShowAllPractices(true)}
 				>
 					<MaterialIcons
 						name="event"
@@ -138,6 +144,78 @@ export default function HomeScreen() {
 			>
 				<Text style={styles.scheduleButtonText}>Schedule Practice</Text>
 			</TouchableOpacity>
+
+			{/* All Practices Modal */}
+			<Modal
+				visible={showAllPractices}
+				animationType="slide"
+				presentationStyle="pageSheet"
+			>
+				<View style={styles.modalContainer}>
+					<View style={styles.modalHeader}>
+						<TouchableOpacity onPress={() => setShowAllPractices(false)}>
+							<Text style={styles.cancelButton}>Cancel</Text>
+						</TouchableOpacity>
+						<Text style={styles.modalTitle}>All Practices</Text>
+						<View style={{ width: 60 }} />
+					</View>
+					<ScrollView style={styles.modalContent}>
+						{upcomingPractices.map((practice) => (
+							<TouchableOpacity
+								key={practice.id}
+								onPress={() => {
+									setShowAllPractices(false);
+									navigation.navigate("Practice Details", { practiceId: practice.id });
+								}}
+								style={styles.practiceItem}
+							>
+								<View style={styles.practiceHeader}>
+									<Text style={styles.practiceTitle}>
+										{practice.title || "Practice"}
+									</Text>
+									<TouchableOpacity
+										style={styles.deleteButton}
+										onPress={() => {
+											Alert.alert(
+												"Delete Practice",
+												"Are you sure you want to delete this practice?",
+												[
+													{ text: "Cancel", style: "cancel" },
+													{
+														text: "Delete",
+														style: "destructive",
+														onPress: async () => {
+															try {
+																await deletePractice(practice.id);
+															} catch (error) {
+																Alert.alert("Error", "Failed to delete practice.");
+															}
+														},
+													},
+												]
+											);
+										}}
+									>
+										<Text style={styles.deleteButtonText}>Delete</Text>
+									</TouchableOpacity>
+								</View>
+								<Text style={styles.dateText}>
+									{new Date(practice.startTime).toLocaleDateString()} at {new Date(practice.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+								</Text>
+								<Text style={styles.durationText}>
+									{practice.duration || 60} minutes
+								</Text>
+								<Text style={styles.drillsLabel}>Drills:</Text>
+								{(practice.drills || []).map((drill, index) => (
+									<Text key={index} style={styles.drillItem}>
+										• {drill}
+									</Text>
+								))}
+							</TouchableOpacity>
+						))}
+					</ScrollView>
+				</View>
+			</Modal>
 		</ScrollView>
 	);
 }
@@ -270,5 +348,85 @@ const styles = StyleSheet.create({
 		color: theme.colors.white,
 		fontWeight: "700",
 		fontSize: 16,
+	},
+	// Modal styles
+	modalContainer: {
+		flex: 1,
+		backgroundColor: theme.colors.background,
+	},
+	modalHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		paddingHorizontal: 16,
+		paddingVertical: 16,
+		paddingTop: 20,
+		borderBottomWidth: 1,
+		borderBottomColor: theme.colors.border,
+		backgroundColor: theme.colors.surface,
+	},
+	modalTitle: {
+		fontSize: 18,
+		fontWeight: "600",
+		color: theme.colors.textPrimary,
+	},
+	cancelButton: {
+		fontSize: 16,
+		color: theme.colors.primary,
+	},
+	modalContent: {
+		flex: 1,
+		padding: 16,
+	},
+	practiceItem: {
+		backgroundColor: theme.colors.surface,
+		borderRadius: 12,
+		padding: 16,
+		marginBottom: 12,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+	},
+	practiceHeader: {
+		flexDirection: "row",
+		justifyContent: "space-between",
+		alignItems: "center",
+		marginBottom: 8,
+	},
+	practiceTitle: {
+		fontSize: 18,
+		fontWeight: "700",
+		color: theme.colors.textPrimary,
+	},
+	dateText: {
+		fontSize: 16,
+		color: theme.colors.textPrimary,
+		marginBottom: 4,
+	},
+	durationText: {
+		fontSize: 16,
+		color: theme.colors.textMuted,
+		marginBottom: 8,
+	},
+	drillsLabel: {
+		fontSize: 16,
+		fontWeight: "600",
+		color: theme.colors.textPrimary,
+		marginBottom: 4,
+	},
+	drillItem: {
+		fontSize: 14,
+		color: theme.colors.textMuted,
+		marginLeft: 8,
+	},
+	deleteButton: {
+		backgroundColor: "#FF3B30",
+		paddingHorizontal: 12,
+		paddingVertical: 6,
+		borderRadius: 8,
+	},
+	deleteButtonText: {
+		color: theme.colors.white,
+		fontSize: 12,
+		fontWeight: "600",
 	},
 });
