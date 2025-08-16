@@ -54,10 +54,10 @@ export default function PracticesScreen() {
 		>
 			<Text style={styles.practiceTitle}>Practice</Text>
 			<Text style={styles.dateText}>
-				Start: {new Date(item.startTime).toLocaleString()}
+				Start: {new Date(item.startTime).toLocaleDateString()} at {new Date(item.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
 			</Text>
 			<Text style={styles.dateText}>
-				End: {new Date(item.endTime).toLocaleString()}
+				Duration: {item.duration || 60} minutes
 			</Text>
 			<Text style={styles.drillsLabel}>Drills:</Text>
 			{(item.drills || []).map((drill, index) => (
