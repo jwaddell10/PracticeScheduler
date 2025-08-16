@@ -15,10 +15,11 @@ import PremiumScreen from "./components/PremiumFeaturesScreen";
 import Auth from "./components/Auth";
 import Account from "./components/Account";
 import Modal from "./components/Modal";
-import Practices from "./components/Practices";
+import Clipboard from "./components/Clipboard";
 
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
+import { ClipboardProvider } from "./context/ClipboardContext";
 import { useUserRole } from "./hooks/useUserRole";
 
 import theme from "./components/styles/theme"; // Make sure this path is correct
@@ -137,22 +138,17 @@ function FavoriteDrillsStackScreen() {
 	);
 }
 
-const PracticesStack = createNativeStackNavigator();
-function PracticesStackScreen() {
+const ClipboardStack = createNativeStackNavigator();
+function ClipboardStackScreen() {
 	return (
-		<PracticesStack.Navigator
+		<ClipboardStack.Navigator
 			screenOptions={{
 				headerStyle: { backgroundColor: theme.colors.surface },
 				headerTintColor: theme.colors.textPrimary,
 			}}
 		>
-			<PracticesStack.Screen name="Practices" component={Practices} />
-			<PracticesStack.Screen name="Practice" component={CreatePractice} />
-			<PracticesStack.Screen
-				name="Practice Details"
-				component={PracticeDetails}
-			/>
-		</PracticesStack.Navigator>
+			<ClipboardStack.Screen name="Clipboard" component={Clipboard} />
+		</ClipboardStack.Navigator>
 	);
 }
 
@@ -165,7 +161,8 @@ export default function Navigation() {
 	return (
 		<NavigationContainer theme={navigationTheme}>
 			<FavoritesProvider>
-				<Tab.Navigator
+				<ClipboardProvider>
+					<Tab.Navigator
 					screenOptions={({ route }) => ({
 						headerShown: false,
 						tabBarStyle: {
@@ -181,8 +178,8 @@ export default function Navigation() {
 								case "HomeTab":
 									iconName = "home";
 									break;
-								case "PracticesTab":
-									iconName = "event";
+								case "ClipboardTab":
+									iconName = "content-paste";
 									break;
 								case "DrillsTab":
 									iconName = "fitness-center";
@@ -216,9 +213,9 @@ export default function Navigation() {
 								options={{ title: "Home" }}
 							/>
 							<Tab.Screen
-								name="PracticesTab"
-								component={PracticesStackScreen}
-								options={{ title: "Practices" }}
+								name="ClipboardTab"
+								component={ClipboardStackScreen}
+								options={{ title: "Clipboard" }}
 							/>
 							<Tab.Screen
 								name="DrillsTab"
@@ -244,6 +241,7 @@ export default function Navigation() {
 						/>
 					)}
 				</Tab.Navigator>
+				</ClipboardProvider>
 			</FavoritesProvider>
 		</NavigationContainer>
 	);

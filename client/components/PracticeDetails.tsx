@@ -528,7 +528,8 @@ export default function PracticeDetails({ route }) {
 									keyExtractor={(item, index) => `${item}-${index}`}
 									renderItem={renderDrill}
 									containerStyle={styles.drillListContainer}
-									scrollEnabled={false}
+									scrollEnabled={true}
+									nestedScrollEnabled={true}
 								/>
 							) : (
 								<View style={styles.readOnlyDrillsContainer}>
@@ -646,7 +647,7 @@ const styles = StyleSheet.create({
 	},
 	scrollContent: {
 		padding: 20,
-		paddingBottom: 120, // Extra padding to account for sticky button
+		paddingBottom: 140, // Extra padding to account for sticky button
 	},
 	containerCentered: {
 		flex: 1,
@@ -722,7 +723,7 @@ const styles = StyleSheet.create({
 		color: theme.colors.textPrimary,
 	},
 	drillListContainer: {
-		maxHeight: 280,
+		// Removed maxHeight to allow full scrolling
 	},
 	drillItem: {
 		flexDirection: "row",
@@ -832,7 +833,7 @@ const styles = StyleSheet.create({
 		color: theme.colors.textPrimary,
 	},
 	readOnlyDrillsContainer: {
-		maxHeight: 280,
+		// Removed maxHeight to allow full scrolling
 	},
 	readOnlyDrillItem: {
 		flexDirection: "row",

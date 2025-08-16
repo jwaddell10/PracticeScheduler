@@ -31,6 +31,8 @@ import DrillDetails from "./DrillDetails";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
+import { useClipboard } from "../context/ClipboardContext";
+import { clearClipboardAfterPractice } from "../util/clipboardManager";
 
 interface DrillData {
 	name: string;
@@ -66,6 +68,7 @@ const CreatePractice = () => {
 	const [drillDurations, setDrillDurations] = useState<{ [key: string]: number }>({});
 	const [notes, setNotes] = useState(""); // Added notes state
 	const [title, setTitle] = useState(""); // Added title state
+	const { clipboardDrills, refreshClipboard } = useClipboard();
 
 	const {
 		selectedFilters,
@@ -93,6 +96,20 @@ const CreatePractice = () => {
 	} = useFavorites();
 
 	const session = useSession();
+
+	// Initialize selected drills from clipboard when component mounts
+	useEffect(() => {
+		if (clipboardDrills.length > 0) {
+			// Set selected drills from clipboard
+			setSelectedDrills(clipboardDrills.map(drill => drill.name));
+			// Initialize drill durations
+			const initialDurations: { [key: string]: number } = {};
+			clipboardDrills.forEach(drill => {
+				initialDurations[drill.name] = drill.duration || 0;
+			});
+			setDrillDurations(initialDurations);
+		}
+	}, [clipboardDrills]);
 
 	// Monitor modal state changes
 	useEffect(() => {
@@ -266,6 +283,13 @@ const CreatePractice = () => {
 				drillDuration: drillDurationArray,
 				notes: notes || undefined,
 			});
+
+			// Clear clipboard after successful practice creation
+			await clearClipboardAfterPractice();
+			await refreshClipboard();
+			setSelectedDrills([]);
+			setDrillDurations({});
+
 			navigation.goBack();
 		} catch (error) {
 			alert("Failed to create practice. Please try again.");
@@ -411,21 +435,27 @@ const CreatePractice = () => {
 									<Text style={styles.label}>
 										Selected Drills
 									</Text>
-									<TouchableOpacity
-										onPress={() =>
-											setDrillSelectionModalVisible(true)
-										}
-										style={styles.addDrillsButton}
-									>
-										<AntDesign 
-											name="plus" 
-											size={20} 
-											color={theme.colors.white} 
-										/>
-										<Text style={styles.addDrillsButtonText}>
-											Add Drills
-										</Text>
-									</TouchableOpacity>
+									{clipboardDrills.length === 0 ? (
+										<View style={styles.emptyClipboardContainer}>
+											<Text style={styles.emptyClipboardText}>
+												You haven't added any drills to your clipboard
+											</Text>
+											<TouchableOpacity
+												style={styles.browseDrillsButton}
+												onPress={() => navigation.navigate("FavoriteTab")}
+											>
+												<Text style={styles.browseDrillsButtonText}>
+													Browse Drills
+												</Text>
+											</TouchableOpacity>
+										</View>
+									) : (
+										<View style={styles.clipboardInfoContainer}>
+											<Text style={styles.clipboardInfoText}>
+												{clipboardDrills.length} drill{clipboardDrills.length !== 1 ? 's' : ''} from clipboard
+											</Text>
+										</View>
+									)}
 
 									{/* Duration Validation Error */}
 									{selectedDrills.length > 0 && !isDurationValid() && (
@@ -1371,6 +1401,40 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: theme.colors.textMuted,
 		marginTop: 16,
+	},
+	// Clipboard styles
+	emptyClipboardContainer: {
+		alignItems: "center",
+		paddingVertical: 20,
+	},
+	emptyClipboardText: {
+		fontSize: 16,
+		color: theme.colors.textMuted,
+		marginBottom: 16,
+		textAlign: "center",
+	},
+	browseDrillsButton: {
+		backgroundColor: theme.colors.primary,
+		paddingHorizontal: 20,
+		paddingVertical: 12,
+		borderRadius: 8,
+	},
+	browseDrillsButtonText: {
+		color: theme.colors.white,
+		fontWeight: "600",
+		fontSize: 16,
+	},
+	clipboardInfoContainer: {
+		backgroundColor: theme.colors.surface,
+		borderRadius: 8,
+		padding: 12,
+		marginBottom: 16,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+	},
+	clipboardInfoText: {
+		fontSize: 14,
+		color: theme.colors.textMuted,
 		textAlign: "center",
 	},
 });

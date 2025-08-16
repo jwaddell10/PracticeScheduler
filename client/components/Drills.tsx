@@ -18,6 +18,8 @@ import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
 import DrillFilterModal from "./DrillFilterModal";
 import theme from "./styles/theme";
+import { addDrillToClipboard, removeDrillFromClipboard } from "../util/clipboardManager";
+import { useClipboard } from "../context/ClipboardContext";
 
 export default function Drills() {
 	const navigation = useNavigation();
@@ -32,6 +34,7 @@ export default function Drills() {
 		type: [],
 	});
 	const [searchQuery, setSearchQuery] = useState("");
+	const { clipboardStatus, updateClipboardStatus, refreshClipboard } = useClipboard();
 
 	const skillFocusOptions = [
 		"Offense",
@@ -59,6 +62,38 @@ export default function Drills() {
 		});
 		return unsubscribe;
 	}, [navigation, refreshDrills, lastRefreshTime]);
+
+	const handleToggleClipboard = async (drill: any) => {
+		const isCurrentlyInClipboard = clipboardStatus[drill.id];
+		
+		try {
+			if (isCurrentlyInClipboard) {
+				// Remove from clipboard
+				await removeDrillFromClipboard(drill.id);
+				updateClipboardStatus(drill.id, false);
+			} else {
+				// Add to clipboard
+				const clipboardDrill = {
+					id: drill.id,
+					name: drill.name,
+					type: drill.type,
+					skillFocus: drill.skillFocus,
+					difficulty: drill.difficulty,
+					duration: drill.duration,
+					notes: drill.notes,
+				};
+				
+				await addDrillToClipboard(clipboardDrill);
+				updateClipboardStatus(drill.id, true);
+			}
+			
+			// Ensure clipboard is refreshed
+			await refreshClipboard();
+		} catch (error) {
+			console.error("Error toggling drill in clipboard:", error);
+			Alert.alert("Error", "Failed to update clipboard");
+		}
+	};
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
@@ -327,22 +362,32 @@ export default function Drills() {
 							))}
 						</View>
 					</View>
-					<MaterialIcons
-						name="arrow-forward-ios"
-						size={20}
-						color="#007AFF"
-						style={styles.arrowIcon}
-					/>
+
 				</TouchableOpacity>
-				<StarButton
-					drillId={drill.id}
-					initialIsFavorited={favoriteDrillIds.has(drill.id)}
-					size={20}
-					onToggle={(drillId, isFavorited) => {
-						handleFavoriteToggle(drillId, isFavorited);
-					}}
-					style={styles.starButtonStyle}
-				/>
+				<View style={styles.actionButtonsContainer}>
+					<TouchableOpacity
+						style={[
+							styles.clipboardButton,
+							clipboardStatus[drill.id] && styles.clipboardButtonActive
+						]}
+						onPress={() => handleToggleClipboard(drill)}
+					>
+						<MaterialIcons
+							name={clipboardStatus[drill.id] ? "check" : "content-paste"}
+							size={16}
+							color={clipboardStatus[drill.id] ? theme.colors.white : theme.colors.primary}
+						/>
+					</TouchableOpacity>
+					<StarButton
+						drillId={drill.id}
+						initialIsFavorited={favoriteDrillIds.has(drill.id)}
+						size={20}
+						onToggle={(drillId, isFavorited) => {
+							handleFavoriteToggle(drillId, isFavorited);
+						}}
+						style={styles.starButtonStyle}
+					/>
+				</View>
 			</View>
 		);
 	};
@@ -799,6 +844,22 @@ const styles = StyleSheet.create({
 		color: theme.colors.white,
 		fontSize: 16,
 		fontWeight: "600",
+	},
+	// Clipboard button styles
+	actionButtonsContainer: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: 8,
+	},
+	clipboardButton: {
+		padding: 8,
+		borderRadius: 6,
+		borderWidth: 1,
+		borderColor: theme.colors.primary,
+		backgroundColor: "transparent",
+	},
+	clipboardButtonActive: {
+		backgroundColor: theme.colors.primary,
 	},
 	// Search styles
 	searchContainer: {
