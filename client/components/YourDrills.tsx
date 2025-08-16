@@ -23,8 +23,8 @@ import DrillFilterModal from "../components/DrillFilterModal";
 import ActiveFiltersBar from "../components/ActiveFiltersBar";
 import CreateDrill from "./CreateDrill";
 import theme from "./styles/theme";
-import { addDrillToClipboard, removeDrillFromClipboard } from "../util/clipboardManager";
-import { useClipboard } from "../context/ClipboardContext";
+import DrillCard from "./DrillCard";
+import { useUserRole } from "../hooks/useUserRole";
 
 export default function YourDrills() {
 	const {
@@ -44,10 +44,12 @@ export default function YourDrills() {
 
 	const session = useSession();
 	const navigation = useNavigation();
+	const { role } = useUserRole();
 	const [showFilters, setShowFilters] = useState(false);
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
-	const { clipboardStatus, updateClipboardStatus, refreshClipboard } = useClipboard();
+	const [activeTab, setActiveTab] = useState("myDrills"); // "myDrills" or "favorites"
+
 
 	const {
 		selectedFilters,
@@ -89,70 +91,44 @@ export default function YourDrills() {
 		setLastRefreshTime(Date.now());
 	};
 
-	const handleToggleClipboard = async (drill: any) => {
-		const isCurrentlyInClipboard = clipboardStatus[drill.id];
-		
-		try {
-			if (isCurrentlyInClipboard) {
-				// Remove from clipboard
-				await removeDrillFromClipboard(drill.id);
-				updateClipboardStatus(drill.id, false);
-			} else {
-				// Add to clipboard
-				const clipboardDrill = {
-					id: drill.id,
-					name: drill.name,
-					type: drill.type,
-					skillFocus: drill.skillFocus,
-					difficulty: drill.difficulty,
-					duration: drill.duration,
-					notes: drill.notes,
-				};
-				
-				await addDrillToClipboard(clipboardDrill);
-				updateClipboardStatus(drill.id, true);
-			}
-			
-			// Ensure clipboard is refreshed
-			await refreshClipboard();
-		} catch (error) {
-			console.error("Error toggling drill in clipboard:", error);
-			Alert.alert("Error", "Failed to update clipboard");
-		}
-	};
 
-	// Combine user's own drills and favorites
+
+	// Combine user's own drills and favorites based on active tab
 	const combineDrills = () => {
 		const combined = [];
 		const seenIds = new Set();
 
-		if (userDrills) {
-			userDrills.forEach((drill) => {
-				if (drill.user_id === session?.user?.id) {
-					combined.push({
-						...drill,
-						isFavorited: favoriteDrillIds.has(drill.id),
-						isUserDrill: true,
-					});
-					seenIds.add(drill.id);
-				}
-			});
-		}
-
-		if (favoriteDrills) {
-			favoriteDrills.forEach((drill) => {
-				if (
-					drill.user_id !== session?.user?.id &&
-					!seenIds.has(drill.id)
-				) {
-					combined.push({
-						...drill,
-						isFavorited: true,
-						isUserDrill: false,
-					});
-					seenIds.add(drill.id);
-				}
-			});
+		if (activeTab === "myDrills") {
+			// Show only user's created drills
+			if (userDrills) {
+				userDrills.forEach((drill) => {
+					if (drill.user_id === session?.user?.id) {
+						combined.push({
+							...drill,
+							isFavorited: favoriteDrillIds.has(drill.id),
+							isUserDrill: true,
+						});
+						seenIds.add(drill.id);
+					}
+				});
+			}
+		} else if (activeTab === "favorites" && (role === "admin" || role === "premium")) {
+			// Show only favorited drills from drill library (for premium/admin users)
+			if (favoriteDrills) {
+				favoriteDrills.forEach((drill) => {
+					if (
+						drill.user_id !== session?.user?.id &&
+						!seenIds.has(drill.id)
+					) {
+						combined.push({
+							...drill,
+							isFavorited: true,
+							isUserDrill: false,
+						});
+						seenIds.add(drill.id);
+					}
+				});
+			}
 		}
 
 		return combined;
@@ -229,6 +205,15 @@ export default function YourDrills() {
 	};
 
 	const organizedDrills = organizeDrills(searchFilteredDrills);
+	
+	// Reorder to show team drills first
+	const reorderedDrills = {};
+	if (organizedDrills.team) {
+		reorderedDrills.team = organizedDrills.team;
+	}
+	if (organizedDrills.individual) {
+		reorderedDrills.individual = organizedDrills.individual;
+	}
 
 	const loading = favoritesLoading || userDrillsLoading;
 	const error = favoritesError || userDrillsError;
@@ -295,158 +280,15 @@ export default function YourDrills() {
 	}
 
 	const renderDrill = ({ item }) => {
-		const isAdminDrill = item.users?.role === "admin";
-		const isOwnDrill = item.user_id === session?.user?.id;
-		const isPublicDrill = item.isPublic === true;
-		const isFavorited = item.isFavorited || favoriteDrillIds.has(item.id);
-		const isUserCreated = item.isUserDrill || isOwnDrill;
-
 		return (
-			<TouchableOpacity
-				style={styles.drillCard}
-				activeOpacity={0.7}
-				onPress={() =>
-					navigation.navigate("Drill Details", { drill: item })
-				}
-			>
-				{item.imageUrl ? (
-					<Image
-						source={{ uri: item.imageUrl }}
-						style={styles.drillImage}
-						resizeMode="cover"
-					/>
-				) : (
-					<View style={[styles.drillImage, styles.placeholderImage]}>
-						<MaterialIcons
-							name="fitness-center"
-							size={24}
-							color="#999"
-						/>
-					</View>
-				)}
-
-				<View style={styles.drillContent}>
-					<View style={styles.drillHeader}>
-						<View style={styles.titleContainer}>
-							{isFavorited && !isUserCreated && (
-								<MaterialIcons
-									name="star"
-									size={16}
-									color="#FFD700"
-									style={styles.favoriteIcon}
-								/>
-							)}
-							<Text style={styles.drillTitle} numberOfLines={2}>
-								{item.name}
-							</Text>
-						</View>
-
-						<View style={styles.badgeContainer}>
-							{isPublicDrill && (
-								<View style={styles.publicBadge}>
-									<MaterialIcons
-										name="public"
-										size={12}
-										color="#2196F3"
-									/>
-									<Text style={styles.publicBadgeText}>
-										Public
-									</Text>
-								</View>
-							)}
-							{isAdminDrill && !isOwnDrill && (
-								<View style={styles.adminBadge}>
-									<MaterialIcons
-										name="verified"
-										size={12}
-										color="#4CAF50"
-									/>
-									<Text style={styles.adminBadgeText}>
-										Admin
-									</Text>
-								</View>
-							)}
-							{isUserCreated && (
-								<View style={styles.myDrillBadge}>
-									<MaterialIcons
-										name="person"
-										size={12}
-										color="#FF9800"
-									/>
-									<Text style={styles.myDrillBadgeText}>
-										Mine
-									</Text>
-								</View>
-							)}
-						</View>
-
-						<View style={styles.actionButtonsContainer}>
-							<TouchableOpacity
-								style={[
-									styles.clipboardButton,
-									clipboardStatus[item.id] && styles.clipboardButtonActive
-								]}
-								onPress={() => handleToggleClipboard(item)}
-							>
-								<MaterialIcons
-									name={clipboardStatus[item.id] ? "check" : "content-paste"}
-									size={16}
-									color={clipboardStatus[item.id] ? theme.colors.white : theme.colors.primary}
-								/>
-							</TouchableOpacity>
-							{!isUserCreated && (
-								<StarButton
-									drillId={item.id}
-									initialIsFavorited={favoriteDrillIds.has(
-										item.id
-									)}
-									size={20}
-									onToggle={(drillId, isFav) =>
-										handleFavoriteToggle(drillId, isFav)
-									}
-									style={styles.starButton}
-								/>
-							)}
-						</View>
-					</View>
-
-					<View style={styles.drillInfo}>
-						<View style={styles.infoRow}>
-							<Text style={styles.infoLabel}>Focus: </Text>
-							<Text style={styles.infoText} numberOfLines={1}>
-								{formatArrayValue(item.skillFocus)}
-							</Text>
-						</View>
-						<View style={styles.infoRow}>
-							<Text style={styles.infoLabel}>Type: </Text>
-							<Text style={styles.infoText} numberOfLines={1}>
-								{formatArrayValue(item.type)}
-							</Text>
-						</View>
-						{item.difficulty && (
-							<View style={styles.infoRow}>
-								<Text style={styles.infoLabel}>
-									Difficulty:{" "}
-								</Text>
-								<Text style={styles.infoText} numberOfLines={1}>
-									{formatArrayValue(item.difficulty)}
-								</Text>
-							</View>
-						)}
-						{item.notes && item.notes.trim() !== "" && (
-							<View style={styles.notesContainer}>
-								<Text style={styles.infoLabel}>Notes:</Text>
-								<Text
-									style={styles.notesText}
-									numberOfLines={3}
-								>
-									{item.notes}
-								</Text>
-							</View>
-						)}
-					</View>
-				</View>
-			</TouchableOpacity>
+							<DrillCard
+					key={item.id}
+					drill={item}
+					showStarButton={true}
+					showClipboardButton={true}
+					showStarOnlyIfFavorited={true}
+					onRefresh={refreshDrills}
+				/>
 		);
 	};
 
@@ -472,6 +314,40 @@ export default function YourDrills() {
 				toggleFilter={toggleFilter}
 				hasActiveFilters={hasActiveFilters}
 			/>
+
+			{/* Tab Toggle */}
+			<View style={styles.tabContainer}>
+				<TouchableOpacity
+					style={[
+						styles.tabButton,
+						activeTab === "myDrills" && styles.activeTabButton
+					]}
+					onPress={() => setActiveTab("myDrills")}
+				>
+					<Text style={[
+						styles.tabButtonText,
+						activeTab === "myDrills" && styles.activeTabButtonText
+					]}>
+						My Drills
+					</Text>
+				</TouchableOpacity>
+				{(role === "admin" || role === "premium") && (
+					<TouchableOpacity
+						style={[
+							styles.tabButton,
+							activeTab === "favorites" && styles.activeTabButton
+						]}
+						onPress={() => setActiveTab("favorites")}
+					>
+						<Text style={[
+							styles.tabButtonText,
+							activeTab === "favorites" && styles.activeTabButtonText
+						]}>
+							Favorites
+						</Text>
+					</TouchableOpacity>
+				)}
+			</View>
 
 			{/* Search Bar */}
 			<View style={styles.searchContainer}>
@@ -525,17 +401,17 @@ export default function YourDrills() {
 			>
 				<View style={styles.headerContainer}>
 					<Text style={styles.headerTitle}>
-						My Drills & Favorites ({searchFilteredDrills.length}
+						{activeTab === "myDrills" ? "My Drills" : "Favorites"} ({searchFilteredDrills.length}
 						{(hasActiveFilters() || searchQuery.trim() !== "") &&
 							` of ${combinedDrills.length}`}
 						)
 					</Text>
 				</View>
 
-				{Object.keys(organizedDrills).length === 0 ? (
+				{Object.keys(reorderedDrills).length === 0 ? (
 					hasActiveFilters() || searchQuery.trim() !== "" ? renderEmptyFiltered : null
 				) : (
-					Object.entries(organizedDrills).map(([type, skillFocusGroups]) => (
+					Object.entries(reorderedDrills).map(([type, skillFocusGroups]) => (
 						<View key={type} style={styles.section}>
 							<Text style={styles.header}>
 								{type.replace(/\b\w/g, (c) => c.toUpperCase())} Drills (
@@ -612,6 +488,32 @@ export default function YourDrills() {
 
 const styles = StyleSheet.create({
 	container: { flex: 1, backgroundColor: theme.colors.background },
+	tabContainer: {
+		flexDirection: "row",
+		marginHorizontal: 16,
+		marginVertical: 12,
+		backgroundColor: theme.colors.surface,
+		borderRadius: 8,
+		padding: 4,
+	},
+	tabButton: {
+		flex: 1,
+		paddingVertical: 12,
+		paddingHorizontal: 16,
+		borderRadius: 6,
+		alignItems: "center",
+	},
+	activeTabButton: {
+		backgroundColor: theme.colors.primary,
+	},
+	tabButtonText: {
+		fontSize: 14,
+		fontWeight: "600",
+		color: theme.colors.textMuted,
+	},
+	activeTabButtonText: {
+		color: theme.colors.white,
+	},
 	loadingContainer: {
 		flex: 1,
 		justifyContent: "center",

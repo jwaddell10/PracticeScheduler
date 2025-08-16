@@ -12,6 +12,7 @@ const theme = {
 
 		text: "#F1F5F9", // Light text
 		textPrimary: "#F1F5F9", // Explicit primary text
+		textSecondary: "#64748B", // Darker text for tags
 		textMuted: "#94A3B8", // Muted gray/blue
 		white: "#FFFFFF",
 		proPurple: "#8B5CF6",

@@ -20,14 +20,23 @@ import theme from "./styles/theme";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-export default function DrillDetails({ route }) {
+export default function DrillDetails({ route }: { route: any }) {
 	const { drill } = route.params;
+	
+	// Add defensive check for drill object
+	if (!drill) {
+		return (
+			<View style={styles.container}>
+				<Text style={styles.errorText}>Drill not found</Text>
+			</View>
+		);
+	}
 	const navigation = useNavigation();
 	const { isAdmin } = useUserRole();
 	const { deleteDrill } = useDrills();
 	const session = useSession();
 	
-	// console.log(drill, 'drill in drill details')
+	console.log(drill, 'drill in drill details')
 	const [imageLoading, setImageLoading] = useState(true);
 	const [imageError, setImageError] = useState(false);
 	const [modalVisible, setModalVisible] = useState(false);
@@ -525,5 +534,11 @@ const styles = StyleSheet.create({
 		color: "white",
 		fontSize: 16,
 		fontWeight: "600",
+	},
+	errorText: {
+		color: theme.colors.error,
+		fontSize: 18,
+		textAlign: "center",
+		marginTop: 50,
 	},
 });

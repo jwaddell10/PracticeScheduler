@@ -18,8 +18,7 @@ import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
 import DrillFilterModal from "./DrillFilterModal";
 import theme from "./styles/theme";
-import { addDrillToClipboard, removeDrillFromClipboard } from "../util/clipboardManager";
-import { useClipboard } from "../context/ClipboardContext";
+import DrillCard from "./DrillCard";
 
 export default function Drills() {
 	const navigation = useNavigation();
@@ -34,7 +33,7 @@ export default function Drills() {
 		type: [],
 	});
 	const [searchQuery, setSearchQuery] = useState("");
-	const { clipboardStatus, updateClipboardStatus, refreshClipboard } = useClipboard();
+
 
 	const skillFocusOptions = [
 		"Offense",
@@ -63,37 +62,7 @@ export default function Drills() {
 		return unsubscribe;
 	}, [navigation, refreshDrills, lastRefreshTime]);
 
-	const handleToggleClipboard = async (drill: any) => {
-		const isCurrentlyInClipboard = clipboardStatus[drill.id];
-		
-		try {
-			if (isCurrentlyInClipboard) {
-				// Remove from clipboard
-				await removeDrillFromClipboard(drill.id);
-				updateClipboardStatus(drill.id, false);
-			} else {
-				// Add to clipboard
-				const clipboardDrill = {
-					id: drill.id,
-					name: drill.name,
-					type: drill.type,
-					skillFocus: drill.skillFocus,
-					difficulty: drill.difficulty,
-					duration: drill.duration,
-					notes: drill.notes,
-				};
-				
-				await addDrillToClipboard(clipboardDrill);
-				updateClipboardStatus(drill.id, true);
-			}
-			
-			// Ensure clipboard is refreshed
-			await refreshClipboard();
-		} catch (error) {
-			console.error("Error toggling drill in clipboard:", error);
-			Alert.alert("Error", "Failed to update clipboard");
-		}
-	};
+
 
 	useLayoutEffect(() => {
 		navigation.setOptions({
@@ -310,85 +279,13 @@ export default function Drills() {
 		}
 
 		return (
-			<View key={drill.id} style={styles.drillCard}>
-				<TouchableOpacity
-					style={styles.drillCardContent}
-					onPress={() =>
-						navigation.navigate("DrillDetails", { drill })
-					}
-					activeOpacity={0.7}
-				>
-					<View style={styles.drillTextContainer}>
-						<Text style={styles.drillTitle}>{drill.name}</Text>
-						{drill.notes ? (
-							<Text style={styles.drillNotes} numberOfLines={2}>
-								{drill.notes}
-							</Text>
-						) : null}
-
-						{/* TAGS */}
-						<View style={styles.tagsContainer}>
-							{drillDifficulty.map((diff, idx) => (
-								<View
-									key={`diff-${idx}`}
-									style={[styles.tag, styles.difficultyTag]}
-								>
-									<Text style={styles.tagText}>
-										{diff.charAt(0).toUpperCase() +
-											diff.slice(1)}
-									</Text>
-								</View>
-							))}
-							{drillSkillFocus.map((skill, idx) => (
-								<View
-									key={`skill-${idx}`}
-									style={[styles.tag, styles.skillTag]}
-								>
-									<Text style={styles.tagText}>
-										{skill.charAt(0).toUpperCase() +
-											skill.slice(1)}
-									</Text>
-								</View>
-							))}
-							{drillType.map((t, idx) => (
-								<View
-									key={`type-${idx}`}
-									style={[styles.tag, styles.typeTag]}
-								>
-									<Text style={styles.tagText}>
-										{t.charAt(0).toUpperCase() + t.slice(1)}
-									</Text>
-								</View>
-							))}
-						</View>
-					</View>
-
-				</TouchableOpacity>
-				<View style={styles.actionButtonsContainer}>
-					<TouchableOpacity
-						style={[
-							styles.clipboardButton,
-							clipboardStatus[drill.id] && styles.clipboardButtonActive
-						]}
-						onPress={() => handleToggleClipboard(drill)}
-					>
-						<MaterialIcons
-							name={clipboardStatus[drill.id] ? "check" : "content-paste"}
-							size={16}
-							color={clipboardStatus[drill.id] ? theme.colors.white : theme.colors.primary}
-						/>
-					</TouchableOpacity>
-					<StarButton
-						drillId={drill.id}
-						initialIsFavorited={favoriteDrillIds.has(drill.id)}
-						size={20}
-						onToggle={(drillId, isFavorited) => {
-							handleFavoriteToggle(drillId, isFavorited);
-						}}
-						style={styles.starButtonStyle}
-					/>
-				</View>
-			</View>
+			<DrillCard 
+				key={drill.id}
+				drill={drill}
+				showStarButton={true}
+				showClipboardButton={true}
+				onRefresh={refreshDrills}
+			/>
 		);
 	};
 

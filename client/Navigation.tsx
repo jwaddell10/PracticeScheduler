@@ -127,7 +127,7 @@ function FavoriteDrillsStackScreen() {
 				component={YourDrills}
 			/>
 			<FavoriteDrillsStack.Screen
-				name="Drill Details"
+				name="DrillDetails"
 				component={DrillDetails}
 			/>
 			<FavoriteDrillsStack.Screen
