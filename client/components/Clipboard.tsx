@@ -64,26 +64,46 @@ export default function Clipboard() {
 		);
 	};
 
+	// Helper function to safely convert values to strings and remove brackets/quotes
+	const safeString = (value: any): string => {
+		if (value === null || value === undefined) return '';
+		if (typeof value === 'string') {
+			// Try to parse JSON strings (like "[\"serve\"]")
+			try {
+				const parsed = JSON.parse(value);
+				if (Array.isArray(parsed)) {
+					return parsed.join(', ');
+				}
+				return parsed;
+			} catch {
+				// If parsing fails, return the original string
+				return value;
+			}
+		}
+		if (Array.isArray(value)) return value.join(', ');
+		return String(value);
+	};
+
 	const renderDrillItem = (drill: ClipboardDrill) => (
 		<View key={drill.id} style={styles.drillItem}>
 			<View style={styles.drillContent}>
-				<Text style={styles.drillName}>{drill.name}</Text>
+				<Text style={styles.drillName}>{safeString(drill.name)}</Text>
 				<View style={styles.drillDetails}>
 					{drill.type && (
-						<Text style={styles.drillDetail}>Type: {drill.type}</Text>
+						<Text style={styles.drillDetail}>Type: {safeString(drill.type)}</Text>
 					)}
 					{drill.skillFocus && (
-						<Text style={styles.drillDetail}>Focus: {drill.skillFocus}</Text>
+						<Text style={styles.drillDetail}>Focus: {safeString(drill.skillFocus)}</Text>
 					)}
 					{drill.difficulty && (
-						<Text style={styles.drillDetail}>Difficulty: {drill.difficulty}</Text>
+						<Text style={styles.drillDetail}>Difficulty: {safeString(drill.difficulty)}</Text>
 					)}
 					{drill.duration && (
 						<Text style={styles.drillDetail}>Duration: {drill.duration} min</Text>
 					)}
 				</View>
 				{drill.notes && (
-					<Text style={styles.drillNotes}>{drill.notes}</Text>
+					<Text style={styles.drillNotes}>Notes: {safeString(drill.notes)}</Text>
 				)}
 			</View>
 			<TouchableOpacity
