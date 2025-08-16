@@ -75,3 +75,12 @@ export const isDrillInClipboard = async (drillId: string): Promise<boolean> => {
 		return false;
 	}
 };
+
+export const updateClipboardDrills = async (updatedDrills: ClipboardDrill[]): Promise<void> => {
+	try {
+		await AsyncStorage.setItem(CLIPBOARD_STORAGE_KEY, JSON.stringify(updatedDrills));
+	} catch (error) {
+		console.error("Error updating clipboard drills:", error);
+		throw error;
+	}
+};

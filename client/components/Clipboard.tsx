@@ -1,14 +1,15 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
 	View,
 	Text,
 	StyleSheet,
-	ScrollView,
 	TouchableOpacity,
 	Alert,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { removeDrillFromClipboard, clearClipboard } from "../util/clipboardManager";
+import DraggableFlatList from "react-native-draggable-flatlist";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { removeDrillFromClipboard, clearClipboard, updateClipboardDrills } from "../util/clipboardManager";
 import { useClipboard } from "../context/ClipboardContext";
 import theme from "./styles/theme";
 
@@ -26,11 +27,17 @@ const CLIPBOARD_STORAGE_KEY = "practice_clipboard";
 
 export default function Clipboard() {
 	const { clipboardDrills, refreshClipboard, updateClipboardStatus } = useClipboard();
+	const [reorderedDrills, setReorderedDrills] = useState<ClipboardDrill[]>([]);
 
 	// Ensure clipboard is loaded when component mounts
 	React.useEffect(() => {
 		refreshClipboard();
 	}, []);
+
+	// Update reordered drills when clipboard drills change
+	React.useEffect(() => {
+		setReorderedDrills(clipboardDrills);
+	}, [clipboardDrills]);
 
 	const handleRemoveDrillFromClipboard = async (drillId: string) => {
 		try {
@@ -64,6 +71,14 @@ export default function Clipboard() {
 		);
 	};
 
+	const handleDrillsReorder = ({ data }: { data: ClipboardDrill[] }) => {
+		setReorderedDrills(data);
+		// Save the reordered drills to AsyncStorage
+		updateClipboardDrills(data).catch(error => {
+			console.error("Error saving reordered drills:", error);
+		});
+	};
+
 	// Helper function to safely convert values to strings and remove brackets/quotes
 	const safeString = (value: any): string => {
 		if (value === null || value === undefined) return '';
@@ -84,8 +99,18 @@ export default function Clipboard() {
 		return String(value);
 	};
 
-	const renderDrillItem = (drill: ClipboardDrill) => (
-		<View key={drill.id} style={styles.drillItem}>
+	const renderDrillItem = ({ item: drill, drag, isActive }: { item: ClipboardDrill; drag: () => void; isActive: boolean }) => (
+		<TouchableOpacity
+			style={[
+				styles.drillItem,
+				isActive && styles.draggingItem
+			]}
+			onLongPress={drag}
+			disabled={isActive}
+		>
+			<View style={styles.dragHandle}>
+				<MaterialIcons name="drag-handle" size={20} color={theme.colors.textMuted} />
+			</View>
 			<View style={styles.drillContent}>
 				<Text style={styles.drillName}>{safeString(drill.name)}</Text>
 				<View style={styles.drillDetails}>
@@ -112,7 +137,7 @@ export default function Clipboard() {
 			>
 				<MaterialIcons name="remove-circle" size={24} color="#FF3B30" />
 			</TouchableOpacity>
-		</View>
+		</TouchableOpacity>
 	);
 
 	if (clipboardDrills.length === 0) {
@@ -130,22 +155,31 @@ export default function Clipboard() {
 	}
 
 	return (
-		<View style={styles.container}>
-			<View style={styles.header}>
-				<Text style={styles.title}>Practice Clipboard</Text>
-				<TouchableOpacity style={styles.clearButton} onPress={handleClearClipboard}>
-					<Text style={styles.clearButtonText}>Clear All</Text>
-				</TouchableOpacity>
+		<GestureHandlerRootView style={{ flex: 1 }}>
+			<View style={styles.container}>
+				<View style={styles.header}>
+					<Text style={styles.title}>Practice Clipboard</Text>
+					<TouchableOpacity style={styles.clearButton} onPress={handleClearClipboard}>
+						<Text style={styles.clearButtonText}>Clear All</Text>
+					</TouchableOpacity>
+				</View>
+				
+				<Text style={styles.subtitle}>
+					{reorderedDrills.length} drill{reorderedDrills.length !== 1 ? 's' : ''} ready for practice
+				</Text>
+				<Text style={styles.dragHint}>Hold and drag to reorder drills</Text>
+				
+				<DraggableFlatList
+					data={reorderedDrills}
+					renderItem={renderDrillItem}
+					keyExtractor={(item) => item.id}
+					onDragEnd={handleDrillsReorder}
+					containerStyle={{ flex: 1 }}
+					contentContainerStyle={styles.scrollView}
+					showsVerticalScrollIndicator={false}
+				/>
 			</View>
-			
-			<Text style={styles.subtitle}>
-				{clipboardDrills.length} drill{clipboardDrills.length !== 1 ? 's' : ''} ready for practice
-			</Text>
-
-			<ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-				{clipboardDrills.map(renderDrillItem)}
-			</ScrollView>
-		</View>
+		</GestureHandlerRootView>
 	);
 }
 
@@ -228,6 +262,23 @@ const styles = StyleSheet.create({
 	removeButton: {
 		marginLeft: 12,
 		justifyContent: "center",
+	},
+	draggingItem: {
+		opacity: 0.8,
+		transform: [{ scale: 1.05 }],
+		shadowOpacity: 0.3,
+		elevation: 8,
+	},
+	dragHandle: {
+		marginRight: 12,
+		padding: 4,
+	},
+	dragHint: {
+		fontSize: 14,
+		color: theme.colors.textMuted,
+		paddingHorizontal: 20,
+		paddingBottom: 8,
+		fontStyle: "italic",
 	},
 	emptyState: {
 		flex: 1,
