@@ -1,4 +1,3 @@
-// CreatePractice.tsx
 import { useEffect, useState } from "react";
 import {
 	View,
@@ -12,7 +11,7 @@ import {
 	Keyboard,
 	Button,
 	Modal,
-	Image, // Added Image import
+	Image,
 	TextInput,
 	Alert,
 } from "react-native";
@@ -66,8 +65,8 @@ const CreatePractice = () => {
 	const [endDate, setEndDate] = useState<Date | null>(null);
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [drillDurations, setDrillDurations] = useState<{ [key: string]: number }>({});
-	const [notes, setNotes] = useState(""); // Added notes state
-	const [title, setTitle] = useState(""); // Added title state
+	const [notes, setNotes] = useState("");
+	const [title, setTitle] = useState("");
 	const { clipboardDrills, refreshClipboard } = useClipboard();
 
 	const {
@@ -436,99 +435,92 @@ const CreatePractice = () => {
 						behavior={Platform.OS === "ios" ? "padding" : undefined}
 						keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
 					>
-						<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-							<View style={{ flex: 1 }}>
-								<ScrollView
-									contentContainerStyle={styles.scrollView}
-									keyboardShouldPersistTaps="handled"
-									nestedScrollEnabled={true}
-									showsVerticalScrollIndicator={false}
-								>
-								{formatSelectedDate() && (
-									<View style={styles.headerContainer}>
-										<Text style={styles.headerTitle}>
-											Create Practice
-										</Text>
-										<Text style={styles.selectedDateText}>
-											{formatSelectedDate()}
-										</Text>
+						<View style={{ flex: 1 }} pointerEvents="box-none">
+							<ScrollView
+								contentContainerStyle={styles.scrollView}
+								keyboardShouldPersistTaps="handled"
+								nestedScrollEnabled={false}
+								showsVerticalScrollIndicator={false}
+								onScrollBeginDrag={() => Keyboard.dismiss()}
+								scrollEventThrottle={16}
+								alwaysBounceVertical={true}
+							>
+									{formatSelectedDate() && (
+										<View style={styles.headerContainer} pointerEvents="box-none">
+											<Text style={styles.headerTitle}>
+												Create Practice
+											</Text>
+											<Text style={styles.selectedDateText}>
+												{formatSelectedDate()}
+											</Text>
+										</View>
+									)}
+									
+									{/* Practice Title */}
+									<View style={styles.section} pointerEvents="box-none">
+										<Text style={styles.label}>Practice Title</Text>
+										<TextInput
+											style={styles.titleInput}
+											value={title}
+											onChangeText={setTitle}
+											placeholder="Enter practice title..."
+											placeholderTextColor={theme.colors.textMuted}
+											keyboardAppearance="dark"
+										/>
 									</View>
-								)}
-								{/* Practice Title */}
-								<View style={styles.section}>
-									<Text style={styles.label}>Practice Title</Text>
-									<TextInput
-										style={styles.titleInput}
-										value={title}
-										onChangeText={setTitle}
-										placeholder="Enter practice title..."
-										placeholderTextColor={theme.colors.textMuted}
-										keyboardAppearance="dark"
+
+									<PracticeDateTimePicker
+										initialDate={(route.params as any)?.selectedDate}
+										onDatesChange={handleDatesChange}
 									/>
-								</View>
 
-								<PracticeDateTimePicker
-									initialDate={(route.params as any)?.selectedDate}
-									onDatesChange={handleDatesChange}
-								/>
-
-								{/* Drills */}
-								<View style={styles.section}>
-									<Text style={styles.label}>
-										Selected Drills
-									</Text>
-									{clipboardDrills.length === 0 ? (
-										<View style={styles.emptyClipboardContainer}>
-											<Text style={styles.emptyClipboardText}>
-												You haven't added any drills to your clipboard
-											</Text>
-											<TouchableOpacity
-												style={styles.browseDrillsButton}
-												onPress={() => navigation.navigate("FavoriteTab")}
-											>
-												<Text style={styles.browseDrillsButtonText}>
-													Browse Drills
-												</Text>
-											</TouchableOpacity>
-										</View>
-									) : (
-										<View style={styles.clipboardInfoContainer}>
-											<Text style={styles.clipboardInfoText}>
-												{clipboardDrills.length} drill{clipboardDrills.length !== 1 ? 's' : ''} from clipboard
-											</Text>
-										</View>
-									)}
-
-									{/* Duration Validation Error */}
-									{selectedDrills.length > 0 && !isDurationValid() && (
-										<Text style={styles.validationText}>
-											⚠️ Drill durations ({getTotalDrillDuration()} min) must equal practice duration ({startDate && endDate ? Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : 0} min)
+									{/* Drills */}
+									<View style={styles.section} pointerEvents="box-none">
+										<Text style={styles.label}>
+											Selected Drills
 										</Text>
-									)}
+										
+																				{clipboardDrills.length === 0 ? (
+											<View style={styles.emptyClipboardContainer} pointerEvents="box-none">
+												<Text style={styles.emptyClipboardText}>
+													You haven't added any drills to your clipboard
+												</Text>
+												<TouchableOpacity
+													style={styles.browseDrillsButton}
+													onPress={() => {
+														// Navigate to the YourDrills tab
+														(navigation as any).navigate("FavoriteTab");
+													}}
+												>
+													<Text style={styles.browseDrillsButtonText}>
+														Browse Drills
+													</Text>
+												</TouchableOpacity>
+											</View>
+										) : (
+											<View style={styles.clipboardInfoContainer} pointerEvents="box-none">
+												<Text style={styles.clipboardInfoText}>
+													{clipboardDrills.length} drill{clipboardDrills.length !== 1 ? 's' : ''} from clipboard
+												</Text>
+											</View>
+										)}
 
-									{/* Display Selected Drills */}
-									{selectedDrills.length > 0 && (
-										<View
-											style={
-												styles.selectedDrillsContainer
-											}
-										>
-											{selectedDrills.map(
-												(drill, index) => (
-													<View
-														key={index}
-														style={
-															styles.selectedDrillItem
-														}
-													>
-														<Text
-															style={
-																styles.selectedDrillText
-															}
-														>
+										{/* Duration Validation Error */}
+										{selectedDrills.length > 0 && !isDurationValid() && (
+											<Text style={styles.validationText}>
+												⚠️ Drill durations ({getTotalDrillDuration()} min) must equal practice duration ({startDate && endDate ? Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : 0} min)
+											</Text>
+										)}
+
+										{/* Display Selected Drills */}
+										{selectedDrills.length > 0 && (
+											<View style={styles.selectedDrillsContainer} pointerEvents="box-none">
+												{selectedDrills.map((drill, index) => (
+													<View key={index} style={styles.selectedDrillItem} pointerEvents="box-none">
+														<Text style={styles.selectedDrillText}>
 															{drill}
 														</Text>
-														<View style={styles.drillDurationContainer}>
+														<View style={styles.drillDurationContainer} pointerEvents="box-none">
 															<Text style={styles.durationLabel}>Duration:</Text>
 															<TextInput
 																style={styles.drillDurationInput}
@@ -542,380 +534,283 @@ const CreatePractice = () => {
 															<Text style={styles.durationUnit}>min</Text>
 														</View>
 														<TouchableOpacity
-															onPress={() =>
-																removeDrill(
-																	drill
-																)
-															}
-															style={
-																styles.removeDrillButton
-															}
+															onPress={() => removeDrill(drill)}
+															style={styles.removeDrillButton}
 														>
-															<Text
-																style={
-																	styles.removeDrillButtonText
-																}
-															>
+															<Text style={styles.removeDrillButtonText}>
 																×
 															</Text>
 														</TouchableOpacity>
 													</View>
-												)
-											)}
-										</View>
-									)}
+												))}
+											</View>
+										)}
 
-									{selectedDrills.length === 0 && (
-										<Text style={styles.noDrillsText}>
-											No drills selected yet
-										</Text>
-									)}
+										{selectedDrills.length === 0 && (
+											<Text style={styles.noDrillsText}>
+												No drills selected yet
+											</Text>
+										)}
 
-									{/* Drill Selection Modal */}
-									<Modal
-										visible={drillSelectionModalVisible}
-										animationType="slide"
-										transparent={true}
-										onRequestClose={() =>
-											setDrillSelectionModalVisible(false)
-										}
-									>
-										<View style={styles.modalBackdrop}>
-											<View style={styles.modalContent}>
-												<Text style={styles.modalTitle}>
-													Select Drills
-												</Text>
-												
-												{/* Drill Source Toggle - Only show for premium users */}
-												{userRole === 'premium' && (
-													<View style={styles.toggleContainer}>
-														<TouchableOpacity
-															style={[
-																styles.toggleButton,
-																drillSourceToggle === 'public' && styles.toggleButtonActive
-															]}
-															onPress={() => setDrillSourceToggle('public')}
-														>
-															<Text style={[
-																styles.toggleButtonText,
-																drillSourceToggle === 'public' && styles.toggleButtonTextActive
-															]}>
-																Drills
-															</Text>
-														</TouchableOpacity>
-														<TouchableOpacity
-															style={[
-																styles.toggleButton,
-																drillSourceToggle === 'user' && styles.toggleButtonActive
-															]}
-															onPress={() => setDrillSourceToggle('user')}
-														>
-															<Text style={[
-																styles.toggleButtonText,
-																drillSourceToggle === 'user' && styles.toggleButtonTextActive
-															]}>
-																Your Drills
-															</Text>
-														</TouchableOpacity>
-													</View>
-												)}
-												
-												{/* Search Bar */}
-												<View style={styles.searchContainer}>
-													<View style={styles.searchInputContainer}>
-														<MaterialIcons
-															name="search"
-															size={20}
-															color={theme.colors.textMuted}
-															style={styles.searchIcon}
-														/>
-														<TextInput
-															style={styles.searchInput}
-															placeholder="Search drills..."
-															value={searchQuery}
-															onChangeText={setSearchQuery}
-															placeholderTextColor={theme.colors.textMuted}
-															keyboardAppearance="dark"
-														/>
-														{searchQuery.length > 0 && (
+										{/* Add Drills Button */}
+										<TouchableOpacity
+											style={styles.addDrillsButton}
+											onPress={() => setDrillSelectionModalVisible(true)}
+										>
+											<AntDesign name="plus" size={20} color={theme.colors.white} />
+											<Text style={styles.addDrillsButtonText}>
+												Add Drills
+											</Text>
+										</TouchableOpacity>
+
+										{/* Drill Selection Modal */}
+										<Modal
+											visible={drillSelectionModalVisible}
+											animationType="slide"
+											transparent={true}
+											onRequestClose={() => setDrillSelectionModalVisible(false)}
+										>
+											<View style={styles.modalBackdrop}>
+												<View style={styles.modalContent}>
+													<Text style={styles.modalTitle}>
+														Select Drills
+													</Text>
+													
+													{/* Drill Source Toggle - Only show for premium users */}
+													{userRole === 'premium' && (
+														<View style={styles.toggleContainer}>
 															<TouchableOpacity
-																onPress={() => setSearchQuery("")}
-																style={styles.clearSearchButton}
+																style={[
+																	styles.toggleButton,
+																	drillSourceToggle === 'public' && styles.toggleButtonActive
+																]}
+																onPress={() => setDrillSourceToggle('public')}
+															>
+																<Text style={[
+																	styles.toggleButtonText,
+																	drillSourceToggle === 'public' && styles.toggleButtonTextActive
+																]}>
+																	Drills
+																</Text>
+															</TouchableOpacity>
+															<TouchableOpacity
+																style={[
+																	styles.toggleButton,
+																	drillSourceToggle === 'user' && styles.toggleButtonActive
+																]}
+																onPress={() => setDrillSourceToggle('user')}
+															>
+																<Text style={[
+																	styles.toggleButtonText,
+																	drillSourceToggle === 'user' && styles.toggleButtonTextActive
+																]}>
+																	Your Drills
+																</Text>
+															</TouchableOpacity>
+														</View>
+													)}
+													
+													{/* Search Bar */}
+													<View style={styles.searchContainer}>
+														<View style={styles.searchInputContainer}>
+															<MaterialIcons
+																name="search"
+																size={20}
+																color={theme.colors.textMuted}
+																style={styles.searchIcon}
+															/>
+															<TextInput
+																style={styles.searchInput}
+																placeholder="Search drills..."
+																value={searchQuery}
+																onChangeText={setSearchQuery}
+																placeholderTextColor={theme.colors.textMuted}
+																keyboardAppearance="dark"
+															/>
+															{searchQuery.length > 0 && (
+																<TouchableOpacity
+																	onPress={() => setSearchQuery("")}
+																	style={styles.clearSearchButton}
+																>
+																	<MaterialIcons
+																		name="close"
+																		size={20}
+																		color={theme.colors.textMuted}
+																	/>
+																</TouchableOpacity>
+															)}
+															<TouchableOpacity
+																onPress={() => {
+																	console.log('Filter button pressed, setting showFilters to true');
+																	setDrillSelectionModalVisible(false); // Close drill selection modal first
+																	setShowFilters(true);
+																}}
+																style={[
+																	styles.filterButton,
+																	hasActiveFilters() && styles.filterButtonActive,
+																]}
 															>
 																<MaterialIcons
-																	name="close"
+																	name="filter-list"
 																	size={20}
-																	color={theme.colors.textMuted}
+																	color={hasActiveFilters() ? theme.colors.white : theme.colors.textMuted}
 																/>
+																{hasActiveFilters() && <View style={styles.filterBadge} />}
 															</TouchableOpacity>
-														)}
-														<TouchableOpacity
-															onPress={() => {
-																console.log('Filter button pressed, setting showFilters to true');
-																setDrillSelectionModalVisible(false); // Close drill selection modal first
-																setShowFilters(true);
-															}}
-															style={[
-																styles.filterButton,
-																hasActiveFilters() && styles.filterButtonActive,
-															]}
-														>
-															<MaterialIcons
-																name="filter-list"
-																size={20}
-																color={hasActiveFilters() ? theme.colors.white : theme.colors.textMuted}
-															/>
-															{hasActiveFilters() && <View style={styles.filterBadge} />}
-														</TouchableOpacity>
-													</View>
-												</View>
-												
-												<ScrollView
-													style={{ maxHeight: 400 }}
-													showsVerticalScrollIndicator={false}
-													nestedScrollEnabled={true}
-												>
-													{Object.keys(organizedDrills).length === 0 ? (
-														<View style={styles.emptyState}>
-															<Text style={styles.emptyStateText}>
-																No drills found
-															</Text>
 														</View>
-													) : (
-														Object.entries(organizedDrills).map(([type, skillFocusGroups]) => (
-															<View key={type} style={styles.section}>
-																<Text style={styles.header}>
-																	{type.replace(/\b\w/g, (c) => c.toUpperCase())} Drills (
-																	{Object.values(skillFocusGroups).flat().length})
-																</Text>
-																{Object.entries(skillFocusGroups).map(([skillFocus, drills]) => (
-																	<View key={`${type}-${skillFocus}`} style={styles.section}>
-																		<Text style={styles.categoryTitle}>
-																			{skillFocus.replace(/\b\w/g, (c) => c.toUpperCase())} ({drills.length})
-																		</Text>
-																		{drills.map((drill) => {
-																			const selected = selectedDrills.includes(drill.name);
-																			return (
-																				<View
-																					key={drill.id}
-																					style={[
-																						styles.drillItem,
-																						selected && styles.drillItemSelected,
-																					]}
-																				>
-																					<TouchableOpacity
-																						style={styles.drillItemContent}
-																						onPress={() => {
-																							if (selected) {
-																								setSelectedDrills((prev) =>
-																									prev.filter((d) => d !== drill.name)
-																								);
-																							} else {
-																								setSelectedDrills((prev) => [...prev, drill.name]);
-																							}
-																						}}
-																					>
-																						<Text
-																							style={[
-																								styles.drillItemText,
-																								selected && styles.drillItemTextSelected,
-																							]}
-																						>
-																							{drill.name}
-																						</Text>
-																					</TouchableOpacity>
-																					<TouchableOpacity
-																						style={styles.questionIcon}
-																						onPress={() => {
-																							console.log('Question icon clicked for drill:', drill.name);
-																							handleDrillDetailsOpen(drill);
-																						}}
-																					>
-																						<MaterialIcons
-																							name="help-outline"
-																							size={20}
-																							color={selected ? theme.colors.white : theme.colors.textMuted}
-																						/>
-																					</TouchableOpacity>
-																				</View>
-																			);
-																		})}
-																	</View>
-																))}
-															</View>
-														))
-													)}
-												</ScrollView>
-												<TouchableOpacity
-													style={
-														styles.closeModalButton
-													}
-													onPress={() =>
-														setDrillSelectionModalVisible(
-															false
-														)
-													}
-												>
-													<Text
-														style={
-															styles.closeModalButtonText
-														}
+													</View>
+													
+													<ScrollView
+														style={{ maxHeight: 400 }}
+														showsVerticalScrollIndicator={false}
+														nestedScrollEnabled={true}
 													>
-														Done
-													</Text>
-												</TouchableOpacity>
-											</View>
-										</View>
-									</Modal>
-
-									{/* Question Modal - Drill Details */}
-									<Modal
-										visible={questionModalVisible}
-										animationType="slide"
-										transparent={true}
-										onRequestClose={
-											handleQuestionModalClose
-										}
-									>
-										{/* Debug: Add a visible indicator */}
-										{console.log('Modal rendering, visible:', questionModalVisible)}
-										<View style={styles.modalBackdrop}>
-																						<View style={styles.modalContent}>
-												<Text style={styles.modalTitle}>
-													Drill Details
-												</Text>
-												
-												{/* Drill Details Content */}
-												<ScrollView
-													style={{ maxHeight: 400 }}
-													showsVerticalScrollIndicator={false}
-													nestedScrollEnabled={true}
-												>
-													<View style={{ padding: 20 }}>
-														{selectedDrillForDetails ? (
-															<>
-																{/* Drill Name */}
-																<Text
-																	style={[
-																		styles.modalTitle,
-																		{
-																			marginBottom: 20,
-																		},
-																	]}
-																>
-																	{selectedDrillForDetails.name}
+														{Object.keys(organizedDrills).length === 0 ? (
+															<View style={styles.emptyState}>
+																<Text style={styles.emptyStateText}>
+																	No drills found
 																</Text>
+															</View>
+														) : (
+															Object.entries(organizedDrills).map(([type, skillFocusGroups]) => (
+																<View key={type} style={styles.drillSection}>
+																	<Text style={styles.header}>
+																		{type.replace(/\b\w/g, (c) => c.toUpperCase())} Drills (
+																		{Object.values(skillFocusGroups).flat().length})
+																	</Text>
+																	{Object.entries(skillFocusGroups).map(([skillFocus, drills]) => (
+																		<View key={`${type}-${skillFocus}`} style={styles.drillSubSection}>
+																			<Text style={styles.categoryTitle}>
+																				{skillFocus.replace(/\b\w/g, (c) => c.toUpperCase())} ({drills.length})
+																			</Text>
+																			{drills.map((drill) => {
+																				const selected = selectedDrills.includes(drill.name);
+																				return (
+																					<View
+																						key={drill.id}
+																						style={[
+																							styles.drillItem,
+																							selected && styles.drillItemSelected,
+																						]}
+																					>
+																						<TouchableOpacity
+																							style={styles.drillItemContent}
+																							onPress={() => {
+																								if (selected) {
+																									setSelectedDrills((prev) =>
+																										prev.filter((d) => d !== drill.name)
+																									);
+																								} else {
+																									setSelectedDrills((prev) => [...prev, drill.name]);
+																								}
+																							}}
+																						>
+																							<Text
+																								style={[
+																									styles.drillItemText,
+																									selected && styles.drillItemTextSelected,
+																								]}
+																							>
+																								{drill.name}
+																							</Text>
+																						</TouchableOpacity>
+																						<TouchableOpacity
+																							style={styles.questionIcon}
+																							onPress={() => {
+																								console.log('Question icon clicked for drill:', drill.name);
+																								handleDrillDetailsOpen(drill);
+																							}}
+																						>
+																							<MaterialIcons
+																								name="help-outline"
+																								size={20}
+																								color={selected ? theme.colors.white : theme.colors.textMuted}
+																							/>
+																						</TouchableOpacity>
+																					</View>
+																				);
+																			})}
+																		</View>
+																	))}
+																</View>
+															))
+														)}
+													</ScrollView>
+													<TouchableOpacity
+														style={styles.closeModalButton}
+														onPress={() => setDrillSelectionModalVisible(false)}
+													>
+														<Text style={styles.closeModalButtonText}>
+															Done
+														</Text>
+													</TouchableOpacity>
+												</View>
+											</View>
+										</Modal>
 
-																{/* Drill Image */}
-																{selectedDrillForDetails.imageUrl && (
+										{/* Question Modal - Drill Details */}
+										<Modal
+											visible={questionModalVisible}
+											animationType="slide"
+											transparent={true}
+											onRequestClose={handleQuestionModalClose}
+										>
+											{console.log('Modal rendering, visible:', questionModalVisible)}
+											<View style={styles.modalBackdrop}>
+												<View style={styles.modalContent}>
+													<Text style={styles.modalTitle}>
+														Drill Details
+													</Text>
+													
+													{/* Drill Details Content */}
+													<ScrollView
+														style={{ maxHeight: 400 }}
+														showsVerticalScrollIndicator={false}
+														nestedScrollEnabled={true}
+													>
+														<View style={{ padding: 20 }}>
+															{selectedDrillForDetails ? (
+																<>
+																	{/* Drill Name */}
+																	<Text
+																		style={[
+																			styles.modalTitle,
+																			{
+																				marginBottom: 20,
+																			},
+																		]}
+																	>
+																		{selectedDrillForDetails.name}
+																	</Text>
+
+																	{/* Drill Image */}
+																	{selectedDrillForDetails.imageUrl && (
+																		<View
+																			style={{
+																				marginBottom: 20,
+																				alignItems: "center",
+																			}}
+																		>
+																			<Image
+																				source={{
+																					uri: selectedDrillForDetails.imageUrl,
+																				}}
+																				style={{
+																					width: 250,
+																					height: 200,
+																					borderRadius: 8,
+																					resizeMode: "cover",
+																				}}
+																			/>
+																		</View>
+																	)}
+
+																	{/* Drill Details */}
 																	<View
 																		style={{
 																			marginBottom: 20,
-																			alignItems: "center",
 																		}}
 																	>
-																		<Image
-																			source={{
-																				uri: selectedDrillForDetails.imageUrl,
-																			}}
-																			style={{
-																				width: 250,
-																				height: 200,
-																				borderRadius: 8,
-																				resizeMode: "cover",
-																			}}
-																		/>
-																	</View>
-																)}
-
-																{/* Drill Details */}
-																<View
-																	style={{
-																		marginBottom: 20,
-																	}}
-																>
-																	<View
-																		style={{
-																			flexDirection: "row",
-																			marginBottom: 8,
-																		}}
-																	>
-																		<Text
-																			style={{
-																				fontWeight: "bold",
-																				flex: 1,
-																				color: theme.colors.textPrimary,
-																			}}
-																		>
-																			Skill Focus:
-																		</Text>
-																		<Text
-																			style={{
-																				flex: 2,
-																				color: theme.colors.textPrimary,
-																			}}
-																		>
-																			{formatArrayData(
-																				selectedDrillForDetails.skillFocus
-																			)}
-																		</Text>
-																	</View>
-
-																	<View
-																		style={{
-																			flexDirection: "row",
-																			marginBottom: 8,
-																		}}
-																	>
-																		<Text
-																			style={{
-																				fontWeight: "bold",
-																				flex: 1,
-																				color: theme.colors.textPrimary,
-																			}}
-																		>
-																			Type:
-																		</Text>
-																		<Text
-																			style={{
-																				flex: 2,
-																				color: theme.colors.textPrimary,
-																			}}
-																		>
-																			{formatArrayData(
-																				selectedDrillForDetails.type
-																			)}
-																		</Text>
-																	</View>
-
-																	<View
-																		style={{
-																			flexDirection: "row",
-																			marginBottom: 8,
-																		}}
-																	>
-																		<Text
-																			style={{
-																				fontWeight: "bold",
-																				flex: 1,
-																				color: theme.colors.textPrimary,
-																			}}
-																		>
-																			Difficulty:
-																		</Text>
-																		<Text
-																			style={{
-																				flex: 2,
-																				color: theme.colors.textPrimary,
-																			}}
-																		>
-																			{formatArrayData(
-																				selectedDrillForDetails.difficulty
-																			)}
-																		</Text>
-																	</View>
-
-																	{selectedDrillForDetails.duration && (
 																		<View
 																			style={{
 																				flexDirection: "row",
@@ -929,7 +824,7 @@ const CreatePractice = () => {
 																					color: theme.colors.textPrimary,
 																				}}
 																			>
-																				Duration:
+																				Difficulty:
 																			</Text>
 																			<Text
 																				style={{
@@ -937,101 +832,134 @@ const CreatePractice = () => {
 																					color: theme.colors.textPrimary,
 																				}}
 																			>
-																				{selectedDrillForDetails.duration} min
+																				{formatArrayData(
+																					selectedDrillForDetails.difficulty
+																				)}
 																			</Text>
 																		</View>
-																	)}
-																</View>
 
-																{/* Description/Notes */}
-																{selectedDrillForDetails.notes &&
-																selectedDrillForDetails.notes.trim() !== "" ? (
-																	<>
+																		{selectedDrillForDetails.duration && (
+																			<View
+																				style={{
+																					flexDirection: "row",
+																					marginBottom: 8,
+																				}}
+																			>
+																				<Text
+																					style={{
+																						fontWeight: "bold",
+																						flex: 1,
+																						color: theme.colors.textPrimary,
+																					}}
+																				>
+																					Duration:
+																				</Text>
+																				<Text
+																					style={{
+																						flex: 2,
+																						color: theme.colors.textPrimary,
+																					}}
+																				>
+																					{selectedDrillForDetails.duration} min
+																				</Text>
+																			</View>
+																		)}
+																	</View>
+
+																	{/* Description/Notes */}
+																	{selectedDrillForDetails.notes &&
+																	selectedDrillForDetails.notes.trim() !== "" ? (
+																		<>
+																			<Text
+																				style={{
+																					fontWeight: "bold",
+																					fontSize: 16,
+																					marginBottom: 8,
+																					color: theme.colors.textPrimary,
+																				}}
+																			>
+																				Description
+																			</Text>
+																			<Text
+																				style={{
+																					lineHeight: 20,
+																					color: theme.colors.textMuted,
+																				}}
+																			>
+																				{selectedDrillForDetails.notes}
+																			</Text>
+																		</>
+																	) : (
 																		<Text
 																			style={{
-																				fontWeight: "bold",
-																				fontSize: 16,
-																				marginBottom: 8,
-																				color: theme.colors.textPrimary,
-																			}}
-																		>
-																			Description
-																		</Text>
-																		<Text
-																			style={{
-																				lineHeight: 20,
+																				fontStyle: "italic",
 																				color: theme.colors.textMuted,
 																			}}
 																		>
-																			{selectedDrillForDetails.notes}
+																			No description available for this drill.
 																		</Text>
-																	</>
-																) : (
-																	<Text
-																		style={{
-																			fontStyle: "italic",
-																			color: theme.colors.textMuted,
-																		}}
-																	>
-																		No description available for this drill.
-																	</Text>
-																)}
-															</>
-														) : (
-															<Text style={{ 
-																color: theme.colors.textMuted, 
-																fontSize: 16, 
-																textAlign: 'center',
-																fontStyle: 'italic'
-															}}>
-																No drill data available
-															</Text>
-														)}
-													</View>
-												</ScrollView>
+																	)}
+																</>
+															) : (
+																<Text style={{ 
+																	color: theme.colors.textMuted, 
+																	fontSize: 16, 
+																	textAlign: 'center',
+																	fontStyle: 'italic'
+																}}>
+																	No drill data available
+																</Text>
+															)}
+														</View>
+													</ScrollView>
 
-												<TouchableOpacity
-													style={
-														styles.closeModalButton
-													}
-													onPress={
-														handleQuestionModalClose
-													}
-												>
-													<Text
-														style={
-															styles.closeModalButtonText
-														}
+													<TouchableOpacity
+														style={styles.closeModalButton}
+														onPress={handleQuestionModalClose}
 													>
-														Back to Drill Selection
-													</Text>
-												</TouchableOpacity>
+														<Text style={styles.closeModalButtonText}>
+															Back to Drill Selection
+														</Text>
+													</TouchableOpacity>
+												</View>
 											</View>
-										</View>
-									</Modal>
-								</View>
+										</Modal>
+									</View>
 
-							</ScrollView>
-							
-							{/* Sticky Submit Button */}
-							<View style={styles.stickyButtonContainer}>
-								<TouchableOpacity
-									style={styles.submitButton}
-									onPress={isDurationValid() ? handleSubmit : () => {
-										Alert.alert(
-											"Duration Mismatch",
-											`Total drill duration (${getTotalDrillDuration()} min) must equal practice duration (${startDate && endDate ? Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : 0} min)`
-										);
-									}}
-									activeOpacity={0.8}
-								>
-									<Text style={styles.submitButtonText}>
-										Create Practice
-									</Text>
-								</TouchableOpacity>
+									{/* Notes Section */}
+									<View style={styles.section}>
+										<Text style={styles.label}>Notes (Optional)</Text>
+										<TextInput
+											style={styles.notesInput}
+											value={notes}
+											onChangeText={setNotes}
+											placeholder="Add any additional notes for this practice..."
+											placeholderTextColor={theme.colors.textMuted}
+											multiline={true}
+											numberOfLines={4}
+											keyboardAppearance="dark"
+										/>
+									</View>
+								</ScrollView>
+								
+								{/* Sticky Submit Button */}
+								<View style={styles.stickyButtonContainer}>
+									<TouchableOpacity
+										style={styles.submitButton}
+										onPress={isDurationValid() ? handleSubmit : () => {
+											Alert.alert(
+												"Duration Mismatch",
+												`Total drill duration (${getTotalDrillDuration()} min) must equal practice duration (${startDate && endDate ? Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)) : 0} min)`
+											);
+										}}
+										activeOpacity={0.8}
+									>
+										<Text style={styles.submitButtonText}>
+											Create Practice
+										</Text>
+									</TouchableOpacity>
+								</View>
 							</View>
-							</View>
-						</TouchableWithoutFeedback>
 					</KeyboardAvoidingView>
 				</GestureHandlerRootView>
 
@@ -1192,41 +1120,16 @@ const styles = StyleSheet.create({
 		marginBottom: 8,
 		fontWeight: '500',
 	},
-	draggableItem: {
-		paddingVertical: 12,
-		paddingHorizontal: 16,
-		borderRadius: 10,
-		marginVertical: 6,
-	},
-	draggableText: {
-		color: "white",
-		fontWeight: "600",
-		fontSize: 16,
-	},
 	notesInput: {
 		borderWidth: 1,
-		borderColor: "#ccc",
-		borderRadius: 12,
+		borderColor: theme.colors.border,
+		borderRadius: 8,
 		padding: 12,
 		fontSize: 16,
 		minHeight: 100,
-		backgroundColor: theme.colors.surface,
-	},
-	dropdownContainer: {
-		backgroundColor: theme.colors.surface,
-		borderWidth: 1,
-		borderColor: theme.colors.primary,
-		borderRadius: 12,
-		paddingHorizontal: 12,
-		paddingVertical: 4,
-		marginTop: 8,
-	},
-	dropdownLabel: {
-		color: theme.colors.primary,
-		fontWeight: "600",
-	},
-	dropdownPlaceholder: {
-		color: "#999",
+		backgroundColor: theme.colors.background,
+		color: theme.colors.textPrimary,
+		textAlignVertical: 'top',
 	},
 	submitButton: {
 		backgroundColor: theme.colors.primary,
@@ -1277,6 +1180,12 @@ const styles = StyleSheet.create({
 		color: theme.colors.textPrimary,
 		textAlign: "center",
 	},
+	drillSection: {
+		marginBottom: 20,
+	},
+	drillSubSection: {
+		marginBottom: 16,
+	},
 	drillItem: {
 		flexDirection: "row",
 		justifyContent: "space-between",
@@ -1299,7 +1208,7 @@ const styles = StyleSheet.create({
 		fontWeight: "500",
 	},
 	drillItemTextSelected: {
-		color: "#fff", // Fixed: White text for selected items
+		color: "#fff",
 	},
 	drillItemContent: {
 		flex: 1,
@@ -1325,7 +1234,7 @@ const styles = StyleSheet.create({
 	modalBackdrop: {
 		flex: 1,
 		backgroundColor: "rgba(0, 0, 0, 0.5)",
-		padding: 20, // Add padding instead of using margins in modalContent
+		padding: 20,
 	},
 	addDrillsButton: {
 		flexDirection: "row",
@@ -1377,7 +1286,6 @@ const styles = StyleSheet.create({
 		color: theme.colors.white,
 		fontWeight: "600",
 	},
-	// Search styles
 	searchContainer: {
 		marginBottom: 16,
 	},
@@ -1421,7 +1329,6 @@ const styles = StyleSheet.create({
 		borderRadius: 4,
 		backgroundColor: theme.colors.error,
 	},
-	// Organization styles
 	header: {
 		fontSize: 26,
 		fontWeight: "700",
@@ -1447,7 +1354,6 @@ const styles = StyleSheet.create({
 		color: theme.colors.textMuted,
 		marginTop: 16,
 	},
-	// Clipboard styles
 	emptyClipboardContainer: {
 		alignItems: "center",
 		paddingVertical: 20,
