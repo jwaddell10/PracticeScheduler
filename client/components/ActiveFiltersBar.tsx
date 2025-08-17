@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import theme from './styles/theme';
 
 export default function ActiveFiltersBar({
   selectedFilters,
@@ -33,7 +34,7 @@ export default function ActiveFiltersBar({
               onPress={() => removeFilter(filter)}
               style={styles.removeFilterButton}
             >
-              <MaterialIcons name="close" size={16} color="#007AFF" />
+              <MaterialIcons name="close" size={16} color={theme.colors.white} />
             </TouchableOpacity>
           </View>
         ))}
@@ -126,16 +127,16 @@ const styles = StyleSheet.create({
   },
   // Active filters styles
   activeFiltersContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: theme.colors.border,
   },
   activeFilter: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e3f2fd',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
@@ -143,7 +144,7 @@ const styles = StyleSheet.create({
   },
   activeFilterText: {
     fontSize: 14,
-    color: '#007AFF',
+    color: theme.colors.white,
     fontWeight: '500',
     marginRight: 4,
   },

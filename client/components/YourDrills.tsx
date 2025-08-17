@@ -312,12 +312,6 @@ export default function YourDrills() {
 
 	return (
 		<View style={styles.container}>
-			<ActiveFiltersBar
-				selectedFilters={selectedFilters}
-				toggleFilter={toggleFilter}
-				hasActiveFilters={hasActiveFilters}
-			/>
-
 			{/* Search Bar */}
 			<View style={styles.searchContainer}>
 				<View style={styles.searchInputContainer}>
@@ -363,6 +357,13 @@ export default function YourDrills() {
 					</TouchableOpacity>
 				</View>
 			</View>
+
+			{/* Active filters */}
+			<ActiveFiltersBar
+				selectedFilters={selectedFilters}
+				toggleFilter={toggleFilter}
+				hasActiveFilters={hasActiveFilters}
+			/>
 
 			{/* Tab Toggle - Only show for premium/admin users */}
 			{(role === "admin" || role === "premium" || role === "Premium") && (

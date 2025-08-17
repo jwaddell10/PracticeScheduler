@@ -416,7 +416,7 @@ export default function Drills() {
 											<MaterialIcons
 												name="close"
 												size={16}
-												color="#007AFF"
+												color={theme.colors.white}
 											/>
 										</TouchableOpacity>
 									</View>
@@ -692,16 +692,16 @@ const styles = StyleSheet.create({
 	},
 	// Active filters styles
 	activeFiltersContainer: {
-		backgroundColor: "#fff",
+		backgroundColor: theme.colors.surface,
 		paddingVertical: 12,
 		paddingHorizontal: 16,
 		borderBottomWidth: 1,
-		borderBottomColor: "#eee",
+		borderBottomColor: theme.colors.border,
 	},
 	activeFilter: {
 		flexDirection: "row",
 		alignItems: "center",
-		backgroundColor: "#e3f2fd",
+		backgroundColor: theme.colors.primary,
 		paddingHorizontal: 12,
 		paddingVertical: 6,
 		borderRadius: 16,
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
 	},
 	activeFilterText: {
 		fontSize: 14,
-		color: "#007AFF",
+		color: theme.colors.white,
 		fontWeight: "500",
 		marginRight: 4,
 	},

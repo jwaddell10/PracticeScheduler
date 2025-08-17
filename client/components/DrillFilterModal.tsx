@@ -29,7 +29,7 @@ export default function DrillFilterModal({
 			animationType="slide"
 			transparent={false}
 		>
-			<SafeAreaView style={styles.modalContainer} edges={['top']}>
+			<SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
 				<View style={styles.modalHeader}>
 					<TouchableOpacity onPress={onClose}>
 						<Text style={styles.cancelButton}>Cancel</Text>
@@ -194,6 +194,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
+    paddingTop: 30,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
