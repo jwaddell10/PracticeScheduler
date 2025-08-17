@@ -345,14 +345,12 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	}
 
 	return (
-		<KeyboardAvoidingView
-			style={{ flex: 1, backgroundColor: "#fff" }}
-			behavior={Platform.OS === "ios" ? "padding" : undefined}
-			keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
-		>
+		<View style={{ flex: 1, backgroundColor: theme.colors.background }}>
 			<ScrollView
+				style={{ flex: 1 }}
 				contentContainerStyle={styles.container}
 				keyboardShouldPersistTaps="handled"
+				showsVerticalScrollIndicator={false}
 			>
 				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
 					<View>
@@ -360,18 +358,22 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						<TextInput
 							style={styles.input}
 							placeholder="Enter drill name"
+							placeholderTextColor={theme.colors.textMuted}
 							value={name}
 							onChangeText={setName}
+							keyboardAppearance="dark"
 						/>
 
 						<Text style={styles.label}>Description</Text>
 						<TextInput
 							style={[styles.input, styles.notesInput]}
 							placeholder="Optional description about the drill"
+							placeholderTextColor={theme.colors.textMuted}
 							value={notes}
 							onChangeText={setNotes}
 							multiline
 							numberOfLines={4}
+							keyboardAppearance="dark"
 						/>
 
 						<SelectionButtons
@@ -448,26 +450,26 @@ export default function CreateDrill(props?: CreateDrillProps) {
 								</TouchableOpacity>
 							</View>
 						)}
+						
+						{/* Button at the end of scroll content */}
+						<View style={styles.buttonContainer}>
+							<TouchableOpacity
+								style={[
+									styles.button,
+									saving && styles.buttonDisabled,
+								]}
+								onPress={handleSubmit}
+								disabled={saving}
+							>
+								<Text style={styles.buttonText}>
+									{saving ? "Saving..." : (isEditMode ? "Update Drill" : "Create Drill")}
+								</Text>
+							</TouchableOpacity>
+						</View>
 					</View>
 				</TouchableWithoutFeedback>
 			</ScrollView>
-			
-			{/* Sticky button at bottom */}
-			<View style={styles.stickyButtonContainer}>
-				<TouchableOpacity
-					style={[
-						styles.button,
-						saving && styles.buttonDisabled,
-					]}
-					onPress={handleSubmit}
-					disabled={saving}
-				>
-					<Text style={styles.buttonText}>
-						{saving ? "Saving..." : "Create Drill"}
-					</Text>
-				</TouchableOpacity>
-			</View>
-		</KeyboardAvoidingView>
+		</View>
 	);
 }
 
@@ -476,7 +478,7 @@ const styles = StyleSheet.create({
 	container: {
 		flexGrow: 1,
 		padding: 16,
-		paddingBottom: 100, // Add space for sticky button
+		paddingBottom: 40, // Add space for button at bottom
 		backgroundColor: theme.colors.background,
 	},
 	label: {
@@ -561,16 +563,7 @@ const styles = StyleSheet.create({
 		marginTop: 20,
 		marginBottom: 40,
 	},
-	stickyButtonContainer: {
-		position: 'absolute',
-		bottom: 0,
-		left: 0,
-		right: 0,
-		backgroundColor: theme.colors.background,
-		padding: 16,
-		borderTopWidth: 1,
-		borderTopColor: theme.colors.border,
-	},
+
 	button: {
 		backgroundColor: theme.colors.primary,
 		padding: 16,

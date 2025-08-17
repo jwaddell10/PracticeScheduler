@@ -601,6 +601,7 @@ const CreatePractice = () => {
 															value={searchQuery}
 															onChangeText={setSearchQuery}
 															placeholderTextColor={theme.colors.textMuted}
+															keyboardAppearance="dark"
 														/>
 														{searchQuery.length > 0 && (
 															<TouchableOpacity

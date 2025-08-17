@@ -106,6 +106,7 @@ export default function Clipboard() {
 				isActive && styles.draggingItem
 			]}
 			onLongPress={drag}
+			delayLongPress={200}
 			disabled={isActive}
 		>
 			<View style={styles.dragHandle}>

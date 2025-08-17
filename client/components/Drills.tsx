@@ -320,6 +320,7 @@ export default function Drills() {
 								value={searchQuery}
 								onChangeText={setSearchQuery}
 								placeholderTextColor="#94A3B8"
+								keyboardAppearance="dark"
 							/>
 							{searchQuery.length > 0 && (
 								<TouchableOpacity
