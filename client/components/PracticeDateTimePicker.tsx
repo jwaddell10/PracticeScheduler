@@ -53,9 +53,9 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 	};
 
 	return (
-		<View>
-			<View style={styles.section}>
-				<View style={styles.startTimeContainer}>
+		<View pointerEvents="box-none">
+			<View style={styles.section} pointerEvents="box-none">
+				<View style={styles.startTimeContainer} pointerEvents="box-none">
 					<Text style={styles.label}>Start Time</Text>
 					<DateTimePicker
 						value={startDate}
@@ -69,8 +69,8 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 				</View>
 			</View>
 
-			<View style={styles.section}>
-				<View style={styles.durationContainer}>
+			<View style={styles.section} pointerEvents="box-none">
+				<View style={styles.durationContainer} pointerEvents="box-none">
 					<Text style={styles.label}>Duration (minutes)</Text>
 					<TextInput
 						style={styles.durationInput}

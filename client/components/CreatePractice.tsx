@@ -102,14 +102,30 @@ const CreatePractice = () => {
 		if (clipboardDrills.length > 0) {
 			// Set selected drills from clipboard
 			setSelectedDrills(clipboardDrills.map(drill => drill.name));
-			// Initialize drill durations
-			const initialDurations: { [key: string]: number } = {};
-			clipboardDrills.forEach(drill => {
-				initialDurations[drill.name] = drill.duration || 0;
-			});
-			setDrillDurations(initialDurations);
+			
+			// Auto-calculate drill durations if we have start and end dates
+			if (startDate && endDate) {
+				const totalDuration = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60));
+				const durationPerDrill = Math.floor(totalDuration / clipboardDrills.length);
+				const remainder = totalDuration % clipboardDrills.length;
+				
+				const initialDurations: { [key: string]: number } = {};
+				clipboardDrills.forEach((drill, index) => {
+					// Distribute remainder to first few drills
+					const extraMinute = index < remainder ? 1 : 0;
+					initialDurations[drill.name] = durationPerDrill + extraMinute;
+				});
+				setDrillDurations(initialDurations);
+			} else {
+				// Fallback to existing durations or 0
+				const initialDurations: { [key: string]: number } = {};
+				clipboardDrills.forEach(drill => {
+					initialDurations[drill.name] = drill.duration || 0;
+				});
+				setDrillDurations(initialDurations);
+			}
 		}
-	}, [clipboardDrills]);
+	}, [clipboardDrills, startDate, endDate]);
 
 	// Monitor modal state changes
 	useEffect(() => {
@@ -243,6 +259,22 @@ const CreatePractice = () => {
 	const handleDatesChange = (start: Date, end: Date) => {
 		setStartDate(start);
 		setEndDate(end);
+		
+		// Auto-calculate drill durations when dates change
+		if (start && end && selectedDrills.length > 0) {
+			const totalDuration = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
+			const durationPerDrill = Math.floor(totalDuration / selectedDrills.length);
+			const remainder = totalDuration % selectedDrills.length;
+			
+			const newDrillDurations: { [key: string]: number } = {};
+			selectedDrills.forEach((drill, index) => {
+				// Distribute remainder to first few drills
+				const extraMinute = index < remainder ? 1 : 0;
+				newDrillDurations[drill] = durationPerDrill + extraMinute;
+			});
+			
+			setDrillDurations(newDrillDurations);
+		}
 	};
 
 	function toLocalISOString(date: Date) {
@@ -409,6 +441,8 @@ const CreatePractice = () => {
 								<ScrollView
 									contentContainerStyle={styles.scrollView}
 									keyboardShouldPersistTaps="handled"
+									nestedScrollEnabled={true}
+									showsVerticalScrollIndicator={false}
 								>
 								{formatSelectedDate() && (
 									<View style={styles.headerContainer}>
@@ -639,6 +673,7 @@ const CreatePractice = () => {
 												<ScrollView
 													style={{ maxHeight: 400 }}
 													showsVerticalScrollIndicator={false}
+													nestedScrollEnabled={true}
 												>
 													{Object.keys(organizedDrills).length === 0 ? (
 														<View style={styles.emptyState}>
@@ -754,6 +789,7 @@ const CreatePractice = () => {
 												<ScrollView
 													style={{ maxHeight: 400 }}
 													showsVerticalScrollIndicator={false}
+													nestedScrollEnabled={true}
 												>
 													<View style={{ padding: 20 }}>
 														{selectedDrillForDetails ? (
