@@ -346,129 +346,127 @@ export default function CreateDrill(props?: CreateDrillProps) {
 
 	return (
 		<View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-			<ScrollView
-				style={{ flex: 1 }}
-				contentContainerStyle={styles.container}
-				keyboardShouldPersistTaps="handled"
-				showsVerticalScrollIndicator={false}
-			>
-				<TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-					<View>
-						<Text style={styles.label}>Drill Name</Text>
-						<TextInput
-							style={styles.input}
-							placeholder="Enter drill name"
-							placeholderTextColor={theme.colors.textMuted}
-							value={name}
-							onChangeText={setName}
-							keyboardAppearance="dark"
-						/>
+			<View style={{ flex: 1 }}>
+				<ScrollView
+					style={{ flex: 1 }}
+					contentContainerStyle={styles.container}
+					keyboardShouldPersistTaps="handled"
+					showsVerticalScrollIndicator={false}
+				>
+				<Text style={styles.label}>Drill Name</Text>
+				<TextInput
+					style={styles.input}
+					placeholder="Enter drill name"
+					placeholderTextColor={theme.colors.textMuted}
+					value={name}
+					onChangeText={setName}
+					keyboardAppearance="dark"
+				/>
 
-						<Text style={styles.label}>Description</Text>
-						<TextInput
-							style={[styles.input, styles.notesInput]}
-							placeholder="Optional description about the drill"
-							placeholderTextColor={theme.colors.textMuted}
-							value={notes}
-							onChangeText={setNotes}
-							multiline
-							numberOfLines={4}
-							keyboardAppearance="dark"
-						/>
+				<Text style={styles.label}>Description</Text>
+				<TextInput
+					style={[styles.input, styles.notesInput]}
+					placeholder="Optional description about the drill"
+					placeholderTextColor={theme.colors.textMuted}
+					value={notes}
+					onChangeText={setNotes}
+					multiline
+					numberOfLines={4}
+					keyboardAppearance="dark"
+				/>
 
-						<SelectionButtons
-							title="Type"
-							options={drillTypes}
-							selectedValues={type}
-							onSelect={setType}
-						/>
-						<SelectionButtons
-							title="Skill Focus"
-							options={drillCategories}
-							selectedValues={skillFocus}
-							onSelect={setSkillFocus}
-						/>
-						<SelectionButtons
-							title="Difficulty"
-							options={drillDifficulties}
-							selectedValues={difficulty}
-							onSelect={setDifficulty}
-						/>
+				<SelectionButtons
+					title="Type"
+					options={drillTypes}
+					selectedValues={type}
+					onSelect={setType}
+				/>
+				<SelectionButtons
+					title="Skill Focus"
+					options={drillCategories}
+					selectedValues={skillFocus}
+					onSelect={setSkillFocus}
+				/>
+				<SelectionButtons
+					title="Difficulty"
+					options={drillDifficulties}
+					selectedValues={difficulty}
+					onSelect={setDifficulty}
+				/>
 
-						{/* Admin toggle for public drills */}
-						{isAdmin && (
-							<View style={styles.toggleRow}>
-								<Text style={styles.toggleLabel}>
-									Make Public
-								</Text>
-								<Switch
-									value={isPublic}
-									onValueChange={setIsPublic}
-								/>
-							</View>
-						)}
-
-						{/* Only show image upload for premium users or admins */}
-						{role === 'premium' || role === 'Premium' || isAdmin ? (
-							<>
-								<Text style={styles.label}>
-									Upload Image (optional)
-								</Text>
-								<TouchableOpacity
-									style={styles.imageUploadButton}
-									onPress={pickImage}
-								>
-									<Text style={styles.imageUploadButtonText}>
-										{imageUri ? "Change Image" : "Pick an Image"}
-									</Text>
-								</TouchableOpacity>
-
-								{imageUri && (
-									<Image
-										source={{ uri: imageUri }}
-										style={styles.previewImage}
-										resizeMode="cover"
-									/>
-								)}
-							</>
-						) : (
-							<View style={styles.premiumFeatureContainer}>
-								<Text style={styles.premiumFeatureText}>
-									Add images to your drills with Premium
-								</Text>
-								<TouchableOpacity
-									style={styles.upgradeButton}
-									onPress={() => {
-										Alert.alert(
-											"Coming Soon!",
-											"Premium features are currently in development. Stay tuned for updates!",
-											[{ text: "OK", style: "default" }]
-										);
-									}}
-								>
-									<Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
-								</TouchableOpacity>
-							</View>
-						)}
-						
-						{/* Button at the end of scroll content */}
-						<View style={styles.buttonContainer}>
-							<TouchableOpacity
-								style={[
-									styles.button,
-									saving && styles.buttonDisabled,
-								]}
-								onPress={handleSubmit}
-								disabled={saving}
-							>
-								<Text style={styles.buttonText}>
-									{saving ? "Saving..." : (isEditMode ? "Update Drill" : "Create Drill")}
-								</Text>
-							</TouchableOpacity>
-						</View>
+				{/* Admin toggle for public drills */}
+				{isAdmin && (
+					<View style={styles.toggleRow}>
+						<Text style={styles.toggleLabel}>
+							Make Public
+						</Text>
+						<Switch
+							value={isPublic}
+							onValueChange={setIsPublic}
+						/>
 					</View>
-				</TouchableWithoutFeedback>
-			</ScrollView>
+				)}
+
+				{/* Only show image upload for premium users or admins */}
+				{role === 'premium' || role === 'Premium' || isAdmin ? (
+					<>
+						<Text style={styles.label}>
+							Upload Image (optional)
+						</Text>
+						<TouchableOpacity
+							style={styles.imageUploadButton}
+							onPress={pickImage}
+						>
+							<Text style={styles.imageUploadButtonText}>
+								{imageUri ? "Change Image" : "Pick an Image"}
+							</Text>
+						</TouchableOpacity>
+
+						{imageUri && (
+							<Image
+								source={{ uri: imageUri }}
+								style={styles.previewImage}
+								resizeMode="cover"
+							/>
+						)}
+					</>
+				) : (
+					<View style={styles.premiumFeatureContainer}>
+						<Text style={styles.premiumFeatureText}>
+							Add images to your drills with Premium
+						</Text>
+						<TouchableOpacity
+							style={styles.upgradeButton}
+							onPress={() => {
+								Alert.alert(
+									"Coming Soon!",
+									"Premium features are currently in development. Stay tuned for updates!",
+									[{ text: "OK", style: "default" }]
+								);
+							}}
+						>
+							<Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
+						</TouchableOpacity>
+					</View>
+				)}
+				</ScrollView>
+			</View>
+			
+			{/* Sticky Submit Button */}
+			<View style={styles.stickyButtonContainer}>
+				<TouchableOpacity
+					style={[
+						styles.button,
+						saving && styles.buttonDisabled,
+					]}
+					onPress={handleSubmit}
+					disabled={saving}
+				>
+					<Text style={styles.buttonText}>
+						{saving ? "Saving..." : (isEditMode ? "Update Drill" : "Create Drill")}
+					</Text>
+				</TouchableOpacity>
+			</View>
 		</View>
 	);
 }
@@ -478,7 +476,7 @@ const styles = StyleSheet.create({
 	container: {
 		flexGrow: 1,
 		padding: 16,
-		paddingBottom: 40, // Add space for button at bottom
+		paddingBottom: 100, // Increased to account for sticky button
 		backgroundColor: theme.colors.background,
 	},
 	label: {
@@ -563,7 +561,19 @@ const styles = StyleSheet.create({
 		marginTop: 20,
 		marginBottom: 40,
 	},
-
+	stickyButtonContainer: {
+		position: 'absolute',
+		bottom: 0,
+		left: 0,
+		right: 0,
+		backgroundColor: theme.colors.background,
+		paddingHorizontal: 16,
+		paddingVertical: 16,
+		borderTopWidth: 1,
+		borderTopColor: theme.colors.textMuted,
+		zIndex: 1000,
+		elevation: 5,
+	},
 	button: {
 		backgroundColor: theme.colors.primary,
 		padding: 16,

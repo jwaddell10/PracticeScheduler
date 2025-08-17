@@ -31,7 +31,6 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
 import { useClipboard } from "../context/ClipboardContext";
-import { clearClipboardAfterPractice } from "../util/clipboardManager";
 
 interface DrillData {
 	name: string;
@@ -66,7 +65,7 @@ const CreatePractice = () => {
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [drillDurations, setDrillDurations] = useState<{ [key: string]: number }>({});
 	const [notes, setNotes] = useState("");
-	const [title, setTitle] = useState("");
+	const [title, setTitle] = useState("Team Practice");
 	const { clipboardDrills, refreshClipboard } = useClipboard();
 
 	const {
@@ -323,9 +322,7 @@ const CreatePractice = () => {
 				notes: notes || undefined,
 			});
 
-			// Clear clipboard after successful practice creation
-			await clearClipboardAfterPractice();
-			await refreshClipboard();
+			// Keep clipboard drills - only clear local state
 			setSelectedDrills([]);
 			setDrillDurations({});
 
@@ -473,6 +470,21 @@ const CreatePractice = () => {
 										initialDate={(route.params as any)?.selectedDate}
 										onDatesChange={handleDatesChange}
 									/>
+
+									{/* Notes Section */}
+									<View style={styles.section} pointerEvents="box-none">
+										<Text style={styles.label}>Notes (Optional)</Text>
+										<TextInput
+											style={styles.notesInput}
+											value={notes}
+											onChangeText={setNotes}
+											placeholder="Add any additional notes for this practice..."
+											placeholderTextColor={theme.colors.textMuted}
+											multiline={true}
+											numberOfLines={4}
+											keyboardAppearance="dark"
+										/>
+									</View>
 
 									{/* Drills */}
 									<View style={styles.section} pointerEvents="box-none">
@@ -924,21 +936,6 @@ const CreatePractice = () => {
 												</View>
 											</View>
 										</Modal>
-									</View>
-
-									{/* Notes Section */}
-									<View style={styles.section}>
-										<Text style={styles.label}>Notes (Optional)</Text>
-										<TextInput
-											style={styles.notesInput}
-											value={notes}
-											onChangeText={setNotes}
-											placeholder="Add any additional notes for this practice..."
-											placeholderTextColor={theme.colors.textMuted}
-											multiline={true}
-											numberOfLines={4}
-											keyboardAppearance="dark"
-										/>
 									</View>
 								</ScrollView>
 								
