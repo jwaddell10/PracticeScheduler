@@ -54,6 +54,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const route = useRoute();
 	const session = useSession();
 	const { isAdmin, loading: roleLoading, error: roleError, role } = useUserRole(); // ⬅️ use the hook
+	const { updateDrill } = useDrills(); // Add this to use the context's updateDrill function
 	
 	// Get params from route
 	const { mode = 'create', drill: existingDrill } = (route.params as any) || {};
@@ -244,28 +245,21 @@ export default function CreateDrill(props?: CreateDrillProps) {
 			}
 
 			if (isEditMode) {
-				// Update existing drill
-				const { error: updateError } = await supabase
-					.from("Drill")
-					.update({
-						name,
-						type,
-						skillFocus,
-						difficulty,
-						notes,
-						imageUrl,
-						isPublic: isAdmin ? isPublic : existingDrill.isPublic,
-					})
-					.eq("id", existingDrill.id);
-
-				if (updateError) throw updateError;
+				// Update existing drill using context function
+				await updateDrill(existingDrill.id, {
+					name,
+					type,
+					skillFocus,
+					difficulty,
+					notes,
+					imageUrl,
+					isPublic: isAdmin ? isPublic : existingDrill.isPublic,
+				});
 
 				Alert.alert("Success", "Drill updated successfully!", [
 					{
 						text: "OK",
 						onPress: () => {
-							// Call the refresh function passed from parent component
-							refreshDrills?.();
 							// If onClose is provided, use it, otherwise navigate back
 							if (onClose) {
 								onClose();
