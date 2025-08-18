@@ -97,7 +97,7 @@ export default function UpcomingPractices({ limit = 3 }: UpcomingPracticesProps)
 				{formatDate(practice.startTime)} at {formatTime(practice.startTime)}
 			</Text>
 			<Text style={[styles.durationText, isCompact && styles.compactDurationText]}>
-				{practice.duration || 60} minutes
+				{practice.practiceDuration || 60} minutes
 			</Text>
 			{!isCompact && (
 				<>

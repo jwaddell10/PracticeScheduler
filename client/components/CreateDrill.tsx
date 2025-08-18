@@ -32,9 +32,9 @@ const drillTypes = [
 const drillCategories = [
 	{ label: "Offense", value: "offense" },
 	{ label: "Defense", value: "defense" },
-	{ label: "Serve", value: "serve" },
-	{ label: "Serve Receive", value: "serve receive" },
+	{ label: "Serve/Receive", value: "serve/receive" },
 	{ label: "Blocking", value: "blocking" },
+	{ label: "Warm-up", value: "warm-up" },
 ];
 
 const drillDifficulties = [

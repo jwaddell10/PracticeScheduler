@@ -318,7 +318,7 @@ const CreatePractice = () => {
 				endTime: toLocalISOString(endDate),
 				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
 				drills: selectedDrills,
-				drillDuration: drillDurationArray,
+				practiceDuration: Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60)),
 				notes: notes || undefined,
 			});
 

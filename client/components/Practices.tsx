@@ -57,7 +57,7 @@ export default function PracticesScreen() {
 				Start: {new Date(item.startTime).toLocaleDateString()} at {new Date(item.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
 			</Text>
 			<Text style={styles.dateText}>
-				Duration: {item.duration || 60} minutes
+				Duration: {item.practiceDuration || 60} minutes
 			</Text>
 			<Text style={styles.drillsLabel}>Drills:</Text>
 			{(item.drills || []).map((drill, index) => (

@@ -8,7 +8,7 @@ interface Practice {
 	startTime: string;
 	endTime: string;
 	drills: string[];
-	drillDuration?: number[];
+	practiceDuration?: number;
 	notes?: string;
 	teamId: string;
 }
@@ -46,7 +46,7 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 			
 			const { data, error: supabaseError } = await supabase
 				.from("Practice")
-				.select("id, title, startTime, endTime, drills, drillDuration, notes, teamId")
+				.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId")
 				.order("startTime", { ascending: true });
 
 			if (supabaseError) {

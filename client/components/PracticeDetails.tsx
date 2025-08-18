@@ -76,7 +76,7 @@ export default function PracticeDetails({ route }) {
 	const fetchPracticeDetails = async () => {
 		const { data, error } = await supabase
 			.from("Practice")
-			.select("*")
+			.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId")
 			.eq("id", practiceId)
 			.single();
 
@@ -87,28 +87,17 @@ export default function PracticeDetails({ route }) {
 			setPractice(data);
 			// Parse the stored datetime as local time (not UTC)
 			setStartDate(new Date(data.startTime.replace("Z", "")));
-			// Calculate duration from startTime and endTime if available, otherwise use default
-			if (data.startTime && data.endTime) {
-				const start = new Date(data.startTime.replace("Z", ""));
-				const end = new Date(data.endTime.replace("Z", ""));
-				const diffMinutes = Math.round((end - start) / (1000 * 60));
-				setDuration(diffMinutes > 0 ? diffMinutes : 60);
-			} else {
-				setDuration(60); // Default duration
-			}
+			// Use practiceDuration from database, otherwise use default
+			setDuration(data.practiceDuration || 60);
 			setNotes(data.notes || "");
 			setDrills(data.drills || []);
 			
-			// Initialize drill durations from JSONB array format
+			// Initialize drill durations by dividing practice duration evenly
 			const initialDurations = {};
 			if (data.drills) {
 				data.drills.forEach((drill, index) => {
-					// Handle JSONB array format from database
-					const storedDuration = data.drillDuration && Array.isArray(data.drillDuration)
-						? data.drillDuration[index]
-						: Math.floor(data.duration / data.drills.length);
 					const drillKey = `${drill}-${index}`;
-					initialDurations[drillKey] = storedDuration || 0;
+					initialDurations[drillKey] = Math.floor((data.practiceDuration || 60) / data.drills.length);
 				});
 			}
 			setDrillDurations(initialDurations);
@@ -257,9 +246,9 @@ export default function PracticeDetails({ route }) {
 			.from("Practice")
 			.update({
 				startTime: startTimeString,
+				practiceDuration: duration,
 				notes,
 				drills,
-				drillDuration: drillDurationArray,
 			})
 			.eq("id", practiceId);
 
@@ -270,13 +259,8 @@ export default function PracticeDetails({ route }) {
 			Alert.alert("Error", "Failed to update practice.");
 		} else {
 			Alert.alert("Success", "Practice updated!");
-			setPractice((prev) => ({
-				...prev,
-				startTime: startTimeString,
-				duration: duration,
-				notes,
-				drills,
-			}));
+			// Refresh the practice data from the database to ensure we have the latest data
+			await fetchPracticeDetails();
 			setIsEditing(false); // Exit edit mode after successful save
 		}
 	};

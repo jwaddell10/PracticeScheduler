@@ -5,8 +5,8 @@ import {
 	StyleSheet,
 	ScrollView,
 	TouchableOpacity,
-	Modal,
 } from "react-native";
+import Modal from "react-native-modal";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
@@ -25,19 +25,24 @@ export default function DrillFilterModal({
 }) {
 	return (
 		<Modal
-			visible={visible}
-			animationType="slide"
-			transparent={false}
+			isVisible={visible}
+			animationIn="slideInUp"
+			animationOut="slideOutDown"
+			style={styles.modal}
+			backdropOpacity={0.5}
+			useNativeDriver={true}
 		>
 			<SafeAreaView style={styles.modalContainer} edges={['top', 'left', 'right']}>
-				<View style={styles.modalHeader}>
-					<TouchableOpacity onPress={onClose}>
-						<Text style={styles.cancelButton}>Cancel</Text>
-					</TouchableOpacity>
-					<Text style={styles.modalTitle}>Filter Drills</Text>
-					<TouchableOpacity onPress={clearAllFilters}>
-						<Text style={styles.clearButton}>Clear All</Text>
-					</TouchableOpacity>
+				<View style={styles.modalHeaderContainer}>
+					<View style={styles.modalHeader}>
+						<TouchableOpacity onPress={onClose} style={styles.headerButton}>
+							<Text style={styles.cancelButton}>Cancel</Text>
+						</TouchableOpacity>
+						<Text style={styles.modalTitle}>Filter Drills</Text>
+						<TouchableOpacity onPress={clearAllFilters} style={styles.headerButton}>
+							<Text style={styles.clearButton}>Clear All</Text>
+						</TouchableOpacity>
+					</View>
 				</View>
 
 				<ScrollView style={styles.modalContent}>
@@ -184,9 +189,21 @@ export default function DrillFilterModal({
 
 const styles = StyleSheet.create({
   // Modal styles
+  modal: {
+    margin: 0,
+    justifyContent: 'flex-end',
+    marginTop: 50,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
   modalContainer: {
     flex: 1,
     backgroundColor: theme.colors.background,
+  },
+  modalHeaderContainer: {
+    backgroundColor: theme.colors.surface,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -194,10 +211,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
-    paddingTop: 30,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     backgroundColor: theme.colors.surface,
+  },
+  headerButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+  },
+  headerTopSpacer: {
+    height: 20,
   },
   modalTitle: {
     fontSize: 18,

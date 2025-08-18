@@ -203,7 +203,7 @@ export default function HomeScreen() {
 									{new Date(practice.startTime).toLocaleDateString()} at {new Date(practice.startTime).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
 								</Text>
 								<Text style={styles.durationText}>
-									{practice.duration || 60} minutes
+									{practice.practiceDuration || 60} minutes
 								</Text>
 								<Text style={styles.drillsLabel}>Drills:</Text>
 								{(practice.drills || []).map((drill, index) => (

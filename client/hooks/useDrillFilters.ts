@@ -12,9 +12,9 @@ export function useDrillFilters() {
 	const skillFocusOptions = [
 		"Offense",
 		"Defense",
-		"Serve",
-		"Serve Receive",
+		"Serve/Receive",
 		"Blocking",
+		"Warm-up",
 	];
 	const difficultyOptions = ["Beginner", "Intermediate", "Advanced"];
 	const typeOptions = ["Team Drill", "Individual"];
