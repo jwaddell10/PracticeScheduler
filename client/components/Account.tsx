@@ -13,10 +13,6 @@ export default function Account({ session }: { session: Session | null }) {
 	const [email, setEmail] = useState("");
 	const [drills, setDrills] = useState("");
 	const { role, loading: roleLoading } = useUserRole();
-	
-	
-	// const [website, setWebsite] = useState("");
-	// const [avatarUrl, setAvatarUrl] = useState("");
 
 	useEffect(() => {
 		if (session) getProfile();

@@ -3,9 +3,8 @@ import "dotenv/config";
 
 export default () => ({
 	expo: {
-		scheme: "com.supabase",
 		name: "PracticePro Volleyball",
-		slug: "PracticeScheduler",
+		slug: "PracticePro Volleyball",
 		version: "1.0.0",
 		orientation: "portrait",
 		icon: "./assets/logo.png",
