@@ -77,19 +77,19 @@ export function useDrillFilters() {
 
 			const skillFocusMatch =
 				selectedFilters.skillFocus.length === 0 ||
-				selectedFilters.skillFocus.some((filter) =>
+				selectedFilters.skillFocus.every((filter) =>
 					drillSkillFocus.includes(filter.toLowerCase())
 				);
 
 			const difficultyMatch =
 				selectedFilters.difficulty.length === 0 ||
-				selectedFilters.difficulty.some((filter) =>
+				selectedFilters.difficulty.every((filter) =>
 					drillDifficulty.includes(filter.toLowerCase())
 				);
 
 			const typeMatch =
 				selectedFilters.type.length === 0 ||
-				selectedFilters.type.some((filter) =>
+				selectedFilters.type.every((filter) =>
 					drillType.includes(filter.toLowerCase())
 				);
 

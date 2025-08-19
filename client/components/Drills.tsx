@@ -163,19 +163,19 @@ export default function Drills() {
 
 			const skillFocusMatch =
 				selectedFilters.skillFocus.length === 0 ||
-				selectedFilters.skillFocus.some((filter) =>
+				selectedFilters.skillFocus.every((filter) =>
 					drillSkillFocus.includes(filter.toLowerCase())
 				);
 
 			const difficultyMatch =
 				selectedFilters.difficulty.length === 0 ||
-				selectedFilters.difficulty.some((filter) =>
+				selectedFilters.difficulty.every((filter) =>
 					drillDifficulty.includes(filter.toLowerCase())
 				);
 
 			const typeMatch =
 				selectedFilters.type.length === 0 ||
-				selectedFilters.type.some((filter) =>
+				selectedFilters.type.every((filter) =>
 					drillType.includes(filter.toLowerCase())
 				);
 
@@ -195,56 +195,7 @@ export default function Drills() {
 
 	const filteredDrills = filterDrills(searchFilteredDrills);
 
-	const groupedDrills = filteredDrills.reduce(
-		(acc, drill) => {
-			// Parse the type to handle JSON arrays
-			let drillType = [];
-			if (drill.type) {
-				if (typeof drill.type === "string") {
-					try {
-						const parsed = JSON.parse(drill.type);
-						drillType = Array.isArray(parsed) ? parsed : [parsed];
-					} catch {
-						drillType = [drill.type];
-					}
-				}
-			}
-
-			// Determine if it's a team drill or individual drill
-			const isTeamDrill = drillType.some((type) => 
-				type.toLowerCase().includes("team")
-			);
-			
-			const typeKey = isTeamDrill ? "team" : "individual";
-			
-			// Get all skill focuses for this drill
-			let skillFocuses = ["General"];
-			if (drill.skillFocus) {
-				try {
-					const parsed = JSON.parse(drill.skillFocus);
-					const skills = Array.isArray(parsed) ? parsed : [parsed];
-					if (skills.length > 0) {
-						skillFocuses = skills.map(skill => skill.toLowerCase());
-					}
-				} catch {
-					if (drill.skillFocus) {
-						skillFocuses = [drill.skillFocus.toLowerCase()];
-					}
-				}
-			}
-			
-			// Add drill to each skill focus category
-			skillFocuses.forEach(skillFocus => {
-				if (!acc[typeKey][skillFocus]) {
-					acc[typeKey][skillFocus] = [];
-				}
-				acc[typeKey][skillFocus].push(drill);
-			});
-			
-			return acc;
-		},
-		{ team: {}, individual: {} }
-	);
+	// No categorization - just use filtered drills directly
 
 	const renderDrillRow = (drill) => {
 		let drillSkillFocus = [];
@@ -426,43 +377,9 @@ export default function Drills() {
 					)}
 					<ScrollView contentContainerStyle={styles.scrollView}>
 						<Text style={styles.header}>
-							Team Drills (
-							{Object.values(groupedDrills.team).flat().length})
+							All Drills ({filteredDrills.length})
 						</Text>
-						{Object.entries(groupedDrills.team).map(
-							([category, drills]) => (
-								<View key={category} style={styles.section}>
-									<Text style={styles.categoryTitle}>
-										{category.replace(/\b\w/g, (c) =>
-											c.toUpperCase()
-										)}{" "}
-										({drills.length})
-									</Text>
-									{drills.map(renderDrillRow)}
-								</View>
-							)
-						)}
-						<Text style={styles.header}>
-							Individual Drills (
-							{
-								Object.values(groupedDrills.individual).flat()
-									.length
-							}
-							)
-						</Text>
-						{Object.entries(groupedDrills.individual).map(
-							([category, drills]) => (
-								<View key={category} style={styles.section}>
-									<Text style={styles.categoryTitle}>
-										{category.replace(/\b\w/g, (c) =>
-											c.toUpperCase()
-										)}{" "}
-										({drills.length})
-									</Text>
-									{drills.map(renderDrillRow)}
-								</View>
-							)
-						)}
+						{filteredDrills.map(renderDrillRow)}
 						{filteredDrills.length === 0 && (
 							<View style={styles.emptyState}>
 								<MaterialIcons

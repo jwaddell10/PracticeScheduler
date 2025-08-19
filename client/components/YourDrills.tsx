@@ -153,69 +153,7 @@ export default function YourDrills() {
 			);
 		});
 
-	// Organize drills by type and skill focus
-	const organizeDrills = (drills) => {
-		const organized = {};
-		
-		drills.forEach((drill) => {
-			// Parse type
-			let drillType = ["Individual"];
-			if (drill.type) {
-				try {
-					const parsed = JSON.parse(drill.type);
-					drillType = Array.isArray(parsed) ? parsed : [parsed];
-				} catch {
-					drillType = [drill.type];
-				}
-			}
-			
-			// Determine if it's a team drill or individual drill
-			const isTeamDrill = drillType.some((type) => 
-				type.toLowerCase().includes("team")
-			);
-			const typeKey = isTeamDrill ? "team" : "individual";
-			
-			// Parse skill focus
-			let skillFocuses = ["General"];
-			if (drill.skillFocus) {
-				try {
-					const parsed = JSON.parse(drill.skillFocus);
-					const skills = Array.isArray(parsed) ? parsed : [parsed];
-					if (skills.length > 0) {
-						skillFocuses = skills.map(skill => skill.toLowerCase());
-					}
-				} catch {
-					if (drill.skillFocus) {
-						skillFocuses = [drill.skillFocus.toLowerCase()];
-					}
-				}
-			}
-			
-			// Add drill to each skill focus category
-			skillFocuses.forEach(skillFocus => {
-				if (!organized[typeKey]) {
-					organized[typeKey] = {};
-				}
-				if (!organized[typeKey][skillFocus]) {
-					organized[typeKey][skillFocus] = [];
-				}
-				organized[typeKey][skillFocus].push(drill);
-			});
-		});
-		
-		return organized;
-	};
-
-	const organizedDrills = organizeDrills(searchFilteredDrills);
-	
-	// Reorder to show team drills first
-	const reorderedDrills = {};
-	if (organizedDrills.team) {
-		reorderedDrills.team = organizedDrills.team;
-	}
-	if (organizedDrills.individual) {
-		reorderedDrills.individual = organizedDrills.individual;
-	}
+	// No categorization - just use filtered drills directly
 
 	const loading = favoritesLoading || userDrillsLoading || roleLoading;
 	const error = favoritesError || userDrillsError;
@@ -411,30 +349,15 @@ export default function YourDrills() {
 					</Text>
 				</View>
 
-				{Object.keys(reorderedDrills).length === 0 ? (
-					hasActiveFilters() || searchQuery.trim() !== "" ? renderEmptyFiltered : null
-				) : (
-					Object.entries(reorderedDrills).map(([type, skillFocusGroups]) => (
-						<View key={type} style={styles.section}>
-							<Text style={styles.header}>
-								{type.replace(/\b\w/g, (c) => c.toUpperCase())} Drills (
-								{Object.values(skillFocusGroups).flat().length})
-							</Text>
-							{Object.entries(skillFocusGroups).map(([skillFocus, drills]) => (
-								<View key={`${type}-${skillFocus}`} style={styles.section}>
-									<Text style={styles.categoryTitle}>
-										{skillFocus.replace(/\b\w/g, (c) => c.toUpperCase())} ({drills.length})
-									</Text>
-									{drills.map((drill) => (
-										<View key={drill.id}>
-											{renderDrill({ item: drill })}
-										</View>
-									))}
-								</View>
-							))}
-						</View>
-					))
-				)}
+				<Text style={styles.header}>
+					{activeTab === "myDrills" ? "My Drills" : "Favorites"} ({searchFilteredDrills.length})
+				</Text>
+				{searchFilteredDrills.map((drill) => (
+					<View key={drill.id}>
+						{renderDrill({ item: drill })}
+					</View>
+				))}
+				{searchFilteredDrills.length === 0 && (hasActiveFilters() || searchQuery.trim() !== "") && renderEmptyFiltered}
 			</ScrollView>
 
 			{/* Floating Action Button */}
