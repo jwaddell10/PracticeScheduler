@@ -117,7 +117,7 @@ export default function DrillCard({
 			style={styles.drillCard}
 			activeOpacity={0.7}
 			onPress={() =>
-				navigation.navigate("DrillDetails", { drill })
+				navigation.navigate("Drill Details", { drill })
 			}
 		>
 			{/* Image Section */}

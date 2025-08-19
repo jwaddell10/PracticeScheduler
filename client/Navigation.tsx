@@ -69,7 +69,7 @@ function HomeStackScreen() {
 				options={{ title: "Your Drills" }}
 			/>
 			<HomeStack.Screen
-				name="DrillDetails"
+				name="Drill Details"
 				component={DrillDetails}
 				options={{ title: "Drill Details" }}
 			/>
@@ -95,7 +95,7 @@ function DrillStackScreen() {
 			}}
 		>
 			<DrillStack.Screen name="Drills" component={Drills} />
-			<DrillStack.Screen name="DrillDetails" component={DrillDetails} />
+			<DrillStack.Screen name="Drill Details" component={DrillDetails} />
 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} />
 		</DrillStack.Navigator>
 	);
@@ -115,7 +115,7 @@ function FavoriteDrillsStackScreen() {
 				component={YourDrills}
 			/>
 			<FavoriteDrillsStack.Screen
-				name="DrillDetails"
+				name="Drill Details"
 				component={DrillDetails}
 			/>
 			<FavoriteDrillsStack.Screen

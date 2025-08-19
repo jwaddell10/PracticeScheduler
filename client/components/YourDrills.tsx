@@ -153,6 +153,8 @@ export default function YourDrills() {
 			);
 		});
 
+
+
 	// No categorization - just use filtered drills directly
 
 	const loading = favoritesLoading || userDrillsLoading || roleLoading;
@@ -348,10 +350,6 @@ export default function YourDrills() {
 						)
 					</Text>
 				</View>
-
-				<Text style={styles.header}>
-					{activeTab === "myDrills" ? "My Drills" : "Favorites"} ({searchFilteredDrills.length})
-				</Text>
 				{searchFilteredDrills.map((drill) => (
 					<View key={drill.id}>
 						{renderDrill({ item: drill })}

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
 	View,
 	Text,
@@ -21,10 +21,11 @@ import theme from "./styles/theme";
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 export default function DrillDetails({ route }: { route: any }) {
-	const { drill } = route.params;
+	const { drill: initialDrill } = route.params;
+	const [currentDrill, setCurrentDrill] = useState(initialDrill);
 	
 	// Add defensive check for drill object
-	if (!drill) {
+	if (!currentDrill) {
 		return (
 			<View style={styles.container}>
 				<Text style={styles.errorText}>Drill not found</Text>
@@ -33,17 +34,31 @@ export default function DrillDetails({ route }: { route: any }) {
 	}
 	const navigation = useNavigation();
 	const { isAdmin } = useUserRole();
-	const { deleteDrill } = useDrills();
+	const { deleteDrill, publicDrills, userDrills } = useDrills();
 	const session = useSession();
 	
-	console.log(drill, 'drill in drill details')
+	console.log(currentDrill, 'drill in drill details')
 	const [imageLoading, setImageLoading] = useState(true);
 	const [imageError, setImageError] = useState(false);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [modalImageLoading, setModalImageLoading] = useState(true);
 	const [isDeleting, setIsDeleting] = useState(false);
 
-	// console.log(drill, "drill");
+	// Refresh drill data when screen comes into focus
+	useEffect(() => {
+		const unsubscribe = navigation.addListener('focus', () => {
+			// Find the updated drill from the drills context
+			const allDrills = [...(publicDrills || []), ...(userDrills || [])];
+			const updatedDrill = allDrills.find(d => d.id === currentDrill.id);
+			if (updatedDrill) {
+				setCurrentDrill(updatedDrill);
+			}
+		});
+
+		return unsubscribe;
+	}, [navigation, currentDrill.id, publicDrills, userDrills]);
+
+	// console.log(currentDrill, "drill");
 
 	// Helper function to capitalize first letter
 	const capitalize = (str) => {
@@ -72,15 +87,15 @@ export default function DrillDetails({ route }: { route: any }) {
 		// Admin can delete any drill
 		if (isAdmin) return true;
 		// User can only delete their own drills
-		return drill.user_id === session?.user?.id;
+		return currentDrill.user_id === session?.user?.id;
 	};
 
 	// Check if user can edit this drill
 	const canEditDrill = () => {
 		// Admin can edit any public drill
-		if (isAdmin && drill.isPublic) return true;
+		if (isAdmin && currentDrill.isPublic) return true;
 		// User can only edit their own drills
-		return drill.user_id === session?.user?.id;
+		return currentDrill.user_id === session?.user?.id;
 	};
 
 	// Handle delete drill
@@ -101,7 +116,7 @@ export default function DrillDetails({ route }: { route: any }) {
 					onPress: async () => {
 						try {
 							setIsDeleting(true);
-							await deleteDrill(drill.id);
+							await deleteDrill(currentDrill.id);
 							Alert.alert("Success", "Drill deleted successfully.");
 							navigation.goBack();
 						} catch (error) {
@@ -129,10 +144,10 @@ export default function DrillDetails({ route }: { route: any }) {
 		<ScrollView style={styles.container}>
 			<View style={styles.card}>
 				{/* Drill Name */}
-				<Text style={styles.name}>{drill.name}</Text>
+				<Text style={styles.name}>{currentDrill.name}</Text>
 
 				{/* Drill Image */}
-				{drill.imageUrl && (
+				{currentDrill.imageUrl && (
 					<TouchableOpacity
 						style={styles.imageContainer}
 						onPress={handleImagePress}
@@ -151,7 +166,7 @@ export default function DrillDetails({ route }: { route: any }) {
 						)}
 						{!imageError && (
 							<Image
-								source={{ uri: drill.imageUrl }}
+								source={{ uri: currentDrill.imageUrl }}
 								style={[
 									styles.drillImage,
 									imageLoading && styles.hiddenImage,
@@ -186,39 +201,39 @@ export default function DrillDetails({ route }: { route: any }) {
 					<View style={styles.detailRow}>
 						<Text style={styles.detailLabel}>Skill Focus:</Text>
 						<Text style={styles.detailValue}>
-							{formatArrayData(drill.skillFocus)}
+							{formatArrayData(currentDrill.skillFocus)}
 						</Text>
 					</View>
 
 					<View style={styles.detailRow}>
 						<Text style={styles.detailLabel}>Type:</Text>
 						<Text style={styles.detailValue}>
-							{formatArrayData(drill.type)}
+							{formatArrayData(currentDrill.type)}
 						</Text>
 					</View>
 
 					<View style={styles.detailRow}>
 						<Text style={styles.detailLabel}>Difficulty:</Text>
 						<Text style={[styles.detailValue]}>
-							{formatArrayData(drill.difficulty)}
+							{formatArrayData(currentDrill.difficulty)}
 						</Text>
 					</View>
 
-					{drill.duration && (
+					{currentDrill.duration && (
 						<View style={styles.detailRow}>
 							<Text style={styles.detailLabel}>Duration:</Text>
 							<Text style={styles.detailValue}>
-								{drill.duration} min
+								{currentDrill.duration} min
 							</Text>
 						</View>
 					)}
 				</View>
 
 				{/* Description/Notes */}
-				{drill.notes && drill.notes.trim() !== "" ? (
+				{currentDrill.notes && currentDrill.notes.trim() !== "" ? (
 					<>
 						<Text style={styles.sectionTitle}>Description</Text>
-						<Text style={styles.description}>{drill.notes}</Text>
+						<Text style={styles.description}>{currentDrill.notes}</Text>
 					</>
 				) : (
 					<Text style={styles.noDescription}>
@@ -234,7 +249,7 @@ export default function DrillDetails({ route }: { route: any }) {
 							style={styles.editButton}
 							onPress={() => navigation.navigate('CreateDrill', { 
 								mode: 'edit', 
-								drill: drill,
+								drill: currentDrill,
 								refreshDrills: () => {
 									// Refresh the drill details
 									navigation.goBack();
@@ -292,7 +307,7 @@ export default function DrillDetails({ route }: { route: any }) {
 								</View>
 							)}
 							<Image
-								source={{ uri: drill.imageUrl }}
+								source={{ uri: currentDrill.imageUrl }}
 								style={styles.fullScreenImage}
 								resizeMode="contain"
 								onLoad={() => setModalImageLoading(false)}
