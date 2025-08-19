@@ -5,6 +5,7 @@ import {
 	TouchableOpacity,
 	Image,
 	StyleSheet,
+	Pressable,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -223,6 +224,7 @@ export default function DrillCard({
 								clipboardStatus[drill.id] && styles.clipboardButtonActive
 							]}
 							onPress={handleToggleClipboard}
+							activeOpacity={1}
 						>
 							<MaterialIcons
 								name={clipboardStatus[drill.id] ? "check" : "content-paste"}

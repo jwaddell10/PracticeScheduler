@@ -5,6 +5,7 @@ import {
 	StyleSheet,
 	TouchableOpacity,
 	Alert,
+	ScrollView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
@@ -113,7 +114,7 @@ export default function Clipboard() {
 				<MaterialIcons name="drag-handle" size={20} color={theme.colors.textMuted} />
 			</View>
 			<View style={styles.drillContent}>
-				<Text style={styles.drillName}>{safeString(drill.name)}</Text>
+				<Text style={styles.drillName}>{drill.name || 'No name'}</Text>
 				<View style={styles.drillDetails}>
 					{drill.type && (
 						<Text style={styles.drillDetail}>Type: {safeString(drill.type)}</Text>
@@ -124,13 +125,10 @@ export default function Clipboard() {
 					{drill.difficulty && (
 						<Text style={styles.drillDetail}>Difficulty: {safeString(drill.difficulty)}</Text>
 					)}
-					{drill.duration && (
+					{drill.duration !== undefined && (
 						<Text style={styles.drillDetail}>Duration: {drill.duration} min</Text>
 					)}
 				</View>
-				{drill.notes && (
-					<Text style={styles.drillNotes}>Notes: {safeString(drill.notes)}</Text>
-				)}
 			</View>
 			<TouchableOpacity
 				style={styles.removeButton}
@@ -170,15 +168,35 @@ export default function Clipboard() {
 				</Text>
 				<Text style={styles.dragHint}>Hold and drag to reorder drills</Text>
 				
-				<DraggableFlatList
-					data={reorderedDrills}
-					renderItem={renderDrillItem}
-					keyExtractor={(item) => item.id}
-					onDragEnd={handleDrillsReorder}
-					containerStyle={{ flex: 1 }}
-					contentContainerStyle={styles.scrollView}
-					showsVerticalScrollIndicator={false}
-				/>
+				<ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollView}>
+					{reorderedDrills.map((drill, index) => (
+						<View key={drill.id} style={styles.drillItem}>
+							<View style={styles.dragHandle}>
+								<MaterialIcons name="drag-handle" size={20} color={theme.colors.textMuted} />
+							</View>
+							<View style={styles.drillContent}>
+								<Text style={styles.drillName}>{drill.name || 'No name'}</Text>
+								<View style={styles.drillDetails}>
+									{drill.type && (
+										<Text style={styles.drillDetail}>Type: {safeString(drill.type)}</Text>
+									)}
+									{drill.skillFocus && (
+										<Text style={styles.drillDetail}>Focus: {safeString(drill.skillFocus)}</Text>
+									)}
+									{drill.difficulty && (
+										<Text style={styles.drillDetail}>Difficulty: {safeString(drill.difficulty)}</Text>
+									)}
+								</View>
+							</View>
+							<TouchableOpacity
+								style={styles.removeButton}
+								onPress={() => handleRemoveDrillFromClipboard(drill.id)}
+							>
+								<MaterialIcons name="remove-circle" size={24} color="#FF3B30" />
+							</TouchableOpacity>
+						</View>
+					))}
+				</ScrollView>
 			</View>
 		</GestureHandlerRootView>
 	);
@@ -221,8 +239,8 @@ const styles = StyleSheet.create({
 		paddingVertical: 12,
 	},
 	scrollView: {
-		flex: 1,
 		paddingHorizontal: 20,
+		paddingBottom: 20,
 	},
 	drillItem: {
 		flexDirection: "row",
@@ -255,11 +273,7 @@ const styles = StyleSheet.create({
 		color: theme.colors.textMuted,
 		marginBottom: 2,
 	},
-	drillNotes: {
-		fontSize: 14,
-		color: theme.colors.textMuted,
-		fontStyle: "italic",
-	},
+
 	removeButton: {
 		marginLeft: 12,
 		justifyContent: "center",
