@@ -107,7 +107,7 @@ export default function Clipboard() {
 				isActive && styles.draggingItem
 			]}
 			onLongPress={drag}
-			delayLongPress={200}
+			delayLongPress={50}
 			disabled={isActive}
 		>
 			<View style={styles.dragHandle}>
@@ -168,35 +168,13 @@ export default function Clipboard() {
 				</Text>
 				<Text style={styles.dragHint}>Hold and drag to reorder drills</Text>
 				
-				<ScrollView style={{ flex: 1 }} contentContainerStyle={styles.scrollView}>
-					{reorderedDrills.map((drill, index) => (
-						<View key={drill.id} style={styles.drillItem}>
-							<View style={styles.dragHandle}>
-								<MaterialIcons name="drag-handle" size={20} color={theme.colors.textMuted} />
-							</View>
-							<View style={styles.drillContent}>
-								<Text style={styles.drillName}>{drill.name || 'No name'}</Text>
-								<View style={styles.drillDetails}>
-									{drill.type && (
-										<Text style={styles.drillDetail}>Type: {safeString(drill.type)}</Text>
-									)}
-									{drill.skillFocus && (
-										<Text style={styles.drillDetail}>Focus: {safeString(drill.skillFocus)}</Text>
-									)}
-									{drill.difficulty && (
-										<Text style={styles.drillDetail}>Difficulty: {safeString(drill.difficulty)}</Text>
-									)}
-								</View>
-							</View>
-							<TouchableOpacity
-								style={styles.removeButton}
-								onPress={() => handleRemoveDrillFromClipboard(drill.id)}
-							>
-								<MaterialIcons name="remove-circle" size={24} color="#FF3B30" />
-							</TouchableOpacity>
-						</View>
-					))}
-				</ScrollView>
+				<DraggableFlatList
+					data={reorderedDrills}
+					onDragEnd={handleDrillsReorder}
+					keyExtractor={(item) => item.id}
+					renderItem={renderDrillItem}
+					contentContainerStyle={styles.scrollView}
+				/>
 			</View>
 		</GestureHandlerRootView>
 	);
