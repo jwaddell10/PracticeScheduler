@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "../../X-Clone"
+		},
+		{
+			"path": "../../Messaging-App"
+		},
+		{
+			"path": "../../drillUploader"
+		}
+	],
+	"settings": {}
+}

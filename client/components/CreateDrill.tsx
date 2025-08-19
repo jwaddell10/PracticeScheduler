@@ -322,21 +322,21 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	};
 
 	// While role is loading, show a loading state (optional)
-	if (roleLoading) {
-		return (
-			<View style={styles.container}>
-				<Text>Loading permissions...</Text>
-			</View>
-		);
-	}
+	// if (roleLoading) {
+	// 	return (
+	// 		<View style={styles.container}>
+	// 			<Text>Loading permissions...</Text>
+	// 		</View>
+	// 	);
+	// }
 
-	if (roleError) {
-		return (
-			<View style={styles.container}>
-				<Text>Error loading role: {roleError}</Text>
-			</View>
-		);
-	}
+	// if (roleError) {
+	// 	return (
+	// 		<View style={styles.container}>
+	// 			<Text>Error loading role: {roleError}</Text>
+	// 		</View>
+	// 	);
+	// }
 
 	return (
 		<View style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -402,7 +402,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 				)}
 
 				{/* Only show image upload for premium users or admins */}
-				{role === 'premium' || role === 'Premium' || isAdmin ? (
+				{/* {role === 'premium' || role === 'Premium' || isAdmin ? (
 					<>
 						<Text style={styles.label}>
 							Upload Image (optional)
@@ -442,6 +442,27 @@ export default function CreateDrill(props?: CreateDrillProps) {
 							<Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
 						</TouchableOpacity>
 					</View>
+				)} */}
+
+				{/* Image upload for all users */}
+				<Text style={styles.label}>
+					Upload Image (optional)
+				</Text>
+				<TouchableOpacity
+					style={styles.imageUploadButton}
+					onPress={pickImage}
+				>
+					<Text style={styles.imageUploadButtonText}>
+						{imageUri ? "Change Image" : "Pick an Image"}
+					</Text>
+				</TouchableOpacity>
+
+				{imageUri && (
+					<Image
+						source={{ uri: imageUri }}
+						style={styles.previewImage}
+						resizeMode="cover"
+					/>
 				)}
 				</ScrollView>
 			</View>

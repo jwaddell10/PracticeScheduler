@@ -82,25 +82,11 @@ function HomeStackScreen() {
 }
 
 // Component to show upgrade banner for free users
-function DrillsUpgradeScreen() {
-	return (
-		<View style={{ flex: 1, backgroundColor: theme.colors.background, padding: 20 }}>
-			<View style={{ flex: 1, justifyContent: 'center' }}>
-				<UpgradeToPremiumBanner />
-			</View>
-		</View>
-	);
-}
+// DrillsUpgradeScreen removed - all users can now access drills
 
 const DrillStack = createNativeStackNavigator();
 function DrillStackScreen() {
-	const { role, loading, isAdmin } = useUserRole();
-	
-	// Show upgrade screen for free users, drills for premium users or admins
-	const DrillsComponent = (!loading && role !== 'premium' && role !== 'Premium' && !isAdmin) 
-		? DrillsUpgradeScreen 
-		: Drills;
-
+	// Show drills for all users
 	return (
 		<DrillStack.Navigator
 			screenOptions={{
@@ -108,7 +94,7 @@ function DrillStackScreen() {
 				headerTintColor: theme.colors.textPrimary,
 			}}
 		>
-			<DrillStack.Screen name="Drills" component={DrillsComponent} />
+			<DrillStack.Screen name="Drills" component={Drills} />
 			<DrillStack.Screen name="DrillDetails" component={DrillDetails} />
 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} />
 		</DrillStack.Navigator>

@@ -564,16 +564,7 @@ const CreatePractice = () => {
 											</Text>
 										)}
 
-										{/* Add Drills Button */}
-										<TouchableOpacity
-											style={styles.addDrillsButton}
-											onPress={() => setDrillSelectionModalVisible(true)}
-										>
-											<AntDesign name="plus" size={20} color={theme.colors.white} />
-											<Text style={styles.addDrillsButtonText}>
-												Add Drills
-											</Text>
-										</TouchableOpacity>
+
 
 										{/* Drill Selection Modal */}
 										<Modal
@@ -1233,28 +1224,7 @@ const styles = StyleSheet.create({
 		backgroundColor: "rgba(0, 0, 0, 0.5)",
 		padding: 20,
 	},
-	addDrillsButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		justifyContent: "center",
-		backgroundColor: theme.colors.primary,
-		paddingVertical: 12,
-		paddingHorizontal: 20,
-		borderRadius: 12,
-		marginTop: 8,
-		marginBottom: 16,
-		shadowColor: theme.colors.primary,
-		shadowOpacity: 0.3,
-		shadowOffset: { width: 0, height: 3 },
-		shadowRadius: 6,
-		elevation: 4,
-	},
-	addDrillsButtonText: {
-		color: theme.colors.white,
-		fontWeight: "600",
-		fontSize: 16,
-		marginLeft: 8,
-	},
+
 	toggleContainer: {
 		flexDirection: "row",
 		backgroundColor: theme.colors.background,

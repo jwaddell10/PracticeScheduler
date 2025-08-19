@@ -301,9 +301,9 @@ export default function Drills() {
 			<SafeAreaView style={styles.safeArea}>
 				<View style={styles.container}>
 					{/* Show upgrade banner for free users */}
-					{role === "free" && (
+					{/* {role === "free" && (
 						<UpgradeToPremiumBanner />
-					)}
+					)} */}
 					
 					{/* Search Bar */}
 					<View style={styles.searchContainer}>

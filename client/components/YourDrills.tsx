@@ -114,7 +114,7 @@ export default function YourDrills() {
 					}
 				});
 			}
-		} else if (activeTab === "favorites" && (role === "admin" || role === "premium" || role === "Premium")) {
+		} else if (activeTab === "favorites") {
 			// Show only favorited drills from drill library (for premium/admin users)
 			if (favoriteDrills && favoriteDrills.length > 0) {
 				favoriteDrills.forEach((drill) => {
@@ -365,39 +365,37 @@ export default function YourDrills() {
 				hasActiveFilters={hasActiveFilters}
 			/>
 
-			{/* Tab Toggle - Only show for premium/admin users */}
-			{(role === "admin" || role === "premium" || role === "Premium") && (
-				<View style={styles.tabContainer}>
-					<TouchableOpacity
-						style={[
-							styles.tabButton,
-							activeTab === "myDrills" && styles.activeTabButton
-						]}
-						onPress={() => setActiveTab("myDrills")}
-					>
-						<Text style={[
-							styles.tabButtonText,
-							activeTab === "myDrills" && styles.activeTabButtonText
-						]}>
-							My Drills
-						</Text>
-					</TouchableOpacity>
-					<TouchableOpacity
-						style={[
-							styles.tabButton,
-							activeTab === "favorites" && styles.activeTabButton
-						]}
-						onPress={() => setActiveTab("favorites")}
-					>
-						<Text style={[
-							styles.tabButtonText,
-							activeTab === "favorites" && styles.activeTabButtonText
-						]}>
-							Favorites
-						</Text>
-					</TouchableOpacity>
-				</View>
-			)}
+			{/* Tab Toggle - Show for all users */}
+			<View style={styles.tabContainer}>
+				<TouchableOpacity
+					style={[
+						styles.tabButton,
+						activeTab === "myDrills" && styles.activeTabButton
+					]}
+					onPress={() => setActiveTab("myDrills")}
+				>
+					<Text style={[
+						styles.tabButtonText,
+						activeTab === "myDrills" && styles.activeTabButtonText
+					]}>
+						My Drills
+					</Text>
+				</TouchableOpacity>
+				<TouchableOpacity
+					style={[
+						styles.tabButton,
+						activeTab === "favorites" && styles.activeTabButton
+					]}
+					onPress={() => setActiveTab("favorites")}
+				>
+					<Text style={[
+						styles.tabButtonText,
+						activeTab === "favorites" && styles.activeTabButtonText
+					]}>
+						Favorites
+					</Text>
+				</TouchableOpacity>
+			</View>
 
 			<ScrollView
 				style={styles.scrollView}

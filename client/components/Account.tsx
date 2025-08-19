@@ -14,11 +14,7 @@ export default function Account({ session }: { session: Session | null }) {
 	const [drills, setDrills] = useState("");
 	const { role, loading: roleLoading } = useUserRole();
 	
-	// Debug: Log the role to see what's being returned
-	useEffect(() => {
-		console.log('Account - User role:', role);
-		console.log('Account - Role loading:', roleLoading);
-	}, [role, roleLoading]);
+	
 	// const [website, setWebsite] = useState("");
 	// const [avatarUrl, setAvatarUrl] = useState("");
 
