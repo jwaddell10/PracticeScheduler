@@ -19,6 +19,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import theme from "./styles/theme";
+import { usePractices } from "../context/PracticesContext";
 
 // Custom Cancel Button Component
 const CustomCancelButton = ({ onPress }) => (
@@ -43,9 +44,33 @@ const CustomCancelButton = ({ onPress }) => (
 	</TouchableOpacity>
 );
 
+// Custom Confirm Button Component for Copy Practice
+const CustomConfirmButton = ({ onPress }) => (
+	<TouchableOpacity
+		onPress={onPress}
+		style={{
+			backgroundColor: '#FFA500',
+			paddingVertical: 12,
+			paddingHorizontal: 16,
+			borderRadius: 8,
+			minHeight: 44,
+			justifyContent: 'center',
+			alignItems: 'center',
+			marginHorizontal: 16,
+			marginBottom: 8,
+		}}
+		activeOpacity={0.8}
+	>
+		<Text style={{ color: 'white', fontSize: 16, fontWeight: '600' }}>
+			Copy Practice
+		</Text>
+	</TouchableOpacity>
+);
+
 export default function PracticeDetails({ route }) {
 	const navigation = useNavigation();
 	const { practiceId } = route.params;
+	const { addPractice, updatePractice, deletePractice: deletePracticeFromContext } = usePractices();
 	const [practice, setPractice] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -55,6 +80,7 @@ export default function PracticeDetails({ route }) {
 	const [duration, setDuration] = useState(60); // Duration in minutes
 	const [notes, setNotes] = useState("");
 	const [showStartPicker, setShowStartPicker] = useState(false);
+	const [showCopyDatePicker, setShowCopyDatePicker] = useState(false);
 	const [drills, setDrills] = useState([]);
 	const [drillDurations, setDrillDurations] = useState({});
 
@@ -107,28 +133,17 @@ export default function PracticeDetails({ route }) {
 
 	const deletePractice = async () => {
 		try {
-			const { error } = await supabase
-				.from("Practice")
-				.delete()
-				.eq("id", practiceId);
-
-			if (error) {
-				console.error("Error deleting practice:", error);
-				Alert.alert("Error", "Failed to delete practice.");
-			} else {
-				Alert.alert("Success", "Practice deleted!", [
-					{
-						text: "OK",
-						onPress: () => {
-							// Navigate back to previous screen
-							if (route.params?.onDelete) {
-								route.params.onDelete();
-							}
-							navigation.goBack();
-						}
+			await deletePracticeFromContext(practiceId);
+			
+			Alert.alert("Success", "Practice deleted!", [
+				{
+					text: "OK",
+					onPress: () => {
+						// Navigate back to previous screen
+						navigation.goBack();
 					}
-				]);
-			}
+				}
+			]);
 		} catch (error) {
 			console.error("Error deleting practice:", error);
 			Alert.alert("Error", "Failed to delete practice.");
@@ -170,7 +185,39 @@ export default function PracticeDetails({ route }) {
 
 	const handleSharePDF = async () => {
 		try {
-			await exportPracticeToPDF(practice);
+			// Convert drillDurations object to drillDuration array for PDF export
+			const drillDurationArray = drills.map((drill, index) => {
+				// Find the duration by searching all keys that start with the drill name
+				let duration = 0;
+				
+				// First, try to find a key with a non-zero duration
+				for (const [key, value] of Object.entries(drillDurations)) {
+					if (key.startsWith(`${drill}-`) && (value as number) > 0) {
+						duration = value as number;
+						break;
+					}
+				}
+				
+				// If no non-zero duration found, use the first key with index 0
+				if (duration === 0) {
+					for (const [key, value] of Object.entries(drillDurations)) {
+						if (key === `${drill}-0`) {
+							duration = value as number;
+							break;
+						}
+					}
+				}
+				
+				return duration;
+			});
+
+			// Create practice object with drillDuration array for PDF export
+			const practiceForPDF = {
+				...practice,
+				drillDuration: drillDurationArray
+			};
+
+			await exportPracticeToPDF(practiceForPDF);
 		} catch (error) {
 			console.error('Error sharing PDF:', error);
 			Alert.alert("Error", "Failed to share PDF");
@@ -242,30 +289,53 @@ export default function PracticeDetails({ route }) {
 		});
 		console.log('Final drillDurationArray:', drillDurationArray);
 
-		const { error } = await supabase
-			.from("Practice")
-			.update({
-				startTime: startTimeString,
-				practiceDuration: duration,
-				notes,
-				drills,
-			})
-			.eq("id", practiceId);
+		await updatePractice(practiceId, {
+			startTime: startTimeString,
+			practiceDuration: duration,
+			notes,
+			drills,
+		});
 
 		setSaving(false);
-
-		if (error) {
-			console.error("Error updating practice:", error);
-			Alert.alert("Error", "Failed to update practice.");
-		} else {
-			Alert.alert("Success", "Practice updated!");
-			// Refresh the practice data from the database to ensure we have the latest data
-			await fetchPracticeDetails();
-			setIsEditing(false); // Exit edit mode after successful save
-		}
+		Alert.alert("Success", "Practice updated!");
+		// Refresh the practice data from the database to ensure we have the latest data
+		await fetchPracticeDetails();
+		setIsEditing(false); // Exit edit mode after successful save
 	};
 
 	const handleDrillsReorder = (newOrder) => setDrills(newOrder);
+
+	const handleCopyPractice = () => {
+		// Show date picker for the new practice date
+		setShowCopyDatePicker(true);
+	};
+
+	const handleCopyPracticeWithDate = async (selectedDate) => {
+		try {
+			setShowCopyDatePicker(false);
+			
+			// Create a new practice with the same data but the selected date
+			const newPractice = {
+				title: `${practice.title} (Copy)`,
+				startTime: toLocalISOString(selectedDate),
+				practiceDuration: practice.practiceDuration || 60,
+				notes: practice.notes || "",
+				drills: practice.drills || [],
+				teamId: practice.teamId,
+			};
+
+			// Use the practices context to add the new practice
+			const newPracticeData = await addPractice(newPractice);
+
+			Alert.alert(
+				"Practice Copied!", 
+				`Practice has been copied successfully and scheduled for ${selectedDate.toLocaleDateString()} at ${selectedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}.`
+			);
+		} catch (error) {
+			console.error("Error copying practice:", error);
+			Alert.alert("Error", "Failed to copy practice.");
+		}
+	};
 	const handleNotesChange = (text) => setNotes(text);
 
 
@@ -429,6 +499,33 @@ export default function PracticeDetails({ route }) {
 								}}
 							/>
 
+							{/* Copy Practice Date Picker */}
+							<DateTimePickerModal
+								isVisible={showCopyDatePicker}
+								mode="datetime"
+								onConfirm={handleCopyPracticeWithDate}
+								onCancel={() => setShowCopyDatePicker(false)}
+								date={new Date()}
+								textColor={theme.colors.white}
+								themeVariant="dark"
+								display="spinner"
+								modalStyleIOS={{
+									backgroundColor: theme.colors.surface,
+									height: '35%',
+									alignSelf: 'center',
+									marginTop: '150%',
+									borderRadius: 12,
+								}}
+								buttonTextColorIOS={theme.colors.white}
+								confirmTextIOS="Copy Practice"
+								cancelTextIOS="Cancel"
+								customCancelButtonIOS={CustomCancelButton}
+								customConfirmButtonIOS={CustomConfirmButton}
+								pickerContainerStyleIOS={{
+									backgroundColor: theme.colors.surface,
+								}}
+							/>
+
 							<Text style={styles.label}>Duration (minutes)</Text>
 							{isEditing ? (
 								<View style={styles.durationInputWrapper}>
@@ -584,24 +681,31 @@ export default function PracticeDetails({ route }) {
 							</TouchableOpacity>
 						</>
 					) : (
-						// Read-only mode: Edit, Share, and Delete buttons
+						// Read-only mode: Edit, Share, Copy, and Delete buttons
 						<View style={styles.buttonRow}>
 							<TouchableOpacity
-								style={[styles.editButton, styles.thirdWidthButton]}
+								style={[styles.editButton, styles.quarterWidthButton]}
 								onPress={startEditing}
 								activeOpacity={0.8}
 							>
 								<Text style={styles.editButtonText}>Edit</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								style={[styles.shareButton, styles.thirdWidthButton]}
+								style={[styles.shareButton, styles.quarterWidthButton]}
 								onPress={handleSharePDF}
 								activeOpacity={0.8}
 							>
 								<Text style={styles.shareButtonText}>Share</Text>
 							</TouchableOpacity>
 							<TouchableOpacity
-								style={[styles.deleteButton, styles.thirdWidthButton]}
+								style={[styles.copyButton, styles.quarterWidthButton]}
+								onPress={handleCopyPractice}
+								activeOpacity={0.8}
+							>
+								<Text style={styles.copyButtonText}>Copy</Text>
+							</TouchableOpacity>
+							<TouchableOpacity
+								style={[styles.deleteButton, styles.quarterWidthButton]}
 								onPress={confirmDelete}
 								activeOpacity={0.8}
 							>
@@ -895,6 +999,11 @@ const styles = StyleSheet.create({
 		marginBottom: 0,
 		marginTop: 0,
 	},
+	quarterWidthButton: {
+		flex: 1,
+		marginBottom: 0,
+		marginTop: 0,
+	},
 	shareButton: {
 		backgroundColor: theme.colors.secondary,
 		paddingVertical: 16,
@@ -908,6 +1017,23 @@ const styles = StyleSheet.create({
 		elevation: 5,
 	},
 	shareButtonText: { 
+		color: theme.colors.white, 
+		fontWeight: "700", 
+		fontSize: 18 
+	},
+	copyButton: {
+		backgroundColor: "#FFA500",
+		paddingVertical: 16,
+		borderRadius: 12,
+		alignItems: "center",
+		marginBottom: 0,
+		shadowColor: "#FFA500",
+		shadowOffset: { width: 0, height: 5 },
+		shadowOpacity: 0.4,
+		shadowRadius: 6,
+		elevation: 5,
+	},
+	copyButtonText: { 
 		color: theme.colors.white, 
 		fontWeight: "700", 
 		fontSize: 18 

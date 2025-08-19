@@ -64,6 +64,7 @@ const CreatePractice = () => {
 	const [endDate, setEndDate] = useState<Date | null>(null);
 	const [selectedDrills, setSelectedDrills] = useState<string[]>([]);
 	const [drillDurations, setDrillDurations] = useState<{ [key: string]: number }>({});
+	const [hasManuallyEditedDurations, setHasManuallyEditedDurations] = useState(false);
 	const [notes, setNotes] = useState("");
 	const [title, setTitle] = useState("Team Practice");
 	const { clipboardDrills, refreshClipboard } = useClipboard();
@@ -258,8 +259,8 @@ const CreatePractice = () => {
 		setStartDate(start);
 		setEndDate(end);
 		
-		// Auto-calculate drill durations when dates change
-		if (start && end && selectedDrills.length > 0) {
+		// Auto-calculate drill durations when dates change (only if user hasn't manually edited)
+		if (start && end && selectedDrills.length > 0 && !hasManuallyEditedDurations) {
 			const totalDuration = Math.round((end.getTime() - start.getTime()) / (1000 * 60));
 			const durationPerDrill = Math.floor(totalDuration / selectedDrills.length);
 			const remainder = totalDuration % selectedDrills.length;
@@ -301,13 +302,8 @@ const CreatePractice = () => {
 		// Convert drillDurations object to array format for database storage
 		const drillDurationArray: number[] = [];
 		selectedDrills.forEach(drillName => {
-			// Find the duration for this drill, prioritizing non-zero values
-			let drillDuration = 0;
-			Object.entries(drillDurations).forEach(([key, value]) => {
-				if (key === drillName && value > 0) {
-					drillDuration = value;
-				}
-			});
+			// Get the duration for this drill from the drillDurations object
+			const drillDuration = drillDurations[drillName] || 0;
 			drillDurationArray.push(drillDuration);
 		});
 
@@ -354,6 +350,7 @@ const CreatePractice = () => {
 		const newDrillDurations = { ...drillDurations };
 		delete newDrillDurations[drillToRemove];
 		setDrillDurations(newDrillDurations);
+		setHasManuallyEditedDurations(false); // Reset flag when drills change
 	};
 
 	const updateDrillDuration = (drillName: string, duration: number) => {
@@ -361,6 +358,7 @@ const CreatePractice = () => {
 			...prev,
 			[drillName]: duration
 		}));
+		setHasManuallyEditedDurations(true);
 	};
 
 	const getTotalDrillDuration = () => {
@@ -537,7 +535,10 @@ const CreatePractice = () => {
 															<TextInput
 																style={styles.drillDurationInput}
 																value={drillDurations[drill]?.toString() || ""}
-																onChangeText={(text) => updateDrillDuration(drill, parseInt(text) || 0)}
+																onChangeText={(text) => {
+									const value = text === "" ? 0 : parseInt(text) || 0;
+									updateDrillDuration(drill, value);
+								}}
 																keyboardType="numeric"
 																placeholder="0"
 																placeholderTextColor={theme.colors.textMuted}
@@ -706,6 +707,7 @@ const CreatePractice = () => {
 																								} else {
 																									setSelectedDrills((prev) => [...prev, drill.name]);
 																								}
+																								setHasManuallyEditedDurations(false); // Reset flag when drills change
 																							}}
 																						>
 																							<Text

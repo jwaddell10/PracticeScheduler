@@ -18,7 +18,8 @@ interface PracticesContextType {
 	loading: boolean;
 	error: string | null;
 	fetchPractices: () => Promise<void>;
-	addPractice: (practice: Omit<Practice, 'id'>) => Promise<void>;
+	addPractice: (practice: Omit<Practice, 'id'>) => Promise<Practice | null>;
+	updatePractice: (id: string, updates: Partial<Practice>) => Promise<void>;
 	deletePractice: (id: string) => Promise<void>;
 	refreshPractices: () => Promise<void>;
 }
@@ -79,9 +80,36 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 			// Add the new practice to the local state
 			if (data && data.length > 0) {
 				setPractices(prev => [...prev, data[0]]);
+				return data[0]; // Return the created practice
 			}
+			return null;
 		} catch (err) {
 			console.error("Error adding practice:", err);
+			throw err;
+		}
+	};
+
+	const updatePractice = async (id: string, updates: Partial<Practice>) => {
+		try {
+			const { data, error: supabaseError } = await supabase
+				.from("Practice")
+				.update(updates)
+				.eq("id", id)
+				.select();
+
+			if (supabaseError) {
+				console.error("Error updating practice:", supabaseError);
+				throw new Error(supabaseError.message);
+			}
+
+			// Update the practice in local state
+			if (data && data.length > 0) {
+				setPractices(prev => prev.map(practice => 
+					practice.id === id ? { ...practice, ...data[0] } : practice
+				));
+			}
+		} catch (err) {
+			console.error("Error updating practice:", err);
 			throw err;
 		}
 	};
@@ -124,6 +152,7 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		error,
 		fetchPractices,
 		addPractice,
+		updatePractice,
 		deletePractice,
 		refreshPractices,
 	};

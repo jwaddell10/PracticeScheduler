@@ -46,10 +46,8 @@ const PracticeDateTimePicker = ({ initialDate, onDatesChange }: Props) => {
 	};
 
 	const onChangeDuration = (text: string) => {
-		const newDuration = parseInt(text) || 0;
-		if (newDuration > 0) {
-			setDuration(newDuration);
-		}
+		const newDuration = text === "" ? 0 : parseInt(text) || 0;
+		setDuration(newDuration);
 	};
 
 	return (

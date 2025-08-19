@@ -4,11 +4,11 @@ import "dotenv/config";
 export default () => ({
 	expo: {
 		scheme: "com.supabase",
-		name: "PracticeScheduler",
+		name: "PracticePro Volleyball",
 		slug: "PracticeScheduler",
 		version: "1.0.0",
 		orientation: "portrait",
-		icon: "./assets/volleyball.png",
+		icon: "./assets/logo.png",
 		userInterfaceStyle: "light",
 		newArchEnabled: true,
 		splash: {
