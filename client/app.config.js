@@ -4,7 +4,7 @@ import "dotenv/config";
 export default () => ({
 	expo: {
 		name: "PracticePro Volleyball",
-		slug: "PracticePro Volleyball",
+		slug: "PracticeScheduler",
 		version: "1.0.0",
 		orientation: "portrait",
 		icon: "./assets/logo.png",
