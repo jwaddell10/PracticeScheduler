@@ -3,11 +3,12 @@ import "dotenv/config";
 
 export default () => ({
 	expo: {
+		scheme: "practicepro",
 		name: "PracticePro Volleyball",
 		slug: "PracticeScheduler",
 		version: "1.0.0",
 		orientation: "portrait",
-		icon: "./assets/logo.png",
+		icon: "./assets/PracticeProLogo.png",
 		userInterfaceStyle: "light",
 		newArchEnabled: true,
 		splash: {
@@ -18,6 +19,7 @@ export default () => ({
 		ios: {
 			supportsTablet: true,
 			bundleIdentifier: "com.jwaddell10.PracticeScheduler",
+			associatedDomains: ["applinks:practiceprovolleyball.com"],
 			infoPlist: {
 				NSPhotoLibraryUsageDescription:
 					"We need access to your photo library so you can upload an image for your drill.",
