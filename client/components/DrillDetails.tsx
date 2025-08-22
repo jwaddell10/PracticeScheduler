@@ -37,7 +37,6 @@ export default function DrillDetails({ route }: { route: any }) {
 	const { deleteDrill, publicDrills, userDrills } = useDrills();
 	const session = useSession();
 	
-	console.log(currentDrill, 'drill in drill details')
 	const [imageLoading, setImageLoading] = useState(true);
 	const [imageError, setImageError] = useState(false);
 	const [modalVisible, setModalVisible] = useState(false);
@@ -57,8 +56,6 @@ export default function DrillDetails({ route }: { route: any }) {
 
 		return unsubscribe;
 	}, [navigation, currentDrill.id, publicDrills, userDrills]);
-
-	// console.log(currentDrill, "drill");
 
 	// Helper function to capitalize first letter
 	const capitalize = (str) => {

@@ -18,7 +18,6 @@ export const useFavorites = () => {
 				error: userError,
 			} = await supabase.auth.getUser();
 			if (userError || !user) {
-				console.log("No user authenticated");
 				setFavoriteDrills([]);
 				setFavoriteDrillIds(new Set());
 				return;

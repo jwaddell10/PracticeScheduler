@@ -22,7 +22,6 @@ export default function App() {
 
 		// Handle deep links for email confirmation
 		const handleDeepLink = (url: string) => {
-			console.log('Deep link received:', url);
 			
 			// Check if this is an auth callback
 			if (url.includes('auth/callback')) {

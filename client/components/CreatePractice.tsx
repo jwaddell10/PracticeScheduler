@@ -126,16 +126,6 @@ const CreatePractice = () => {
 		}
 	}, [clipboardDrills, startDate, endDate]);
 
-	// Monitor modal state changes
-	useEffect(() => {
-		console.log('questionModalVisible changed to:', questionModalVisible);
-	}, [questionModalVisible]);
-
-	// Monitor filter modal state changes
-	useEffect(() => {
-		console.log('showFilters changed to:', showFilters);
-	}, [showFilters]);
-
 	// Update local state when hook data changes
 	useEffect(() => {
 		let currentDrills: any[] = [];
@@ -388,13 +378,9 @@ const CreatePractice = () => {
 
 	// Handle drill details open from drill selection modal
 	const handleDrillDetailsOpen = (drill: DrillData) => {
-		console.log('Opening drill details for:', drill.name);
-		console.log('Drill data:', drill);
 		setSelectedDrillForDetails(drill);
 		setDrillSelectionModalVisible(false); // Close drill selection modal first
 		setQuestionModalVisible(true);
-		console.log('Modal should be visible now');
-		console.log('questionModalVisible state:', questionModalVisible);
 	};
 
 	// Helper function to capitalize first letter
@@ -645,7 +631,6 @@ const CreatePractice = () => {
 															)}
 															<TouchableOpacity
 																onPress={() => {
-																	console.log('Filter button pressed, setting showFilters to true');
 																	setDrillSelectionModalVisible(false); // Close drill selection modal first
 																	setShowFilters(true);
 																}}
@@ -722,7 +707,6 @@ const CreatePractice = () => {
 																						<TouchableOpacity
 																							style={styles.questionIcon}
 																							onPress={() => {
-																								console.log('Question icon clicked for drill:', drill.name);
 																								handleDrillDetailsOpen(drill);
 																							}}
 																						>
@@ -760,7 +744,6 @@ const CreatePractice = () => {
 											transparent={true}
 											onRequestClose={handleQuestionModalClose}
 										>
-											{console.log('Modal rendering, visible:', questionModalVisible)}
 											<View style={styles.modalBackdrop}>
 												<View style={styles.modalContent}>
 													<Text style={styles.modalTitle}>
