@@ -14,6 +14,15 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 		persistSession: true,
 		detectSessionInUrl: false,
 		flowType: 'pkce',
-		emailRedirectTo: 'com.supabase://auth/callback',
+		emailRedirectTo: 'practicepro://auth/callback',
+	},
+	global: {
+		headers: {
+			'X-Client-Info': 'practicepro-mobile',
+		},
+	},
+	// Shorter timeout for realtime
+	realTime: {
+		timeout: 5000, // 5 seconds
 	},
 });

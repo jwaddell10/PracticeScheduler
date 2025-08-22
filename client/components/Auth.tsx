@@ -19,55 +19,122 @@ import * as Linking from "expo-linking";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
 
-WebBrowser.maybeCompleteAuthSession(); // required for web only
+// WebBrowser.maybeCompleteAuthSession(); // required for web only
 
-// Use the proper deep link scheme for mobile apps
-const redirectTo = makeRedirectUri();
-
-// Debug: Log the redirect URI
-console.log("Generated redirect URI:", { redirectTo });
-
-Linking.addEventListener("url", (event) => {
-	console.log("Incoming URL:", event.url);
-	// parse token from URL and complete sign-in
-});
-
+// Use explicit redirect URI instead of makeRedirectUri() to avoid malformed URLs
+const redirectTo = 'practicepro://auth/callback';
+console.log("Using redirect URI:", redirectTo);
 const createSessionFromUrl = async (url: string) => {
-	console.log("Creating session from URL:", url);
-
-
-	const { params, errorCode } = QueryParams.getQueryParams(url);
-	console.log("URL params:", params);
-	console.log("Error code:", errorCode);
-
-	if (errorCode) throw new Error(errorCode);
-	const { access_token, refresh_token } = params;
-
-	if (!access_token) {
-		console.log("No access token found in URL");
-		return;
+	try {
+		console.log("Creating session from URL:", url);
+		const { params, errorCode } = QueryParams.getQueryParams(url);
+		if (errorCode) {
+			console.error("Query params error:", errorCode);
+			throw new Error(errorCode);
+		}
+		const { access_token, refresh_token } = params;
+		if (!access_token) {
+			console.log("No access token found in URL");
+			return;
+		}
+		console.log("Found access token, setting session...");
+		const { data, error } = await supabase.auth.setSession({
+			access_token,
+			refresh_token,
+		});
+		if (error) {
+			console.error("Session error:", error);
+			throw error;
+		}
+		console.log("Session created successfully");
+		return data.session;
+	} catch (error) {
+		console.error("Error creating session from URL:", error);
+		throw error;
 	}
-
-	const { data, error } = await supabase.auth.setSession({
-		access_token,
-		refresh_token,
+};
+const performOAuth = async () => {
+	const { data, error } = await supabase.auth.signInWithOAuth({
+		provider: "github",
+		options: {
+			redirectTo,
+			skipBrowserRedirect: true,
+		},
 	});
 	if (error) throw error;
-	console.log("Session created successfully");
-	return data.session;
-};
-
-// Tells Supabase Auth to continuously refresh the session automatically if
-// the app is in the foreground. When this is added, you will continue to receive
-// `onAuthStateChange` events with the `TOKEN_REFRESHED` or `SIGNED_OUT` event
-// if the user's session is terminated. This should only be registered once.
-AppState.addEventListener("change", (state) => {
-	if (state === "active") {
-		supabase.auth.startAutoRefresh();
-	} else {
-		supabase.auth.stopAutoRefresh();
+	const res = await WebBrowser.openAuthSessionAsync(
+		data?.url ?? "",
+		redirectTo
+	);
+	if (res.type === "success") {
+		const { url } = res;
+		await createSessionFromUrl(url);
 	}
-});
+};
+const sendMagicLink = async (email: string) => {
+	let retryCount = 0;
+	const maxRetries = 3;
+
+	while (retryCount < maxRetries) {
+		try {
+			console.log(`Sending magic link to: ${email} (attempt ${retryCount + 1}/${maxRetries})`);
+			const { error } = await supabase.auth.signInWithOtp({
+				email: email,
+				options: {
+					emailRedirectTo: redirectTo,
+				},
+			});
+			
+			if (error) {
+				console.error("Magic link error:", error);
+				
+				// Check if it's a 504 error (Gateway Timeout)
+				if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
+					retryCount++;
+					if (retryCount < maxRetries) {
+						console.log(`504 error detected, retrying in ${retryCount * 2} seconds...`);
+						await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+						continue;
+					} else {
+						Alert.alert(
+							"Magic Link Failed", 
+							"Server is temporarily unavailable. Please try again in a few minutes."
+						);
+					}
+				} else if (error.message.includes('Error sending confirmation email') || error.message.includes('Error sending magic link')) {
+					// Email service error - don't retry, show helpful message
+					Alert.alert(
+						"Email Service Issue", 
+						"Unable to send magic link. This might be due to:\n\n• Email service temporarily unavailable\n• Rate limiting\n• Invalid email address\n\nPlease try again later or use a different email address."
+					);
+				} else {
+					Alert.alert("Magic Link Error", error.message);
+				}
+				break;
+			} else {
+				console.log("Magic link sent successfully");
+				Alert.alert(
+					"Magic Link Sent!", 
+					"Check your email and click the link to sign in. The link will open your app automatically."
+				);
+				break;
+			}
+		} catch (error) {
+			console.error("Magic link exception:", error);
+			retryCount++;
+			
+			if (retryCount < maxRetries) {
+				console.log(`Exception occurred, retrying in ${retryCount * 2} seconds...`);
+				await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+			} else {
+				Alert.alert(
+					"Magic Link Failed", 
+					error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+				);
+			}
+		}
+	}
+};
 
 export default function Auth() {
 	const [email, setEmail] = useState("");
@@ -78,61 +145,157 @@ export default function Auth() {
 	const url = Linking.useURL();
 	console.log("Deep link URL received:", url);
 
-	useEffect(() => {
-		if (url) {
-			console.log("Processing deep link URL:", url);
-			createSessionFromUrl(url).catch(console.error);
-		}
-	}, [url]);
+	// Only process URLs that contain auth parameters and are properly formatted
+	if (url && url.includes('access_token') && !url.endsWith(':///')) {
+		console.log("✅ Processing auth URL:", url);
+		createSessionFromUrl(url);
+	} else if (url && url.endsWith(':///')) {
+		console.log("⚠️  Ignoring malformed deep link (empty path):", url);
+		console.log("   This usually happens when testing with 'practicepro://'");
+		console.log("   Use a proper auth callback URL for testing");
+	} else if (url) {
+		console.log("ℹ️  Received non-auth deep link:", url);
+	}
 
 	async function signInWithEmail() {
-		setLoading(true);
-		const { error } = await supabase.auth.signInWithPassword({
-			email: email,
-			password: password,
-		});
+		if (!email || !password) {
+			Alert.alert("Error", "Please enter both email and password");
+			return;
+		}
 
-		if (error) Alert.alert(error.message);
+		setLoading(true);
+		let retryCount = 0;
+		const maxRetries = 3;
+
+		while (retryCount < maxRetries) {
+			try {
+				console.log(`Signing in... (attempt ${retryCount + 1}/${maxRetries})`);
+				const { error } = await supabase.auth.signInWithPassword({
+					email: email,
+					password: password,
+				});
+
+				if (error) {
+					console.error("Sign in error:", error);
+					
+					// Check if it's a 504 error (Gateway Timeout)
+					if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
+						retryCount++;
+						if (retryCount < maxRetries) {
+							console.log(`504 error detected, retrying in ${retryCount * 2} seconds...`);
+							await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+							continue;
+						} else {
+							Alert.alert(
+								"Sign In Failed", 
+								"Server is temporarily unavailable. Please try again in a few minutes."
+							);
+						}
+					} else {
+						Alert.alert("Sign In Error", error.message);
+					}
+					break;
+				} else {
+					console.log("Sign in successful");
+					Alert.alert("Success", "Signed in successfully!");
+					break;
+				}
+			} catch (error) {
+				console.error("Sign in exception:", error);
+				retryCount++;
+				
+				if (retryCount < maxRetries) {
+					console.log(`Exception occurred, retrying in ${retryCount * 2} seconds...`);
+					await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+				} else {
+					Alert.alert("Sign In Failed", error instanceof Error ? error.message : "An unexpected error occurred");
+				}
+			}
+		}
+		
 		setLoading(false);
 	}
 
 	async function signUpWithEmail() {
-		setLoading(true);
-		const {
-			data: { session },
-			error,
-		} = await supabase.auth.signUp({
-			email: email,
-			password: password,
-			options: {
-				emailRedirectTo: redirectTo,
-			},
-		});
+		if (!email || !password) {
+			Alert.alert("Error", "Please enter both email and password");
+			return;
+		}
 
-		if (error) Alert.alert(error.message);
-		if (!session)
-			Alert.alert("Please check your inbox for email verification!");
+		setLoading(true);
+		let retryCount = 0;
+		const maxRetries = 3;
+
+		while (retryCount < maxRetries) {
+			try {
+				console.log(`Starting signup process for: ${email} (attempt ${retryCount + 1}/${maxRetries})`);
+				const {
+					data: { session },
+					error,
+				} = await supabase.auth.signUp({
+					email: email,
+					password: password,
+					options: {
+						emailRedirectTo: redirectTo,
+					},
+				});
+
+				if (error) {
+					console.error("Signup error:", error);
+					
+					// Check if it's a 504 error (Gateway Timeout)
+					if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
+						retryCount++;
+						if (retryCount < maxRetries) {
+							console.log(`504 error detected, retrying in ${retryCount * 2} seconds...`);
+							await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+							continue;
+						} else {
+							Alert.alert(
+								"Signup Failed", 
+								"Server is temporarily unavailable. Please try again in a few minutes."
+							);
+						}
+					} else if (error.message.includes('Error sending confirmation email')) {
+						// Email service error - don't retry, show helpful message
+						Alert.alert(
+							"Email Service Issue", 
+							"Unable to send confirmation email. This might be due to:\n\n• Email service temporarily unavailable\n• Rate limiting\n• Invalid email address\n\nPlease try again later or use a different email address."
+						);
+					} else {
+						Alert.alert("Signup Error", error.message);
+					}
+					break;
+				} else if (!session) {
+					console.log("Signup successful, email verification required");
+					Alert.alert(
+						"Account Created!", 
+						"Please check your inbox for email verification. Click the link in your email to complete signup."
+					);
+					break;
+				} else {
+					console.log("Signup successful with session");
+					Alert.alert("Welcome!", "Account created and signed in successfully!");
+					break;
+				}
+			} catch (error) {
+				console.error("Signup exception:", error);
+				retryCount++;
+				
+				if (retryCount < maxRetries) {
+					console.log(`Exception occurred, retrying in ${retryCount * 2} seconds...`);
+					await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
+				} else {
+					Alert.alert(
+						"Signup Failed", 
+						error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+					);
+				}
+			}
+		}
+		
 		setLoading(false);
 	}
-
-	const sendMagicLink = async () => {
-		setLoading(true);
-		const { error } = await supabase.auth.signInWithOtp({
-			email: email,
-			options: {
-				emailRedirectTo: redirectTo,
-			},
-		});
-
-		if (error) {
-			Alert.alert(error.message);
-		} else {
-			Alert.alert(
-				"Magic link sent! Check your email and click the link directly in your browser."
-			);
-		}
-		setLoading(false);
-	};
 
 	return (
 		<KeyboardAvoidingView
@@ -210,7 +373,9 @@ export default function Auth() {
 						onPress={signInWithEmail}
 						disabled={loading}
 					>
-						<Text style={styles.buttonText}>Sign In</Text>
+						<Text style={styles.buttonText}>
+							{loading ? "Signing In..." : "Sign In"}
+						</Text>
 					</TouchableOpacity>
 
 					<TouchableOpacity
@@ -218,34 +383,70 @@ export default function Auth() {
 						onPress={signUpWithEmail}
 						disabled={loading}
 					>
-						<Text style={styles.buttonText}>Sign Up</Text>
+						<Text style={styles.buttonText}>
+							{loading ? "Creating Account..." : "Sign Up"}
+						</Text>
 					</TouchableOpacity>
 
 					<TouchableOpacity
 						style={[styles.button, styles.magicLinkButton]}
-						onPress={sendMagicLink}
+						onPress={async () => {
+							if (!email) {
+								Alert.alert("Error", "Please enter your email address");
+								return;
+							}
+							setLoading(true);
+							await sendMagicLink(email);
+							setLoading(false);
+						}}
 						disabled={loading}
 					>
-						<Text style={styles.buttonText}>Send Magic Link</Text>
+						<Text style={styles.buttonText}>
+							{loading ? "Sending..." : "Send Magic Link"}
+						</Text>
 					</TouchableOpacity>
 
 					<TouchableOpacity
 						style={[styles.button, styles.testButton]}
 						onPress={() => {
 							const testUrl =
-								"com.supabase://auth/callback?access_token=test&refresh_token=test";
-							console.log("Testing deep link:", testUrl);
+								"practicepro://auth/callback?access_token=test_token&refresh_token=test_refresh&type=recovery";
+							console.log("🧪 Testing proper auth deep link:", testUrl);
 							createSessionFromUrl(testUrl).catch(console.error);
 						}}
 					>
-						<Text style={styles.buttonText}>Test Deep Link</Text>
+						<Text style={styles.buttonText}>Test Auth Deep Link</Text>
+					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={[styles.button, styles.testButton]}
+						onPress={() => {
+							const testUrl = "practicepro://";
+							console.log("🧪 Testing malformed deep link:", testUrl);
+							// This should be ignored by our logic
+						}}
+					>
+						<Text style={styles.buttonText}>Test Malformed Deep Link</Text>
+					</TouchableOpacity>
+
+					<TouchableOpacity
+						style={[styles.button, styles.testButton]}
+						onPress={async () => {
+							if (!email) {
+								Alert.alert("Error", "Please enter an email address first");
+								return;
+							}
+							console.log("🧪 Testing email configuration with:", email);
+							await sendMagicLink(email);
+						}}
+					>
+						<Text style={styles.buttonText}>Test Email Config</Text>
 					</TouchableOpacity>
 				</View>
 			</ScrollView>
 		</KeyboardAvoidingView>
 	);
 }
-
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,

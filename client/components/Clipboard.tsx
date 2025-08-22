@@ -218,7 +218,7 @@ const styles = StyleSheet.create({
 	},
 	scrollView: {
 		paddingHorizontal: 20,
-		paddingBottom: 20,
+		paddingBottom: 150,
 	},
 	drillItem: {
 		flexDirection: "row",
