@@ -22,8 +22,10 @@ import { MaterialIcons } from "@expo/vector-icons";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import theme from "./styles/theme";
+import { useSession } from "../context/SessionContext";
 import { usePractices } from "../context/PracticesContext";
 import { useUserRole } from "../context/UserRoleContext";
+import { useDrills } from "../context/DrillsContext";
 
 // Custom Cancel Button Component
 const CustomCancelButton = ({ onPress }) => (
@@ -76,6 +78,8 @@ export default function PracticeDetails({ route }) {
 	const { practiceId } = route.params;
 	const { addPractice, updatePractice, deletePractice: deletePracticeFromContext } = usePractices();
 	const { role } = useUserRole();
+	const { publicDrills, userDrills } = useDrills();
+	const session = useSession();
 	const [practice, setPractice] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
@@ -592,6 +596,16 @@ export default function PracticeDetails({ route }) {
 							) : (
 								<View style={styles.readOnlyDrillsContainer}>
 									{drills.map((drill, index) => {
+										// Check if user has access to this drill
+										const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
+										const allDrills = [...(publicDrills || []), ...(userDrills || [])];
+										const drillObject = allDrills.find(d => d.name === drill);
+										
+										// If user is free and drill is not in their user drills, hide it
+										if (!hasPremiumAccess && drillObject && drillObject.isPublic && session?.user?.id && drillObject.user_id !== session.user.id) {
+											return null;
+										}
+										
 										// Find the duration using the same logic as the save function
 										let drillDuration = 0;
 										for (const [key, value] of Object.entries(drillDurations)) {
@@ -610,10 +624,22 @@ export default function PracticeDetails({ route }) {
 										}
 										
 										return (
-											<View key={`${drill}-${index}`} style={styles.readOnlyDrillItem}>
+											<TouchableOpacity
+												key={`${drill}-${index}`}
+												style={styles.readOnlyDrillItem}
+												onPress={() => {
+													// Find the drill object from available drills
+													if (drillObject) {
+														navigation.navigate('Drill Details', { drill: drillObject });
+													} else {
+														Alert.alert("Drill Not Found", "This drill is not available in the drill library.");
+													}
+												}}
+												activeOpacity={0.7}
+											>
 												<Text style={styles.readOnlyDrillText}>{drill}</Text>
 												<Text style={styles.readOnlyDrillDuration}>{drillDuration} min</Text>
-											</View>
+											</TouchableOpacity>
 										);
 									})}
 								</View>
