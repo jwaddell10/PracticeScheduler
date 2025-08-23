@@ -9,15 +9,19 @@ type RootStackParamList = {
 	Premium: undefined;
 };
 
-export default function UpgradeToPremiumBanner() {
+interface UpgradeToPremiumBannerProps {
+	role?: string | null;
+}
+
+export default function UpgradeToPremiumBanner({ role }: UpgradeToPremiumBannerProps) {
+	// Hide banner for premium and admin users
+	if (role === "Premium" || role === "premium" || role === "admin") {
+		return null;
+	}
 	const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
 	const handleUpgrade = () => {
-		Alert.alert(
-			"Coming Soon!",
-			"Premium features are currently in development. Stay tuned for updates!",
-			[{ text: "OK", style: "default" }]
-		);
+		navigation.navigate("Premium");
 	};
 
 	return (
@@ -60,6 +64,7 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 2,
+		width: "100%",
 	},
 	topRow: {
 		flexDirection: "row",

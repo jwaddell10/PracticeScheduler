@@ -97,6 +97,7 @@ function DrillStackScreen() {
 			<DrillStack.Screen name="Drills" component={Drills} />
 			<DrillStack.Screen name="Drill Details" component={DrillDetails} />
 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} />
+			<DrillStack.Screen name="Premium" component={PremiumScreen} />
 		</DrillStack.Navigator>
 	);
 }
@@ -122,6 +123,7 @@ function FavoriteDrillsStackScreen() {
 				name="CreateDrill"
 				component={CreateDrill}
 			/>
+			<FavoriteDrillsStack.Screen name="Premium" component={PremiumScreen} />
 		</FavoriteDrillsStack.Navigator>
 	);
 }
@@ -137,6 +139,21 @@ function ClipboardStackScreen() {
 		>
 			<ClipboardStack.Screen name="Clipboard" component={Clipboard} />
 		</ClipboardStack.Navigator>
+	);
+}
+
+const AccountStack = createNativeStackNavigator();
+function AccountStackScreen({ session }: { session: any }) {
+	return (
+		<AccountStack.Navigator
+			screenOptions={{
+				headerStyle: { backgroundColor: theme.colors.surface },
+				headerTintColor: theme.colors.textPrimary,
+			}}
+		>
+			<AccountStack.Screen name="Account" component={() => <Account session={session} />} />
+			<AccountStack.Screen name="Premium" component={PremiumScreen} />
+		</AccountStack.Navigator>
 	);
 }
 
@@ -218,7 +235,7 @@ export default function Navigation() {
 							/>
 							<Tab.Screen
 								name="AccountTab"
-								children={() => <Account session={session} />}
+								children={() => <AccountStackScreen session={session} />}
 								options={{ title: "Profile" }}
 							/>
 						</>

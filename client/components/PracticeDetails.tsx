@@ -23,6 +23,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import theme from "./styles/theme";
 import { usePractices } from "../context/PracticesContext";
+import { useUserRole } from "../context/UserRoleContext";
 
 // Custom Cancel Button Component
 const CustomCancelButton = ({ onPress }) => (
@@ -74,6 +75,7 @@ export default function PracticeDetails({ route }) {
 	const navigation = useNavigation();
 	const { practiceId } = route.params;
 	const { addPractice, updatePractice, deletePractice: deletePracticeFromContext } = usePractices();
+	const { role } = useUserRole();
 	const [practice, setPractice] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);

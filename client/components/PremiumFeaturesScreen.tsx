@@ -31,6 +31,16 @@ export default function PremiumScreen() {
 			icon: "photo-library"
 		},
 		{
+			title: "Share and Print Practices",
+			description: "Export and share your practice schedules",
+			icon: "print"
+		},
+		{
+			title: "Save Favorite Drills",
+			description: "Build your personal drill collection",
+			icon: "favorite"
+		},
+		{
 			title: "Priority Support",
 			description: "Get help when you need it most",
 			icon: "support-agent"
@@ -74,8 +84,8 @@ export default function PremiumScreen() {
 				style={styles.upgradeButton}
 				onPress={() => {
 					Alert.alert(
-						"Coming Soon!",
-						"Premium features are currently in development. Stay tuned for updates!",
+						"Premium Features",
+						"Upgrade to Premium to unlock:\n\n• Access to the complete Drill Library\n• Upload images to your drills\n• Share and print practices\n• Save favorite drills\n\nPremium features are currently in development. Stay tuned for updates!",
 						[{ text: "OK", style: "default" }]
 					);
 				}}

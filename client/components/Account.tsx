@@ -86,7 +86,7 @@ export default function Account({ session }: { session: Session | null }) {
 			</View>
 
 			{/* Show Upgrade Banner for non-premium users */}
-			{!roleLoading && role !== "Premium" && role !== "premium" && <UpgradeToPremiumBanner />}
+			{!roleLoading && <UpgradeToPremiumBanner role={role} />}
 
 			<View style={styles.section}>
 				<Text style={styles.sectionTitle}>Profile Information</Text>
@@ -138,13 +138,13 @@ const styles = StyleSheet.create({
 	header: {
 		alignItems: 'center',
 		marginBottom: 32,
-		paddingTop: 60,
+		paddingTop: 20,
 	},
 	headerTitle: {
 		fontSize: 28,
 		fontWeight: '700',
 		color: theme.colors.textPrimary,
-		marginTop: 16,
+		marginTop: 8,
 		marginBottom: 8,
 	},
 	headerSubtitle: {

@@ -94,6 +94,24 @@ export default function Drills() {
 		);
 	}
 
+	// Check if user has premium access
+	const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
+
+	// Show premium required message for non-premium users
+	if (!hasPremiumAccess) {
+		return (
+			<SafeAreaProvider>
+				<SafeAreaView style={styles.safeArea}>
+					<View style={styles.container}>
+						<View style={styles.centeredContainer}>
+							<UpgradeToPremiumBanner role={role} />
+						</View>
+					</View>
+				</SafeAreaView>
+			</SafeAreaProvider>
+		);
+	}
+
 	const toggleFilter = (filterType, value) => {
 		setSelectedFilters((prev) => {
 			const currentFilters = prev[filterType];
@@ -718,5 +736,11 @@ const styles = StyleSheet.create({
 		height: 8,
 		borderRadius: 4,
 		backgroundColor: theme.colors.error,
+	},
+	centeredContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 20,
 	},
 });

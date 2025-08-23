@@ -49,6 +49,12 @@ export default function YourDrills() {
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeTab, setActiveTab] = useState("myDrills"); // "myDrills" or "favorites"
+	
+	// Ensure non-premium users can't access favorites tab
+	const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
+	if (activeTab === "favorites" && !hasPremiumAccess) {
+		setActiveTab("myDrills");
+	}
 
 
 	const {
@@ -116,6 +122,13 @@ export default function YourDrills() {
 			}
 		} else if (activeTab === "favorites") {
 			// Show only favorited drills from drill library (for premium/admin users)
+			// Check if user has premium access
+			const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
+			if (!hasPremiumAccess) {
+				// Return empty array for non-premium users
+				return [];
+			}
+			
 			if (favoriteDrills && favoriteDrills.length > 0) {
 				favoriteDrills.forEach((drill) => {
 					if (
@@ -306,36 +319,39 @@ export default function YourDrills() {
 			/>
 
 			{/* Tab Toggle - Show for all users */}
-			<View style={styles.tabContainer}>
-				<TouchableOpacity
-					style={[
-						styles.tabButton,
-						activeTab === "myDrills" && styles.activeTabButton
-					]}
-					onPress={() => setActiveTab("myDrills")}
-				>
-					<Text style={[
-						styles.tabButtonText,
-						activeTab === "myDrills" && styles.activeTabButtonText
-					]}>
-						My Drills
-					</Text>
-				</TouchableOpacity>
-				<TouchableOpacity
-					style={[
-						styles.tabButton,
-						activeTab === "favorites" && styles.activeTabButton
-					]}
-					onPress={() => setActiveTab("favorites")}
-				>
-					<Text style={[
-						styles.tabButtonText,
-						activeTab === "favorites" && styles.activeTabButtonText
-					]}>
-						Favorites
-					</Text>
-				</TouchableOpacity>
-			</View>
+			{/* Only show tab container if user has premium access (for favorites tab) */}
+			{(role === "Premium" || role === "premium" || role === "admin") && (
+				<View style={styles.tabContainer}>
+					<TouchableOpacity
+						style={[
+							styles.tabButton,
+							activeTab === "myDrills" && styles.activeTabButton
+						]}
+						onPress={() => setActiveTab("myDrills")}
+					>
+						<Text style={[
+							styles.tabButtonText,
+							activeTab === "myDrills" && styles.activeTabButtonText
+						]}>
+							My Drills
+						</Text>
+					</TouchableOpacity>
+					<TouchableOpacity
+						style={[
+							styles.tabButton,
+							activeTab === "favorites" && styles.activeTabButton
+						]}
+						onPress={() => setActiveTab("favorites")}
+					>
+						<Text style={[
+							styles.tabButtonText,
+							activeTab === "favorites" && styles.activeTabButtonText
+						]}>
+							Favorites
+						</Text>
+					</TouchableOpacity>
+				</View>
+			)}
 
 			<ScrollView
 				style={styles.scrollView}
