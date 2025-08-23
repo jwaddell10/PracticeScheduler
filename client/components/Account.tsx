@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
-import { StyleSheet, View, Alert, Text, ScrollView, TouchableOpacity } from "react-native";
+import { StyleSheet, View, Alert, Text, ScrollView, TouchableOpacity, Linking } from "react-native";
 import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
 import { useUserRole } from "../context/UserRoleContext";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
+import ContactUs from "./ContactUs";
 
 export default function Account({ session }: { session: Session | null }) {
 	const [loading, setLoading] = useState(true);
@@ -113,6 +114,8 @@ export default function Account({ session }: { session: Session | null }) {
 					</View>
 				</View>
 			</View>
+
+			<ContactUs />
 
 			<View style={styles.section}>
 				<Text style={styles.sectionTitle}>Account Actions</Text>
