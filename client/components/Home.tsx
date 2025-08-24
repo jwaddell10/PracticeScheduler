@@ -9,19 +9,23 @@ import {
 	Alert,
 } from "react-native";
 import { Calendar } from "react-native-calendars";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFavorites } from "../context/FavoritesContext"; // Adjust path as needed
 import { usePractices } from "../context/PracticesContext";
 import { useDrills } from "../context/DrillsContext";
+import { useUserRole } from "../context/UserRoleContext";
 import UpcomingPractices from "./UpcomingPractices";
 import theme from "./styles/theme";
 
 export default function HomeScreen() {
+	const route = useRoute();
+	console.log(route, 'route for home?')
 	const navigation = useNavigation();
 	const { favoriteDrills } = useFavorites();
 	const { practices, deletePractice } = usePractices();
 	const { refreshAllDrills, userDrills } = useDrills();
+	const { role } = useUserRole();
 	const [selectedDate, setSelectedDate] = useState(null);
 	const [showAllPractices, setShowAllPractices] = useState(false);
 
@@ -102,7 +106,14 @@ export default function HomeScreen() {
 				{/* PRO Library */}
 				<TouchableOpacity
 					style={styles.statCard}
-					onPress={() => navigation.navigate("Premium")}
+					onPress={() => {
+						const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
+						if (hasPremiumAccess) {
+							navigation.navigate("DrillsTab");
+						} else {
+							navigation.navigate("Premium");
+						}
+					}}
 				>
 					<MaterialIcons name="add" size={28} color="#8B5CF6" />
 					<Text style={styles.statNumber}>PRO</Text>

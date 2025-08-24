@@ -31,11 +31,6 @@ export default function PremiumScreen() {
 			icon: "photo-library"
 		},
 		{
-			title: "Share and Print Practices",
-			description: "Export and share your practice schedules",
-			icon: "print"
-		},
-		{
 			title: "Save Favorite Drills",
 			description: "Build your personal drill collection",
 			icon: "favorite"
