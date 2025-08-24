@@ -211,6 +211,7 @@ export default function Auth() {
 			);
 		} finally {
 			setLoading(false);
+<<<<<<< HEAD
 		}
 	}
 
@@ -244,6 +245,8 @@ export default function Auth() {
 			);
 		} finally {
 			setLoading(false);
+=======
+>>>>>>> 3f820f9a6ecfaab9bd7fcc1ab0fe2f2d88124ba3
 		}
 	}
 
