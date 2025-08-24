@@ -9,15 +9,11 @@ export default () => ({
 		version: "1.0.0",
 		orientation: "portrait",
 		icon: "./assets/PPlogo.png",
-<<<<<<< HEAD
 		userInterfaceStyle: "dark",
 		statusBar: {
 			style: "light",
 			backgroundColor: "#000000",
 		},
-=======
-		userInterfaceStyle: "light",
->>>>>>> 3f820f9a6ecfaab9bd7fcc1ab0fe2f2d88124ba3
 		newArchEnabled: true,
 		splash: {
 			image: "./assets/splash-icon.png",

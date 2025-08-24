@@ -1,9 +1,5 @@
 import React, { useState, useEffect } from "react";
-<<<<<<< HEAD
 import { Platform, Alert, StatusBar } from "react-native";
-=======
-import { Platform, Alert } from "react-native";
->>>>>>> 3f820f9a6ecfaab9bd7fcc1ab0fe2f2d88124ba3
 import * as Linking from "expo-linking";
 import Purchases from "react-native-purchases";
 
@@ -112,7 +108,6 @@ export default function App() {
 	}, []);
 
 	return (
-<<<<<<< HEAD
 		<>
 			<StatusBar barStyle="light-content" backgroundColor="#000000" />
 			<SessionContext.Provider value={session}>
@@ -125,16 +120,5 @@ export default function App() {
 				</FavoritesProvider>
 			</SessionContext.Provider>
 		</>
-=======
-		<SessionContext.Provider value={session}>
-			<FavoritesProvider>
-				<DrillsProvider>
-					<PracticesProvider>
-						<Navigation />
-					</PracticesProvider>
-				</DrillsProvider>
-			</FavoritesProvider>
-		</SessionContext.Provider>
->>>>>>> 3f820f9a6ecfaab9bd7fcc1ab0fe2f2d88124ba3
 	);
 }
