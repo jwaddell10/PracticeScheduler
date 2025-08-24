@@ -72,67 +72,31 @@ const performOAuth = async () => {
 	}
 };
 const sendMagicLink = async (email: string) => {
-	let retryCount = 0;
-	const maxRetries = 3;
-
-	while (retryCount < maxRetries) {
-		try {
-			console.log(`Sending magic link to: ${email} (attempt ${retryCount + 1}/${maxRetries})`);
-			const { error } = await supabase.auth.signInWithOtp({
-				email: email,
-				options: {
-					emailRedirectTo: redirectTo,
-				},
-			});
-			
-			if (error) {
-				console.error("Magic link error:", error);
-				
-				// Check if it's a 504 error (Gateway Timeout)
-				if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
-					retryCount++;
-					if (retryCount < maxRetries) {
-						console.log(`504 error detected, retrying in ${retryCount * 2} seconds...`);
-						await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
-						continue;
-					} else {
-						Alert.alert(
-							"Magic Link Failed", 
-							"Server is temporarily unavailable. Please try again in a few minutes."
-						);
-					}
-				} else if (error.message.includes('Error sending confirmation email') || error.message.includes('Error sending magic link')) {
-					// Email service error - don't retry, show helpful message
-					Alert.alert(
-						"Email Service Issue", 
-						"Unable to send magic link. This might be due to:\n\n• Email service temporarily unavailable\n• Rate limiting\n• Invalid email address\n\nPlease try again later or use a different email address."
-					);
-				} else {
-					Alert.alert("Magic Link Error", error.message);
-				}
-				break;
-			} else {
-				console.log("Magic link sent successfully");
-				Alert.alert(
-					"Magic Link Sent!", 
-					"Check your email and click the link to sign in. The link will open your app automatically."
-				);
-				break;
-			}
-		} catch (error) {
-			console.error("Magic link exception:", error);
-			retryCount++;
-			
-			if (retryCount < maxRetries) {
-				console.log(`Exception occurred, retrying in ${retryCount * 2} seconds...`);
-				await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
-			} else {
-				Alert.alert(
-					"Magic Link Failed", 
-					error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
-				);
-			}
+	try {
+		console.log(`Sending magic link to: ${email}`);
+		const { error } = await supabase.auth.signInWithOtp({
+			email: email,
+			options: {
+				emailRedirectTo: redirectTo,
+			},
+		});
+		
+		if (error) {
+			console.error("Magic link error:", error);
+			Alert.alert("Magic Link Error", error.message);
+		} else {
+			console.log("Magic link sent successfully");
+			Alert.alert(
+				"Magic Link Sent!", 
+				"Check your email and click the link to sign in. The link will open your app automatically."
+			);
 		}
+	} catch (error) {
+		console.error("Magic link exception:", error);
+		Alert.alert(
+			"Magic Link Failed", 
+			error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+		);
 	}
 };
 
@@ -164,56 +128,26 @@ export default function Auth() {
 		}
 
 		setLoading(true);
-		let retryCount = 0;
-		const maxRetries = 3;
+		try {
+			console.log("Signing in...");
+			const { error } = await supabase.auth.signInWithPassword({
+				email: email,
+				password: password,
+			});
 
-		while (retryCount < maxRetries) {
-			try {
-				console.log(`Signing in... (attempt ${retryCount + 1}/${maxRetries})`);
-				const { error } = await supabase.auth.signInWithPassword({
-					email: email,
-					password: password,
-				});
-
-				if (error) {
-					console.error("Sign in error:", error);
-					
-					// Check if it's a 504 error (Gateway Timeout)
-					if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
-						retryCount++;
-						if (retryCount < maxRetries) {
-							console.log(`504 error detected, retrying in ${retryCount * 2} seconds...`);
-							await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
-							continue;
-						} else {
-							Alert.alert(
-								"Sign In Failed", 
-								"Server is temporarily unavailable. Please try again in a few minutes."
-							);
-						}
-					} else {
-						Alert.alert("Sign In Error", error.message);
-					}
-					break;
-				} else {
-					console.log("Sign in successful");
-					Alert.alert("Success", "Signed in successfully!");
-					break;
-				}
-			} catch (error) {
-				console.error("Sign in exception:", error);
-				retryCount++;
-				
-				if (retryCount < maxRetries) {
-					console.log(`Exception occurred, retrying in ${retryCount * 2} seconds...`);
-					await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
-				} else {
-					Alert.alert("Sign In Failed", error instanceof Error ? error.message : "An unexpected error occurred");
-				}
+			if (error) {
+				console.error("Sign in error:", error);
+				Alert.alert("Sign In Error", error.message);
+			} else {
+				console.log("Sign in successful");
+				Alert.alert("Success", "Signed in successfully!");
 			}
+		} catch (error) {
+			console.error("Sign in exception:", error);
+			Alert.alert("Sign In Failed", error instanceof Error ? error.message : "An unexpected error occurred");
+		} finally {
+			setLoading(false);
 		}
-		
-		setLoading(false);
 	}
 
 	async function signUpWithEmail() {
@@ -223,78 +157,39 @@ export default function Auth() {
 		}
 
 		setLoading(true);
-		let retryCount = 0;
-		const maxRetries = 3;
+		try {
+			const {
+				data: { session },
+				error,
+			} = await supabase.auth.signUp({
+				email: email,
+				password: password,
+				options: {
+					emailRedirectTo: redirectTo,
+				},
+			});
 
-		while (retryCount < maxRetries) {
-			try {
-				console.log(`Starting signup process for: ${email} (attempt ${retryCount + 1}/${maxRetries})`);
-				const {
-					data: { session },
-					error,
-				} = await supabase.auth.signUp({
-					email: email,
-					password: password,
-					options: {
-						emailRedirectTo: redirectTo,
-					},
-				});
-
-				if (error) {
-					console.error("Signup error:", error);
-					
-					// Check if it's a 504 error (Gateway Timeout)
-					if (error.message.includes('504') || error.message.includes('Gateway Timeout')) {
-						retryCount++;
-						if (retryCount < maxRetries) {
-							console.log(`504 error detected, retrying in ${retryCount * 2} seconds...`);
-							await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
-							continue;
-						} else {
-							Alert.alert(
-								"Signup Failed", 
-								"Server is temporarily unavailable. Please try again in a few minutes."
-							);
-						}
-					} else if (error.message.includes('Error sending confirmation email')) {
-						// Email service error - don't retry, show helpful message
-						Alert.alert(
-							"Email Service Issue", 
-							"Unable to send confirmation email. This might be due to:\n\n• Email service temporarily unavailable\n• Rate limiting\n• Invalid email address\n\nPlease try again later or use a different email address."
-						);
-					} else {
-						Alert.alert("Signup Error", error.message);
-					}
-					break;
-				} else if (!session) {
-					console.log("Signup successful, email verification required");
-					Alert.alert(
-						"Account Created!", 
-						"Please check your inbox for email verification. Click the link in your email to complete signup."
-					);
-					break;
-				} else {
-					console.log("Signup successful with session");
-					Alert.alert("Welcome!", "Account created and signed in successfully!");
-					break;
-				}
-			} catch (error) {
-				console.error("Signup exception:", error);
-				retryCount++;
-				
-				if (retryCount < maxRetries) {
-					console.log(`Exception occurred, retrying in ${retryCount * 2} seconds...`);
-					await new Promise(resolve => setTimeout(resolve, retryCount * 2000));
-				} else {
-					Alert.alert(
-						"Signup Failed", 
-						error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
-					);
-				}
+			if (error) {
+				console.error("Signup error:", error);
+				Alert.alert("Signup Error", error.message);
+			} else if (!session) {
+				console.log("Signup successful, email verification required");
+				Alert.alert(
+					"Account Created!", 
+					"Please check your inbox for email verification. Click the link in your email to complete signup."
+				);
+			} else {
+				console.log("Signup successful with session");
 			}
+		} catch (error) {
+			console.error("Signup exception:", error);
+			Alert.alert(
+				"Signup Failed", 
+				error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+			);
+		} finally {
+			setLoading(false);
 		}
-		
-		setLoading(false);
 	}
 
 	return (

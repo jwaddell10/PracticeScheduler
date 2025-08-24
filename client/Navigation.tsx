@@ -85,6 +85,13 @@ function HomeStackScreen() {
 // DrillsUpgradeScreen removed - all users can now access drills
 
 const DrillStack = createNativeStackNavigator();
+
+// Wrapper component to pass user role to Drills
+function DrillsWithRole() {
+	const { role } = useUserRole();
+	return <Drills userRole={role} />;
+}
+
 function DrillStackScreen() {
 	// Show drills for all users
 	return (
@@ -94,7 +101,7 @@ function DrillStackScreen() {
 				headerTintColor: theme.colors.textPrimary,
 			}}
 		>
-			<DrillStack.Screen name="Drills" component={Drills} />
+			<DrillStack.Screen name="Drills" component={DrillsWithRole} />
 			<DrillStack.Screen name="Drill Details" component={DrillDetails} />
 			<DrillStack.Screen name="CreateDrill" component={CreateDrill} />
 			<DrillStack.Screen name="Premium" component={PremiumScreen} />

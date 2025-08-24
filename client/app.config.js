@@ -8,7 +8,7 @@ export default () => ({
 		slug: "PracticeScheduler",
 		version: "1.0.0",
 		orientation: "portrait",
-		icon: "./assets/PracticeProLogo.png",
+		icon: "./assets/PPlogo.png",
 		userInterfaceStyle: "light",
 		newArchEnabled: true,
 		splash: {
@@ -48,6 +48,7 @@ export default () => ({
 			serverApi: process.env.SERVER_API,
 			localIP: process.env.LOCAL_IP,
 			PORT: process.env.PORT,
+			REVENUECAT_API_KEY: process.env.REVENUECAT_API_KEY
 		},
 		plugins: ["expo-secure-store"],
 	},
