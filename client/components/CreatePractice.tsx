@@ -346,6 +346,7 @@ const CreatePractice = () => {
 					(endDate.getTime() - startDate.getTime()) / (1000 * 60)
 				),
 				notes: notes || undefined,
+				user_id: session?.user?.id, // Add user_id to associate practice with current user
 			});
 
 			// Keep clipboard drills - only clear local state
@@ -608,9 +609,11 @@ const CreatePractice = () => {
 													? Math.round(
 															(endDate.getTime() -
 																startDate.getTime()) /
-																(1000 * 60)
-													  )
-													: 0}{" "}
+																(1000 *
+																	60)
+																  )
+																: 0
+														}
 												min)
 											</Text>
 										)}

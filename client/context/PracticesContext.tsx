@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { supabase } from "../lib/supabase";
 import { Alert } from "react-native";
+import { useSession } from "./SessionContext";
 
 interface Practice {
 	id: string;
@@ -11,6 +12,7 @@ interface Practice {
 	practiceDuration?: number;
 	notes?: string;
 	teamId: string;
+	user_id?: string; // Add user_id field
 }
 
 interface PracticesContextType {
@@ -28,7 +30,7 @@ const PracticesContext = createContext<PracticesContextType | undefined>(undefin
 
 export const usePractices = () => {
 	const context = useContext(PracticesContext);
-	if (!context) {
+	if (context === undefined) {
 		throw new Error("usePractices must be used within a PracticesProvider");
 	}
 	return context;
@@ -39,15 +41,29 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [hasInitialized, setHasInitialized] = useState(false);
+	const session = useSession();
 
 	const fetchPractices = async () => {
 		try {
 			setLoading(true);
 			setError(null);
 			
+			// Don't fetch if no session
+			if (!session?.user?.id) {
+				setPractices([]);
+				return;
+			}
+
+			// Set the Supabase session for RLS policies
+			await supabase.auth.setSession({
+				access_token: session.access_token,
+				refresh_token: session.refresh_token,
+			});
+			
 			const { data, error: supabaseError } = await supabase
 				.from("Practice")
-				.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId")
+				.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId, user_id")
+				.eq("user_id", session.user.id) // Filter by current user
 				.order("startTime", { ascending: true });
 
 			if (supabaseError) {
@@ -67,9 +83,15 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
 	const addPractice = async (practice: Omit<Practice, 'id'>) => {
 		try {
+			// Add user_id to the practice
+			const practiceWithUser = {
+				...practice,
+				user_id: session?.user?.id
+			};
+
 			const { data, error: supabaseError } = await supabase
 				.from("Practice")
-				.insert([practice])
+				.insert([practiceWithUser])
 				.select();
 
 			if (supabaseError) {
@@ -95,6 +117,7 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 				.from("Practice")
 				.update(updates)
 				.eq("id", id)
+				.eq("user_id", session?.user?.id) // Ensure user can only update their own practices
 				.select();
 
 			if (supabaseError) {
@@ -119,7 +142,8 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 			const { error: supabaseError } = await supabase
 				.from("Practice")
 				.delete()
-				.eq("id", id);
+				.eq("id", id)
+				.eq("user_id", session?.user?.id); // Ensure user can only delete their own practices
 
 			if (supabaseError) {
 				console.error("Delete error:", supabaseError.message);
@@ -138,13 +162,17 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		await fetchPractices();
 	};
 
-	// Initialize practices on mount
+	// Initialize practices when session is available
 	useEffect(() => {
-		if (!hasInitialized) {
+		if (session?.user?.id && !hasInitialized) {
 			fetchPractices();
 			setHasInitialized(true);
+		} else if (!session?.user?.id) {
+			// Clear practices when user logs out
+			setPractices([]);
+			setHasInitialized(false);
 		}
-	}, [hasInitialized]);
+	}, [session, hasInitialized]);
 
 	const value: PracticesContextType = {
 		practices,
