@@ -109,50 +109,35 @@ export default function PracticeDetails({ route }) {
 	};
 
 	const fetchPracticeDetails = async () => {
-		try {
-			// Set the Supabase session for RLS policies
-			if (session) {
-				await supabase.auth.setSession({
-					access_token: session.access_token,
-					refresh_token: session.refresh_token,
+		const { data, error } = await supabase
+			.from("Practice")
+			.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId")
+			.eq("id", practiceId)
+			.single();
+
+		if (error) {
+			console.error("Error fetching practice:", error);
+			Alert.alert("Error", "Could not load practice details.");
+		} else {
+			setPractice(data);
+			// Parse the stored datetime as local time (not UTC)
+			setStartDate(new Date(data.startTime.replace("Z", "")));
+			// Use practiceDuration from database, otherwise use default
+			setDuration(data.practiceDuration || 60);
+			setNotes(data.notes || "");
+			setDrills(data.drills || []);
+			
+			// Initialize drill durations by dividing practice duration evenly
+			const initialDurations = {};
+			if (data.drills) {
+				data.drills.forEach((drill, index) => {
+					const drillKey = `${drill}-${index}`;
+					initialDurations[drillKey] = Math.floor((data.practiceDuration || 60) / data.drills.length);
 				});
 			}
-
-			const { data, error } = await supabase
-				.from("Practice")
-				.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId, user_id")
-				.eq("id", practiceId)
-				.eq("user_id", session?.user?.id) // Ensure user can only access their own practices
-				.single();
-
-			if (error) {
-				console.error("Error fetching practice:", error);
-				Alert.alert("Error", "Could not load practice details.");
-			} else {
-				setPractice(data);
-				// Parse the stored datetime as local time (not UTC)
-				setStartDate(new Date(data.startTime.replace("Z", "")));
-				// Use practiceDuration from database, otherwise use default
-				setDuration(data.practiceDuration || 60);
-				setNotes(data.notes || "");
-				setDrills(data.drills || []);
-				
-				// Initialize drill durations by dividing practice duration evenly
-				const initialDurations = {};
-				if (data.drills) {
-					data.drills.forEach((drill, index) => {
-						const drillKey = `${drill}-${index}`;
-						initialDurations[drillKey] = Math.floor((data.practiceDuration || 60) / data.drills.length);
-					});
-				}
-				setDrillDurations(initialDurations);
-			}
-		} catch (error) {
-			console.error("Error in fetchPracticeDetails:", error);
-			Alert.alert("Error", "Could not load practice details.");
-		} finally {
-			setLoading(false);
+			setDrillDurations(initialDurations);
 		}
+		setLoading(false);
 	};
 
 	const deletePractice = async () => {

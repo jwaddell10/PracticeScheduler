@@ -36,11 +36,16 @@ export const usePractices = () => {
 	return context;
 };
 
-export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	const [practices, setPractices] = useState<Practice[]>([]);
-	const [loading, setLoading] = useState(true);
+interface PracticesProviderProps {
+	children: React.ReactNode;
+	initialPractices?: Practice[];
+}
+
+export const PracticesProvider: React.FC<PracticesProviderProps> = ({ children, initialPractices = [] }) => {
+	const [practices, setPractices] = useState<Practice[]>(initialPractices);
+	const [loading, setLoading] = useState(initialPractices.length === 0);
 	const [error, setError] = useState<string | null>(null);
-	const [hasInitialized, setHasInitialized] = useState(false);
+	const [hasInitialized, setHasInitialized] = useState(initialPractices.length > 0);
 	const session = useSession();
 
 	const fetchPractices = async () => {
@@ -162,7 +167,7 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 		await fetchPractices();
 	};
 
-	// Initialize practices when session is available
+	// Initialize practices when session is available (only if we don't have initial data)
 	useEffect(() => {
 		if (session?.user?.id && !hasInitialized) {
 			fetchPractices();
@@ -171,6 +176,7 @@ export const PracticesProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 			// Clear practices when user logs out
 			setPractices([]);
 			setHasInitialized(false);
+			setLoading(false);
 		}
 	}, [session, hasInitialized]);
 

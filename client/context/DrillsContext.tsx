@@ -43,12 +43,22 @@ export const useDrills = () => {
 	return context;
 };
 
-export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-	const [publicDrills, setPublicDrills] = useState<Drill[]>([]);
-	const [userDrills, setUserDrills] = useState<Drill[]>([]);
-	const [loading, setLoading] = useState(true);
+interface DrillsProviderProps {
+	children: React.ReactNode;
+	initialPublicDrills?: Drill[];
+	initialUserDrills?: Drill[];
+}
+
+export const DrillsProvider: React.FC<DrillsProviderProps> = ({ 
+	children, 
+	initialPublicDrills = [], 
+	initialUserDrills = [] 
+}) => {
+	const [publicDrills, setPublicDrills] = useState<Drill[]>(initialPublicDrills);
+	const [userDrills, setUserDrills] = useState<Drill[]>(initialUserDrills);
+	const [loading, setLoading] = useState(initialPublicDrills.length === 0 && initialUserDrills.length === 0);
 	const [error, setError] = useState<string | null>(null);
-	const [hasInitialized, setHasInitialized] = useState(false);
+	const [hasInitialized, setHasInitialized] = useState(initialPublicDrills.length > 0 || initialUserDrills.length > 0);
 	const session = useSession();
 
 	const fetchPublicDrills = async () => {
@@ -98,14 +108,12 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 			}
 
 			// Set the Supabase session for RLS policies
-			if (session) {
-				await supabase.auth.setSession({
-					access_token: session.access_token,
-					refresh_token: session.refresh_token,
-				});
-			}
+			await supabase.auth.setSession({
+				access_token: session.access_token,
+				refresh_token: session.refresh_token,
+			});
 
-			// Query only for current user's drills
+			// Query for user's drills
 			const { data, error: drillsError } = await supabase
 				.from("Drill")
 				.select(
@@ -131,9 +139,11 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 	};
 
 	const refreshAllDrills = async () => {
-		setLoading(true);
 		try {
+			setLoading(true);
 			await Promise.all([fetchPublicDrills(), fetchUserDrills()]);
+		} catch (err) {
+			console.error("Error refreshing drills:", err);
 		} finally {
 			setLoading(false);
 		}
@@ -141,17 +151,24 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 	const addDrill = async (drill: Omit<Drill, 'id'>) => {
 		try {
+			const drillWithUser = {
+				...drill,
+				user_id: session?.user?.id,
+			};
+
 			const { data, error: supabaseError } = await supabase
 				.from("Drill")
-				.insert([drill])
-				.select(`
-					*,
-					users!Drill_user_id_fkey (
-						id,
-						email,
-						role
-					)
-				`);
+				.insert([drillWithUser])
+				.select(
+					`
+          *,
+          users!Drill_user_id_fkey (
+            id,
+            email,
+            role
+          )
+        `
+				);
 
 			if (supabaseError) {
 				console.error("Error inserting drill:", supabaseError);
@@ -163,8 +180,7 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 				const newDrill = data[0];
 				if (newDrill.isPublic) {
 					setPublicDrills(prev => [...prev, newDrill]);
-				}
-				if (newDrill.user_id === session?.user?.id) {
+				} else {
 					setUserDrills(prev => [...prev, newDrill]);
 				}
 			}
@@ -176,41 +192,39 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 	const updateDrill = async (id: string, updates: Partial<Drill>) => {
 		try {
-			// Set the Supabase session for RLS policies
-			if (session) {
-				await supabase.auth.setSession({
-					access_token: session.access_token,
-					refresh_token: session.refresh_token,
-				});
-			}
-
 			const { data, error: supabaseError } = await supabase
 				.from("Drill")
 				.update(updates)
 				.eq("id", id)
-				.select(`
-					*,
-					users!Drill_user_id_fkey (
-						id,
-						email,
-						role
-					)
-				`);
+				.eq("user_id", session?.user?.id)
+				.select(
+					`
+          *,
+          users!Drill_user_id_fkey (
+            id,
+            email,
+            role
+          )
+        `
+				);
 
 			if (supabaseError) {
 				console.error("Error updating drill:", supabaseError);
 				throw new Error(supabaseError.message);
 			}
 
-			// Update the drill in the appropriate lists
+			// Update the drill in the appropriate list
 			if (data && data.length > 0) {
 				const updatedDrill = data[0];
-				setPublicDrills(prev => 
-					prev.map(drill => drill.id === id ? updatedDrill : drill)
-				);
-				setUserDrills(prev => 
-					prev.map(drill => drill.id === id ? updatedDrill : drill)
-				);
+				if (updatedDrill.isPublic) {
+					setPublicDrills(prev => prev.map(drill => 
+						drill.id === id ? updatedDrill : drill
+					));
+				} else {
+					setUserDrills(prev => prev.map(drill => 
+						drill.id === id ? updatedDrill : drill
+					));
+				}
 			}
 		} catch (err) {
 			console.error("Error updating drill:", err);
@@ -220,21 +234,14 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
 	const deleteDrill = async (id: string) => {
 		try {
-			// Set the Supabase session for RLS policies
-			if (session) {
-				await supabase.auth.setSession({
-					access_token: session.access_token,
-					refresh_token: session.refresh_token,
-				});
-			}
-			
 			const { error: supabaseError } = await supabase
 				.from("Drill")
 				.delete()
-				.eq("id", id);
+				.eq("id", id)
+				.eq("user_id", session?.user?.id);
 
 			if (supabaseError) {
-				console.error("Error deleting drill:", supabaseError);
+				console.error("Delete error:", supabaseError.message);
 				throw new Error(supabaseError.message);
 			}
 
@@ -247,20 +254,19 @@ export const DrillsProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 		}
 	};
 
-	// Initialize drills on mount
+	// Initialize drills when session is available (only if we don't have initial data)
 	useEffect(() => {
-		if (!hasInitialized && session) {
+		if (session?.user?.id && !hasInitialized) {
 			refreshAllDrills();
 			setHasInitialized(true);
+		} else if (!session?.user?.id) {
+			// Clear drills when user logs out
+			setPublicDrills([]);
+			setUserDrills([]);
+			setHasInitialized(false);
+			setLoading(false);
 		}
 	}, [session, hasInitialized]);
-
-	// Refresh drills when session changes
-	useEffect(() => {
-		if (hasInitialized && session) {
-			refreshAllDrills();
-		}
-	}, [session?.user?.id]);
 
 	const value: DrillsContextType = {
 		publicDrills,

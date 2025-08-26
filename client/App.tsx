@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { Platform, Alert, StatusBar } from "react-native";
 import * as Linking from "expo-linking";
 import Purchases from "react-native-purchases";
+import { Session } from "@supabase/supabase-js";
 
 import Navigation from "./Navigation";
+import LoadingScreen from "./components/LoadingScreen";
 import { SessionContext } from "./context/SessionContext";
 import { PracticesProvider } from "./context/PracticesContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
@@ -12,54 +14,111 @@ import { supabase } from "./lib/supabase";
 import "react-native-get-random-values";
 
 export default function App() {
-	const [session, setSession] = useState(null);
+	const [session, setSession] = useState<Session | null>(null);
+	const [isLoading, setIsLoading] = useState(true);
+	const [isInitialized, setIsInitialized] = useState(false);
+	const [preFetchedData, setPreFetchedData] = useState<{
+		practices: any[];
+		publicDrills: any[];
+		userDrills: any[];
+	}>({
+		practices: [],
+		publicDrills: [],
+		userDrills: [],
+	});
 
-	// Initialize RevenueCat Purchases
-	// useEffect(() => {
-	// 	const initRevenueCat = async () => {
-	// 		try {
-	// 			// Check if we're in a development environment
-	// 			if (__DEV__) {
-	// 				console.log('Development mode detected, initializing RevenueCat...');
-	// 			}
-	// 			
-	// 			// Wait for app to be fully loaded and native modules to be ready
-	// 			await new Promise(resolve => setTimeout(resolve, 5000));
-	// 			
-	// 			// Check if Purchases is available and has the required methods
-	// 			if (Purchases && typeof Purchases.configure === 'function') {
-	// 				try {
-	// 					Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
-	// 				} catch (logError) {
-	// 					console.warn('Could not set log level:', logError);
-	// 				}
+	useEffect(() => {
+		try {
+			console.log('Initializing RevenueCat...');
+			Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
 
-	// 				// Use your actual API key for both platforms for now
-	// 				Purchases.configure({
-	// 					apiKey: "appl_VTApErVWbdFRrWEYqfslhIgvWub",
-	// 				});
-	// 				
-	// 				console.log('RevenueCat SDK initialized successfully');
-	// 			} else {
-	// 				console.warn('RevenueCat Purchases not available or not properly loaded');
-	// 			}
-	// 		} catch (error) {
-	// 			console.error('Failed to initialize RevenueCat:', error);
-	// 		}
-	// 	};
-	// 	
-	// 	// Delay initialization to ensure native modules are ready
-	// 	const timer = setTimeout(initRevenueCat, 2000);
-	// 	
-	// 	return () => clearTimeout(timer);
-	// }, []);
+			if (Platform.OS === 'ios') {
+				Purchases.configure({ apiKey: "appl_VTApErVWbdFRrWEYqfslhIgvWub" });
+				console.log('RevenueCat configured for iOS');
+			}
+			// } else if (Platform.OS === 'android') {
+			// 	Purchases.configure({ apiKey: "appl_VTApErVWbdFRrWEYqfslhIgvWub" });
+			// 	console.log('RevenueCat configured for Android');
+
+			// 	// OR: if building for Amazon, be sure to follow the installation instructions then:
+			// 	// Purchases.configure({ apiKey: <public_amazon_api_key>, useAmazon: true });
+			// }
+		} catch (error) {
+			console.error('Error initializing RevenueCat:', error);
+		}
+	}, []);
 
 	// Handle authentication and deep links
 	useEffect(() => {
-		// Get initial session
-		supabase.auth.getSession().then(({ data: { session } }) => {
-			setSession(session);
-		});
+		const initializeApp = async () => {
+			try {
+				// Get initial session
+				const { data: { session: initialSession } } = await supabase.auth.getSession();
+				setSession(initialSession);
+				
+				// If we have a session, pre-fetch data
+				if (initialSession) {
+					
+					// Set the session for RLS policies
+					await supabase.auth.setSession({
+						access_token: initialSession.access_token,
+						refresh_token: initialSession.refresh_token,
+					});
+					
+					// Pre-fetch practices
+					const { data: practices } = await supabase
+						.from("Practice")
+						.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId, user_id")
+						.eq("user_id", initialSession.user.id)
+						.order("startTime", { ascending: true });
+					
+					// Pre-fetch public drills
+					const { data: publicDrills } = await supabase
+						.from("Drill")
+						.select(`
+							*,
+							users!Drill_user_id_fkey (
+								id,
+								email,
+								role
+							)
+						`)
+						.eq("isPublic", true)
+						.order("name");
+					
+					// Pre-fetch user drills
+					const { data: userDrills } = await supabase
+						.from("Drill")
+						.select(`
+							*,
+							users!Drill_user_id_fkey (
+								id,
+								email,
+								role
+							)
+						`)
+						.eq("user_id", initialSession.user.id)
+						.order("name");
+					
+					// Store pre-fetched data
+					setPreFetchedData({
+						practices: practices || [],
+						publicDrills: publicDrills || [],
+						userDrills: userDrills || [],
+					});
+					
+				}
+				
+				setIsInitialized(true);
+			} catch (error) {
+				console.error('Error during app initialization:', error);
+				setIsInitialized(true);
+			} finally {
+				setIsLoading(false);
+			}
+		};
+
+		initializeApp();
 
 		// Listen for auth state changes
 		const {
@@ -77,8 +136,7 @@ export default function App() {
 		});
 
 		// Handle deep links for email confirmation
-		const handleDeepLink = (url) => {
-			console.log("Deep link received:", url);
+		const handleDeepLink = (url: string) => {
 
 			// Check if this is an auth callback
 			if (url.includes("auth/callback")) {
@@ -107,13 +165,26 @@ export default function App() {
 		};
 	}, []);
 
+	// Show loading screen while initializing
+	if (isLoading || !isInitialized) {
+		return (
+			<>
+				<StatusBar barStyle="light-content" backgroundColor="#000000" />
+				<LoadingScreen />
+			</>
+		);
+	}
+
 	return (
 		<>
 			<StatusBar barStyle="light-content" backgroundColor="#000000" />
 			<SessionContext.Provider value={session}>
 				<FavoritesProvider>
-					<DrillsProvider>
-						<PracticesProvider>
+					<DrillsProvider 
+						initialPublicDrills={preFetchedData.publicDrills}
+						initialUserDrills={preFetchedData.userDrills}
+					>
+						<PracticesProvider initialPractices={preFetchedData.practices}>
 							<Navigation />
 						</PracticesProvider>
 					</DrillsProvider>

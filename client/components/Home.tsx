@@ -20,7 +20,6 @@ import theme from "./styles/theme";
 
 export default function HomeScreen() {
 	const route = useRoute();
-	console.log(route, 'route for home?')
 	const navigation = useNavigation();
 	const { favoriteDrills } = useFavorites();
 	const { practices, deletePractice } = usePractices();
