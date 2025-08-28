@@ -23,6 +23,7 @@ export default () => ({
 		ios: {
 			supportsTablet: true,
 			bundleIdentifier: "com.jwaddell10.PracticeScheduler",
+			teamId: "8NTS7W2P65", // Replace with your actual team ID
 			associatedDomains: ["applinks:practiceprovolleyball.com"],
 			infoPlist: {
 				NSPhotoLibraryUsageDescription:
