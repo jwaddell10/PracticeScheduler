@@ -55,8 +55,8 @@ const styles = StyleSheet.create({
 	bannerContainer: {
 		backgroundColor: theme.colors.surface,
 		borderRadius: theme.roundness,
-		padding: theme.padding,
-		marginBottom: 24,
+		padding: 12,
+		marginBottom: 16,
 		borderWidth: 1,
 		borderColor: theme.colors.border,
 		shadowColor: theme.colors.surface,
@@ -69,28 +69,28 @@ const styles = StyleSheet.create({
 	topRow: {
 		flexDirection: "row",
 		alignItems: "center",
-		marginBottom: 16,
+		marginBottom: 12,
 	},
 	icon: {
-		marginRight: 12,
+		marginRight: 10,
 	},
 	textContainer: {
 		flex: 1,
 	},
 	title: {
-		fontSize: 18,
+		fontSize: 16,
 		fontWeight: "700",
 		color: theme.colors.textPrimary,
-		marginBottom: 4,
+		marginBottom: 3,
 	},
 	subtitle: {
-		fontSize: 14,
+		fontSize: 13,
 		color: theme.colors.textMuted,
 	},
 	upgradeButton: {
 		backgroundColor: theme.colors.proPurple, // Match PRO button
-		paddingVertical: 12,
-		paddingHorizontal: 16,
+		paddingVertical: 10,
+		paddingHorizontal: 14,
 		borderRadius: 8,
 		alignItems: "center",
 		width: "100%",
@@ -103,6 +103,6 @@ const styles = StyleSheet.create({
 	upgradeButtonText: {
 		color: theme.colors.white,
 		fontWeight: "700",
-		fontSize: 16,
+		fontSize: 15,
 	},
 });

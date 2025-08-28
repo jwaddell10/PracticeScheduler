@@ -162,7 +162,6 @@ export default function Auth() {
 				Alert.alert("Sign In Error", error.message);
 			} else {
 				console.log("Sign in successful");
-				Alert.alert("Success", "Signed in successfully!");
 			}
 		} catch (error) {
 			console.error("Sign in exception:", error);

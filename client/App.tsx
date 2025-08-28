@@ -6,17 +6,27 @@ import { Session } from "@supabase/supabase-js";
 
 import Navigation from "./Navigation";
 import LoadingScreen from "./components/LoadingScreen";
+import SplashScreen from "./components/SplashScreen";
+import OnboardingScreen from "./components/OnboardingScreen";
 import { SessionContext } from "./context/SessionContext";
 import { PracticesProvider } from "./context/PracticesContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { DrillsProvider } from "./context/DrillsContext";
 import { supabase } from "./lib/supabase";
+import { resetOnboarding } from "./util/onboardingUtils";
 import "react-native-get-random-values";
+
+// Expose reset function for testing
+if (__DEV__) {
+	(global as any).resetOnboarding = resetOnboarding;
+}
 
 export default function App() {
 	const [session, setSession] = useState<Session | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isInitialized, setIsInitialized] = useState(false);
+	const [showOnboarding, setShowOnboarding] = useState(false);
+	const [showSplash, setShowSplash] = useState(true);
 	const [preFetchedData, setPreFetchedData] = useState<{
 		practices: any[];
 		publicDrills: any[];
@@ -164,6 +174,39 @@ export default function App() {
 			linkingSubscription?.remove();
 		};
 	}, []);
+
+	// Show splash screen while checking onboarding status
+	if (showSplash) {
+		return (
+			<>
+				<StatusBar barStyle="light-content" backgroundColor="#000000" />
+				<SplashScreen
+					onOnboardingComplete={() => {
+						setShowSplash(false);
+						setShowOnboarding(false);
+					}}
+					onOnboardingIncomplete={() => {
+						setShowSplash(false);
+						setShowOnboarding(true);
+					}}
+				/>
+			</>
+		);
+	}
+
+	// Show onboarding screen
+	if (showOnboarding) {
+		return (
+			<>
+				<StatusBar barStyle="light-content" backgroundColor="#000000" />
+				<OnboardingScreen
+					onComplete={() => {
+						setShowOnboarding(false);
+					}}
+				/>
+			</>
+		);
+	}
 
 	// Show loading screen while initializing
 	if (isLoading || !isInitialized) {

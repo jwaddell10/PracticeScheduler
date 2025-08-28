@@ -80,7 +80,7 @@ export default function Account({ session }: { session: Session | null }) {
 	return (
 		<ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 			<View style={styles.header}>
-				<MaterialIcons name="account-circle" size={60} color={theme.colors.primary} />
+				<MaterialIcons name="account-circle" size={50} color={theme.colors.primary} />
 				<Text style={styles.headerTitle}>Account</Text>
 				<Text style={styles.headerSubtitle}>Manage your profile and settings</Text>
 			</View>
@@ -137,51 +137,51 @@ const styles = StyleSheet.create({
 	},
 	header: {
 		alignItems: 'center',
-		marginBottom: 32,
-		paddingTop: 20,
+		marginBottom: 20,
+		paddingTop: 10,
 	},
 	headerTitle: {
-		fontSize: 28,
+		fontSize: 24,
 		fontWeight: '700',
 		color: theme.colors.textPrimary,
-		marginTop: 8,
-		marginBottom: 8,
+		marginTop: 6,
+		marginBottom: 6,
 	},
 	headerSubtitle: {
-		fontSize: 16,
+		fontSize: 14,
 		color: theme.colors.textMuted,
 		textAlign: 'center',
 	},
 	section: {
-		marginBottom: 32,
-	},
-	sectionTitle: {
-		fontSize: 20,
-		fontWeight: '600',
-		color: theme.colors.textPrimary,
-		marginBottom: 16,
-	},
-	inputContainer: {
 		marginBottom: 20,
 	},
+	sectionTitle: {
+		fontSize: 18,
+		fontWeight: '600',
+		color: theme.colors.textPrimary,
+		marginBottom: 12,
+	},
+	inputContainer: {
+		marginBottom: 12,
+	},
 	inputLabel: {
-		fontSize: 14,
+		fontSize: 13,
 		fontWeight: '600',
 		color: theme.colors.textMuted,
-		marginBottom: 8,
+		marginBottom: 6,
 	},
 	emailDisplay: {
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'space-between',
 		backgroundColor: theme.colors.surface,
-		padding: 16,
-		borderRadius: 12,
+		padding: 12,
+		borderRadius: 10,
 		borderWidth: 1,
 		borderColor: theme.colors.border,
 	},
 	emailText: {
-		fontSize: 16,
+		fontSize: 15,
 		color: theme.colors.textPrimary,
 		flex: 1,
 	},
@@ -190,13 +190,13 @@ const styles = StyleSheet.create({
 		alignItems: 'center',
 		justifyContent: 'space-between',
 		backgroundColor: theme.colors.surface,
-		padding: 16,
-		borderRadius: 12,
+		padding: 12,
+		borderRadius: 10,
 		borderWidth: 1,
 		borderColor: theme.colors.border,
 	},
 	roleText: {
-		fontSize: 16,
+		fontSize: 15,
 		color: theme.colors.textPrimary,
 		fontWeight: '500',
 	},
@@ -208,8 +208,8 @@ const styles = StyleSheet.create({
 		flexDirection: 'row',
 		alignItems: 'center',
 		backgroundColor: theme.colors.surface,
-		padding: 16,
-		borderRadius: 12,
+		padding: 12,
+		borderRadius: 10,
 		borderWidth: 1,
 		borderColor: theme.colors.error,
 	},
