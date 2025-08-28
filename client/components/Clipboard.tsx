@@ -6,6 +6,7 @@ import {
 	TouchableOpacity,
 	Alert,
 	ScrollView,
+	ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
@@ -24,16 +25,9 @@ interface ClipboardDrill {
 	notes?: string;
 }
 
-const CLIPBOARD_STORAGE_KEY = "practice_clipboard";
-
 export default function Clipboard() {
-	const { clipboardDrills, refreshClipboard, updateClipboardStatus } = useClipboard();
+	const { clipboardDrills, isInitialized, refreshClipboard, updateClipboardStatus } = useClipboard();
 	const [reorderedDrills, setReorderedDrills] = useState<ClipboardDrill[]>([]);
-
-	// Ensure clipboard is loaded when component mounts
-	React.useEffect(() => {
-		refreshClipboard();
-	}, []);
 
 	// Update reordered drills when clipboard drills change
 	React.useEffect(() => {
@@ -139,6 +133,18 @@ export default function Clipboard() {
 		</TouchableOpacity>
 	);
 
+	// Show loading state while context is initializing
+	if (!isInitialized) {
+		return (
+			<View style={styles.container}>
+				<View style={styles.loadingContainer}>
+					<ActivityIndicator size="large" color={theme.colors.primary} />
+					<Text style={styles.loadingText}>Loading clipboard...</Text>
+				</View>
+			</View>
+		);
+	}
+
 	if (clipboardDrills.length === 0) {
 		return (
 			<View style={styles.container}>
@@ -184,6 +190,18 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: theme.colors.background,
+	},
+	loadingContainer: {
+		flex: 1,
+		justifyContent: "center",
+		alignItems: "center",
+		paddingHorizontal: 40,
+	},
+	loadingText: {
+		fontSize: 16,
+		color: theme.colors.textMuted,
+		marginTop: 16,
+		textAlign: "center",
 	},
 	header: {
 		flexDirection: "row",
@@ -251,7 +269,6 @@ const styles = StyleSheet.create({
 		color: theme.colors.textMuted,
 		marginBottom: 2,
 	},
-
 	removeButton: {
 		marginLeft: 12,
 		justifyContent: "center",

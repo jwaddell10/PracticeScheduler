@@ -4,6 +4,7 @@ import { getClipboardDrills, ClipboardDrill } from '../util/clipboardManager';
 interface ClipboardContextType {
 	clipboardDrills: ClipboardDrill[];
 	clipboardStatus: { [key: string]: boolean };
+	isInitialized: boolean;
 	refreshClipboard: () => Promise<void>;
 	updateClipboardStatus: (drillId: string, isInClipboard: boolean) => void;
 }
@@ -25,6 +26,7 @@ interface ClipboardProviderProps {
 export const ClipboardProvider: React.FC<ClipboardProviderProps> = ({ children }) => {
 	const [clipboardDrills, setClipboardDrills] = useState<ClipboardDrill[]>([]);
 	const [clipboardStatus, setClipboardStatus] = useState<{ [key: string]: boolean }>({});
+	const [isInitialized, setIsInitialized] = useState(false);
 
 	const refreshClipboard = async () => {
 		try {
@@ -52,14 +54,25 @@ export const ClipboardProvider: React.FC<ClipboardProviderProps> = ({ children }
 		refreshClipboard();
 	};
 
-	// Load clipboard on mount
+	// Preload clipboard data on context initialization
 	useEffect(() => {
-		refreshClipboard();
+		const initializeClipboard = async () => {
+			try {
+				await refreshClipboard();
+			} catch (error) {
+				console.error('Error initializing clipboard:', error);
+			} finally {
+				setIsInitialized(true);
+			}
+		};
+
+		initializeClipboard();
 	}, []);
 
 	const value: ClipboardContextType = {
 		clipboardDrills,
 		clipboardStatus,
+		isInitialized,
 		refreshClipboard,
 		updateClipboardStatus,
 	};

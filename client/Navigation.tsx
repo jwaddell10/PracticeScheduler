@@ -167,6 +167,8 @@ function AccountStackScreen({ session }: { session: any }) {
 // ----- Bottom Tab Navigator -----
 const Tab = createBottomTabNavigator();
 
+
+
 export default function Navigation() {
 	const session = useSession();
 
@@ -176,7 +178,8 @@ export default function Navigation() {
 				<ClipboardProvider>
 					<UserRoleProvider>
 						<Tab.Navigator
-					screenOptions={({ route }) => ({
+							detachInactiveScreens={false}
+							screenOptions={({ route }) => ({
 						headerShown: false,
 						tabBarStyle: {
 							backgroundColor: theme.colors.surface,

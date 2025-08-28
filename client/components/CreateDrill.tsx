@@ -23,6 +23,7 @@ import { useUserRole } from "../context/UserRoleContext"; // ⬅️ import our h
 import { useDrills } from "../context/DrillsContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import theme from "./styles/theme";
+import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -402,7 +403,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 				)}
 
 				{/* Only show image upload for premium users or admins */}
-				{/* {role === 'premium' || role === 'Premium' || isAdmin ? (
+				{role === 'premium' || role === 'Premium' || isAdmin ? (
 					<>
 						<Text style={styles.label}>
 							Upload Image (optional)
@@ -425,44 +426,12 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						)}
 					</>
 				) : (
-					<View style={styles.premiumFeatureContainer}>
-						<Text style={styles.premiumFeatureText}>
-							Add images to your drills with Premium
+					<>
+						<Text style={styles.label}>
+							Upload Image (optional)
 						</Text>
-						<TouchableOpacity
-							style={styles.upgradeButton}
-							onPress={() => {
-								Alert.alert(
-									"Coming Soon!",
-									"Premium features are currently in development. Stay tuned for updates!",
-									[{ text: "OK", style: "default" }]
-								);
-							}}
-						>
-							<Text style={styles.upgradeButtonText}>Upgrade to Premium</Text>
-						</TouchableOpacity>
-					</View>
-				)} */}
-
-				{/* Image upload for all users */}
-				<Text style={styles.label}>
-					Upload Image (optional)
-				</Text>
-				<TouchableOpacity
-					style={styles.imageUploadButton}
-					onPress={pickImage}
-				>
-					<Text style={styles.imageUploadButtonText}>
-						{imageUri ? "Change Image" : "Pick an Image"}
-					</Text>
-				</TouchableOpacity>
-
-				{imageUri && (
-					<Image
-						source={{ uri: imageUri }}
-						style={styles.previewImage}
-						resizeMode="cover"
-					/>
+						<UpgradeToPremiumBanner role={role} />
+					</>
 				)}
 				</ScrollView>
 			</View>
@@ -611,32 +580,5 @@ const styles = StyleSheet.create({
 	headerButtonDisabled: {
 		color: theme.colors.textMuted,
 	},
-	premiumFeatureContainer: {
-		backgroundColor: theme.colors.surface,
-		borderRadius: 12,
-		padding: 16,
-		marginTop: 16,
-		marginBottom: 16,
-		borderWidth: 1,
-		borderColor: theme.colors.border,
-		alignItems: "center",
-	},
-	premiumFeatureText: {
-		fontSize: 16,
-		color: theme.colors.textMuted,
-		marginBottom: 12,
-		textAlign: "center",
-	},
-	upgradeButton: {
-		backgroundColor: '#8B5CF6',
-		paddingVertical: 12,
-		paddingHorizontal: 20,
-		borderRadius: 8,
-		alignItems: "center",
-	},
-	upgradeButtonText: {
-		color: theme.colors.white,
-		fontSize: 16,
-		fontWeight: "600",
-	},
+
 });
