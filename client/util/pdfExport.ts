@@ -7,6 +7,7 @@ interface Practice {
   startTime: string;
   endTime: string;
   duration?: number;
+  practiceDuration?: number;
   drills: string[];
   drillDuration?: number[];
   notes?: string;
@@ -32,12 +33,25 @@ export const exportPracticeToPDF = async (practice: Practice): Promise<void> => 
     });
 
     // Calculate total duration
-    const totalDuration = practice.duration || 
+    const totalDuration = practice.practiceDuration || practice.duration || 
       (practice.drillDuration ? practice.drillDuration.reduce((sum, dur) => sum + (dur || 0), 0) : 0);
 
     // Generate drill rows
     const drillRows = practice.drills.map((drill, index) => {
-      const drillDuration = practice.drillDuration?.[index] || 0;
+      // Calculate drill duration by dividing total practice duration evenly among drills
+      // If drillDuration array is provided, use it; otherwise calculate evenly
+      let drillDuration = 0;
+      if (practice.drillDuration && practice.drillDuration[index] !== undefined) {
+        drillDuration = practice.drillDuration[index];
+      } else if (practice.practiceDuration) {
+        // Divide practice duration evenly among drills
+        drillDuration = Math.floor(practice.practiceDuration / practice.drills.length);
+        // Add remainder to first few drills
+        if (index < (practice.practiceDuration % practice.drills.length)) {
+          drillDuration += 1;
+        }
+      }
+      
       return `
         <tr>
           <td style="text-align: center; padding: 6px; border-bottom: 1px solid #e0e0e0;">${index + 1}</td>

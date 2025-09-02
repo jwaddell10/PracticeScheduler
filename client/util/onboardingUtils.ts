@@ -1,17 +1,18 @@
-import { storage } from '../components/SplashScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export const resetOnboarding = () => {
-	storage.delete('hasCompletedOnboarding');
+export const resetOnboarding = async () => {
+	await AsyncStorage.removeItem('hasCompletedOnboarding');
 	console.log('Onboarding status reset');
 };
 
-export const checkOnboardingStatus = () => {
-	const hasCompletedOnboarding = storage.getBoolean('hasCompletedOnboarding');
-	console.log('Current onboarding status:', hasCompletedOnboarding);
-	return hasCompletedOnboarding;
+export const checkOnboardingStatus = async () => {
+	const hasCompletedOnboarding = await AsyncStorage.getItem('hasCompletedOnboarding');
+	const onboardingCompleted = hasCompletedOnboarding === 'true';
+	console.log('Current onboarding status:', onboardingCompleted);
+	return onboardingCompleted;
 };
 
-export const completeOnboarding = () => {
-	storage.set('hasCompletedOnboarding', true);
+export const completeOnboarding = async () => {
+	await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
 	console.log('Onboarding marked as complete');
 };

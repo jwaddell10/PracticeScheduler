@@ -102,8 +102,10 @@ const CreatePractice = () => {
 	// Initialize selected drills from clipboard when component mounts
 	useEffect(() => {
 		if (clipboardDrills.length > 0) {
-			// Set selected drills from clipboard
+			// Set selected drills from clipboard, preserving order
 			setSelectedDrills(clipboardDrills.map((drill) => drill.name));
+			
+
 
 			// Auto-calculate drill durations if we have start and end dates
 			if (startDate && endDate) {
@@ -329,19 +331,24 @@ const CreatePractice = () => {
 
 		// Convert drillDurations object to array format for database storage
 		const drillDurationArray: number[] = [];
-		selectedDrills.forEach((drillName) => {
+		const drillsInOrder = clipboardDrills.length > 0 ? clipboardDrills.map(drill => drill.name) : selectedDrills;
+		
+		drillsInOrder.forEach((drillName) => {
 			// Get the duration for this drill from the drillDurations object
 			const drillDuration = drillDurations[drillName] || 0;
 			drillDurationArray.push(drillDuration);
 		});
 
 		try {
+			// Use the current clipboard order (which gets updated when drills are reordered)
+			const drillsInOrder = clipboardDrills.length > 0 ? clipboardDrills.map(drill => drill.name) : selectedDrills;
+			
 			await addPractice({
 				title: title || "Practice",
 				startTime: toLocalISOString(startDate),
 				endTime: toLocalISOString(endDate),
 				teamId: "b2416750-a2c4-4142-a47b-d0fd11ca678a",
-				drills: selectedDrills,
+				drills: drillsInOrder,
 				practiceDuration: Math.round(
 					(endDate.getTime() - startDate.getTime()) / (1000 * 60)
 				),
@@ -377,6 +384,7 @@ const CreatePractice = () => {
 		setSelectedDrills((prev) =>
 			prev.filter((drill) => drill !== drillToRemove)
 		);
+
 		// Remove drill duration when drill is removed
 		const newDrillDurations = { ...drillDurations };
 		delete newDrillDurations[drillToRemove];
@@ -1015,6 +1023,7 @@ const CreatePractice = () => {
 																										if (
 																											selected
 																										) {
+																			// Remove from selected drills
 																											setSelectedDrills(
 																												(
 																													prev
@@ -1027,7 +1036,9 @@ const CreatePractice = () => {
 																															drill.name
 																													)
 																											);
+																											
 																										} else {
+																			// Add to selected drills
 																											setSelectedDrills(
 																												(
 																													prev
@@ -1036,6 +1047,7 @@ const CreatePractice = () => {
 																													drill.name,
 																												]
 																											);
+
 																										}
 																										setHasManuallyEditedDurations(
 																											false

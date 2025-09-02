@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ActivityIndicator } from 'react-native';
-import { MMKV } from 'react-native-mmkv';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import theme from './styles/theme';
 
-// Initialize MMKV storage
-export const storage = new MMKV();
+// Storage keys
+const STORAGE_KEYS = {
+	HAS_COMPLETED_ONBOARDING: 'hasCompletedOnboarding',
+};
 
 interface SplashScreenProps {
 	onOnboardingComplete: () => void;
@@ -21,12 +23,13 @@ export default function SplashScreen({ onOnboardingComplete, onOnboardingIncompl
 				await new Promise(resolve => setTimeout(resolve, 2000));
 				
 				// Check if user has completed onboarding
-				const hasCompletedOnboarding = storage.getBoolean('hasCompletedOnboarding');
+				const hasCompletedOnboarding = await AsyncStorage.getItem(STORAGE_KEYS.HAS_COMPLETED_ONBOARDING);
+				const onboardingCompleted = hasCompletedOnboarding === 'true';
 				
-				console.log('Onboarding status:', hasCompletedOnboarding);
+				console.log('Onboarding status:', onboardingCompleted);
 				
 				// Navigate based on onboarding status
-				if (hasCompletedOnboarding) {
+				if (onboardingCompleted) {
 					onOnboardingComplete();
 				} else {
 					onOnboardingIncomplete();

@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getClipboardDrills, ClipboardDrill } from '../util/clipboardManager';
+import { getClipboardDrills, updateClipboardDrills, ClipboardDrill } from '../util/clipboardManager';
 
 interface ClipboardContextType {
 	clipboardDrills: ClipboardDrill[];
@@ -7,6 +7,7 @@ interface ClipboardContextType {
 	isInitialized: boolean;
 	refreshClipboard: () => Promise<void>;
 	updateClipboardStatus: (drillId: string, isInClipboard: boolean) => void;
+	updateClipboardDrillsOrder: (drills: ClipboardDrill[]) => Promise<void>;
 }
 
 const ClipboardContext = createContext<ClipboardContextType | undefined>(undefined);
@@ -54,6 +55,18 @@ export const ClipboardProvider: React.FC<ClipboardProviderProps> = ({ children }
 		refreshClipboard();
 	};
 
+	const updateClipboardDrillsOrder = async (drills: ClipboardDrill[]) => {
+		try {
+			// Update the local state immediately
+			setClipboardDrills(drills);
+			
+			// Also update the AsyncStorage
+			await updateClipboardDrills(drills);
+		} catch (error) {
+			console.error('Error updating clipboard drills order:', error);
+		}
+	};
+
 	// Preload clipboard data on context initialization
 	useEffect(() => {
 		const initializeClipboard = async () => {
@@ -75,6 +88,7 @@ export const ClipboardProvider: React.FC<ClipboardProviderProps> = ({ children }
 		isInitialized,
 		refreshClipboard,
 		updateClipboardStatus,
+		updateClipboardDrillsOrder,
 	};
 
 	return (

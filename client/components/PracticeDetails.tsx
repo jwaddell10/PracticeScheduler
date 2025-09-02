@@ -21,6 +21,7 @@ import { supabase } from "../lib/supabase";
 import { MaterialIcons } from "@expo/vector-icons";
 
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import DraggableFlatList from "react-native-draggable-flatlist";
 import theme from "./styles/theme";
 import { useSession } from "../context/SessionContext";
 import { usePractices } from "../context/PracticesContext";
@@ -92,6 +93,8 @@ export default function PracticeDetails({ route }) {
 	const [showCopyDatePicker, setShowCopyDatePicker] = useState(false);
 	const [drills, setDrills] = useState([]);
 	const [drillDurations, setDrillDurations] = useState({});
+	const [reorderedDrills, setReorderedDrills] = useState([]);
+	const [editFocusKey, setEditFocusKey] = useState(0);
 
 	// Store original values for cancel functionality
 	const [originalValues, setOriginalValues] = useState({});
@@ -99,6 +102,18 @@ export default function PracticeDetails({ route }) {
 	useEffect(() => {
 		fetchPracticeDetails();
 	}, []);
+
+	// Sync reorderedDrills with drills when drills change
+	useEffect(() => {
+		setReorderedDrills(drills);
+	}, [drills]);
+
+	// Increment edit focus key when editing starts to force DraggableFlatList reinitialization
+	useEffect(() => {
+		if (isEditing) {
+			setEditFocusKey(prev => prev + 1);
+		}
+	}, [isEditing]);
 
 	const toggleStartPicker = () => setShowStartPicker((prev) => !prev);
 
@@ -261,7 +276,7 @@ export default function PracticeDetails({ route }) {
 		}
 
 		// Convert drillDurations object to array format for JSONB storage
-		const drillDurationArray = drills.map((drill, index) => {
+		const drillDurationArray = reorderedDrills.map((drill, index) => {
 			// Find the duration by searching all keys that start with the drill name
 			let duration = 0;
 			let foundKey = '';
@@ -293,7 +308,7 @@ export default function PracticeDetails({ route }) {
 			startTime: startTimeString,
 			practiceDuration: duration,
 			notes,
-			drills,
+			drills: reorderedDrills,
 		});
 
 		setSaving(false);
@@ -303,7 +318,11 @@ export default function PracticeDetails({ route }) {
 		setIsEditing(false); // Exit edit mode after successful save
 	};
 
-	const handleDrillsReorder = (newOrder) => setDrills(newOrder);
+	const handleDrillsReorder = ({ data }: { data: string[] }) => {
+		console.log("Drills reordered:", data);
+		setReorderedDrills(data);
+		setDrills(data);
+	};
 
 	const handleCopyPractice = () => {
 		// Show date picker for the new practice date
@@ -498,7 +517,7 @@ export default function PracticeDetails({ route }) {
 							)}
 
 							<Text style={[styles.label, { marginTop: 24 }]}>
-								Drills {isEditing && "(hold and drag to reorder)"}
+								Drills {isEditing && "(long press and drag to reorder)"}
 							</Text>
 							{isEditing && (() => {
 								const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
@@ -515,83 +534,100 @@ export default function PracticeDetails({ route }) {
 							})()}
 							{isEditing ? (
 								<View style={styles.drillListContainer}>
-									{drills.map((drill, index) => {
-										// Find the duration using the same logic as the save function
-										let drillDuration = 0;
-										let drillKey = '';
-										
-										// First, try to find a key with a non-zero duration
-										for (const [key, value] of Object.entries(drillDurations)) {
-											if (key.startsWith(`${drill}-`) && (value as number) > 0) {
-												drillDuration = value as number;
-												drillKey = key;
-												break;
-											}
-										}
-										
-										// If no non-zero duration found, use the first key with index 0
-										if (drillDuration === 0) {
-											for (const [key, value] of Object.entries(drillDurations)) {
-												if (key === `${drill}-0`) {
-													drillDuration = value as number;
-													drillKey = key;
-													break;
+									<GestureHandlerRootView style={{ flex: 1 }}>
+										<DraggableFlatList
+											key={editFocusKey}
+											data={reorderedDrills}
+											onDragEnd={handleDrillsReorder}
+											keyExtractor={(item) => item}
+											renderItem={({ item: drill, drag, isActive, index }) => {
+												// Find the duration using the same logic as the save function
+												let drillDuration = 0;
+												let drillKey = '';
+												
+												// First, try to find a key with a non-zero duration
+												for (const [key, value] of Object.entries(drillDurations)) {
+													if (key.startsWith(`${drill}-`) && (value as number) > 0) {
+														drillDuration = value as number;
+														drillKey = key;
+														break;
+													}
 												}
-											}
-										}
-										
-										// If still no key found, create a default one
-										if (!drillKey) {
-											drillKey = `${drill}-0`;
-										}
-										
-										const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
-										const isDurationValid = totalDrillDuration === duration;
-										
-										return (
-											<TouchableOpacity
-												key={`${drill}-${index}`}
-												style={[
-													styles.drillItem,
-													{ backgroundColor: theme.colors.surface },
-												]}
-												activeOpacity={0.8}
-											>
-												<View style={styles.drillContent}>
-													<Text style={styles.drillText}>
-														{drill}
-													</Text>
-													<View style={styles.durationInputContainer}>
-														<TextInput
-															key={`drill-duration-${drillKey}`}
-															style={styles.durationInput}
-															value={drillDuration.toString()}
-															onChangeText={(text) => {
-																const newDuration = parseInt(text) || 0;
-																setDrillDurations(prev => {
-																	const updated = {
-																		...prev,
-																		[drillKey]: newDuration
-																	};
-																	return updated;
-																});
-															}}
-															keyboardType="numeric"
-															placeholder="0"
-															placeholderTextColor={theme.colors.textMuted}
-															returnKeyType="done"
-															onSubmitEditing={Keyboard.dismiss}
-															blurOnSubmit={true}
+												
+												// If no non-zero duration found, use the first key with index 0
+												if (drillDuration === 0) {
+													for (const [key, value] of Object.entries(drillDurations)) {
+														if (key === `${drill}-0`) {
+															drillDuration = value as number;
+															drillKey = key;
+															break;
+														}
+													}
+												}
+												
+												// If still no key found, create a default one
+												if (!drillKey) {
+													drillKey = `${drill}-0`;
+												}
+												
+												const totalDrillDuration = Object.values(drillDurations).reduce((sum, dur) => sum + (dur || 0), 0);
+												const isDurationValid = totalDrillDuration === duration;
+												
+												return (
+													<TouchableOpacity
+														style={[
+															styles.drillItem,
+															{ backgroundColor: theme.colors.surface },
+															isActive && { opacity: 0.5 }
+														]}
+														onLongPress={drag}
+														delayLongPress={150}
+														activeOpacity={0.8}
+													>
+														<View style={styles.dragHandle}>
+															<MaterialIcons name="drag-handle" size={20} color={theme.colors.textMuted} />
+														</View>
+														<View style={styles.drillContent}>
+															<Text style={styles.drillText}>
+																{drill}
+															</Text>
+															<View style={styles.durationInputContainer}>
+																<TextInput
+																	key={`drill-duration-${drillKey}`}
+																	style={styles.durationInput}
+																	value={drillDuration.toString()}
+																	onChangeText={(text) => {
+																		const newDuration = parseInt(text) || 0;
+																		setDrillDurations(prev => {
+																			const updated = {
+																				...prev,
+																				[drillKey]: newDuration
+																			};
+																			return updated;
+																		});
+																	}}
+																	keyboardType="numeric"
+																	placeholder="0"
+																	placeholderTextColor={theme.colors.textMuted}
+																	returnKeyType="done"
+																	onSubmitEditing={Keyboard.dismiss}
+																	blurOnSubmit={true}
 															keyboardAppearance="dark"
-														/>
-														<Text style={styles.durationUnit}>
-															min
-														</Text>
-													</View>
-												</View>
-											</TouchableOpacity>
-										);
-									})}
+																/>
+																<Text style={styles.durationUnit}>
+																	min
+																</Text>
+															</View>
+														</View>
+													</TouchableOpacity>
+												);
+											}}
+											contentContainerStyle={styles.draggableListContent}
+											autoscrollThreshold={10}
+											autoscrollSpeed={10}
+											activationDistance={10}
+										/>
+									</GestureHandlerRootView>
 								</View>
 							) : (
 								<View style={styles.readOnlyDrillsContainer}>
@@ -1015,6 +1051,17 @@ const styles = StyleSheet.create({
 		flex: 1,
 		marginBottom: 0,
 		marginTop: 0,
+	},
+	dragHandle: {
+		marginRight: 12,
+		padding: 8,
+		minWidth: 32,
+		minHeight: 32,
+		justifyContent: "center",
+		alignItems: "center",
+	},
+	draggableListContent: {
+		paddingBottom: 20,
 	},
 	shareButton: {
 		backgroundColor: theme.colors.secondary,

@@ -11,8 +11,9 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import DraggableFlatList from "react-native-draggable-flatlist";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { removeDrillFromClipboard, clearClipboard, updateClipboardDrills } from "../util/clipboardManager";
+import { removeDrillFromClipboard, clearClipboard } from "../util/clipboardManager";
 import { useClipboard } from "../context/ClipboardContext";
+import { useFocusEffect } from "@react-navigation/native";
 import theme from "./styles/theme";
 
 interface ClipboardDrill {
@@ -26,13 +27,38 @@ interface ClipboardDrill {
 }
 
 export default function Clipboard() {
-	const { clipboardDrills, isInitialized, refreshClipboard, updateClipboardStatus } = useClipboard();
+	const { clipboardDrills, isInitialized, refreshClipboard, updateClipboardStatus, updateClipboardDrillsOrder } = useClipboard();
 	const [reorderedDrills, setReorderedDrills] = useState<ClipboardDrill[]>([]);
+	const [focusKey, setFocusKey] = useState(0);
 
 	// Update reordered drills when clipboard drills change
 	React.useEffect(() => {
 		setReorderedDrills(clipboardDrills);
 	}, [clipboardDrills]);
+
+	// Force re-render when component mounts or when returning to screen
+	React.useEffect(() => {
+		// This helps ensure the gesture handler is properly initialized
+		const timer = setTimeout(() => {
+			setReorderedDrills([...clipboardDrills]);
+		}, 100);
+		
+		return () => clearTimeout(timer);
+	}, []);
+
+	// Increment focus key when screen comes into focus to force DraggableFlatList reinitialization
+	useFocusEffect(
+		React.useCallback(() => {
+			// Small delay to ensure navigation is complete before reinitializing
+			const timer = setTimeout(() => {
+				setFocusKey(prev => prev + 1);
+			}, 100);
+			
+			return () => clearTimeout(timer);
+		}, [])
+	);
+
+
 
 	const handleRemoveDrillFromClipboard = async (drillId: string) => {
 		try {
@@ -67,32 +93,15 @@ export default function Clipboard() {
 	};
 
 	const handleDrillsReorder = ({ data }: { data: ClipboardDrill[] }) => {
+		console.log("Drills reordered:", data.map(d => d.name));
 		setReorderedDrills(data);
-		// Save the reordered drills to AsyncStorage
-		updateClipboardDrills(data).catch(error => {
+		// Update the clipboard context with the new order
+		updateClipboardDrillsOrder(data).catch(error => {
 			console.error("Error saving reordered drills:", error);
 		});
 	};
 
-	// Helper function to safely convert values to strings and remove brackets/quotes
-	const safeString = (value: any): string => {
-		if (value === null || value === undefined) return '';
-		if (typeof value === 'string') {
-			// Try to parse JSON strings (like "[\"serve\"]")
-			try {
-				const parsed = JSON.parse(value);
-				if (Array.isArray(parsed)) {
-					return parsed.join(', ');
-				}
-				return parsed;
-			} catch {
-				// If parsing fails, return the original string
-				return value;
-			}
-		}
-		if (Array.isArray(value)) return value.join(', ');
-		return String(value);
-	};
+
 
 	const renderDrillItem = ({ item: drill, drag, isActive }: { item: ClipboardDrill; drag: () => void; isActive: boolean }) => (
 		<TouchableOpacity
@@ -100,29 +109,18 @@ export default function Clipboard() {
 				styles.drillItem,
 				isActive && styles.draggingItem
 			]}
-			onLongPress={drag}
-			delayLongPress={50}
-			disabled={isActive}
+			onLongPress={() => {
+				console.log("Drill item long pressed for drill:", drill.name);
+				drag();
+			}}
+			delayLongPress={150}
+			activeOpacity={0.9}
 		>
 			<View style={styles.dragHandle}>
 				<MaterialIcons name="drag-handle" size={20} color={theme.colors.textMuted} />
 			</View>
 			<View style={styles.drillContent}>
 				<Text style={styles.drillName}>{drill.name || 'No name'}</Text>
-				<View style={styles.drillDetails}>
-					{drill.type && (
-						<Text style={styles.drillDetail}>Type: {safeString(drill.type)}</Text>
-					)}
-					{drill.skillFocus && (
-						<Text style={styles.drillDetail}>Focus: {safeString(drill.skillFocus)}</Text>
-					)}
-					{drill.difficulty && (
-						<Text style={styles.drillDetail}>Difficulty: {safeString(drill.difficulty)}</Text>
-					)}
-					{drill.duration !== undefined && (
-						<Text style={styles.drillDetail}>Duration: {drill.duration} min</Text>
-					)}
-				</View>
 			</View>
 			<TouchableOpacity
 				style={styles.removeButton}
@@ -160,29 +158,33 @@ export default function Clipboard() {
 	}
 
 	return (
-		<GestureHandlerRootView style={{ flex: 1 }}>
-			<View style={styles.container}>
-				<View style={styles.header}>
-					<Text style={styles.title}>Practice Clipboard</Text>
-					<TouchableOpacity style={styles.clearButton} onPress={handleClearClipboard}>
-						<Text style={styles.clearButtonText}>Clear All</Text>
-					</TouchableOpacity>
-				</View>
-				
-				<Text style={styles.subtitle}>
-					{reorderedDrills.length} drill{reorderedDrills.length !== 1 ? 's' : ''} ready for practice
-				</Text>
-				<Text style={styles.dragHint}>Hold and drag to reorder drills</Text>
-				
+		<View style={styles.container}>
+			<View style={styles.header}>
+				<Text style={styles.title}>Practice Clipboard</Text>
+				<TouchableOpacity style={styles.clearButton} onPress={handleClearClipboard}>
+					<Text style={styles.clearButtonText}>Clear All</Text>
+				</TouchableOpacity>
+			</View>
+			
+			<Text style={styles.subtitle}>
+				{reorderedDrills.length} drill{reorderedDrills.length !== 1 ? 's' : ''} ready for practice
+			</Text>
+			<Text style={styles.dragHint}>Long press anywhere on a drill to reorder</Text>
+			
+			<GestureHandlerRootView style={{ flex: 1 }}>
 				<DraggableFlatList
+					key={focusKey}
 					data={reorderedDrills}
 					onDragEnd={handleDrillsReorder}
 					keyExtractor={(item) => item.id}
 					renderItem={renderDrillItem}
 					contentContainerStyle={styles.scrollView}
+					autoscrollThreshold={10}
+					autoscrollSpeed={10}
+					activationDistance={10}
 				/>
-			</View>
-		</GestureHandlerRootView>
+			</GestureHandlerRootView>
+		</View>
 	);
 }
 
@@ -251,6 +253,8 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.1,
 		shadowRadius: 4,
 		elevation: 2,
+		minHeight: 60,
+		alignItems: "center",
 	},
 	drillContent: {
 		flex: 1,
@@ -259,15 +263,7 @@ const styles = StyleSheet.create({
 		fontSize: 18,
 		fontWeight: "600",
 		color: theme.colors.textPrimary,
-		marginBottom: 8,
-	},
-	drillDetails: {
-		marginBottom: 8,
-	},
-	drillDetail: {
-		fontSize: 14,
-		color: theme.colors.textMuted,
-		marginBottom: 2,
+		lineHeight: 24,
 	},
 	removeButton: {
 		marginLeft: 12,
@@ -281,7 +277,11 @@ const styles = StyleSheet.create({
 	},
 	dragHandle: {
 		marginRight: 12,
-		padding: 4,
+		padding: 8,
+		minWidth: 32,
+		minHeight: 32,
+		justifyContent: "center",
+		alignItems: "center",
 	},
 	dragHint: {
 		fontSize: 14,

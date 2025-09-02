@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { storage } from './SplashScreen';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import theme from './styles/theme';
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -16,15 +16,13 @@ const onboardingSteps = [
 		title: 'Welcome to PracticePro',
 		subtitle: 'Your complete volleyball practice management solution',
 		description: 'Create, organize, and manage your volleyball practices with ease. Build custom drills and access professional content.',
-		icon: 'sports-volleyball',
-		image: require('../assets/volleyball.png'),
+		image: require('../assets/HomePage.png'),
 	},
 	{
 		id: 2,
 		title: 'Create Custom Drills',
 		subtitle: 'Build drills tailored to your team',
 		description: 'Design drills that match your team\'s skill level and focus areas. Add images and detailed instructions.',
-		icon: 'fitness-center',
 		image: require('../assets/CreateDrill.png'),
 	},
 	{
@@ -32,7 +30,6 @@ const onboardingSteps = [
 		title: 'Professional Drill Library',
 		subtitle: 'Premium subscribers only',
 		description: 'Browse expertly crafted drills created by volleyball professionals. Filter by skill focus and difficulty level.',
-		icon: 'library-books',
 		image: require('../assets/DrillLibrary.png'),
 	},
 	{
@@ -40,7 +37,6 @@ const onboardingSteps = [
 		title: 'Plan Your Practices',
 		subtitle: 'Organize with ease',
 		description: 'Schedule practices, add drills to your clipboard, and create comprehensive practice plans.',
-		icon: 'event',
 		image: require('../assets/CreatePractice.png'),
 	},
 	{
@@ -48,7 +44,6 @@ const onboardingSteps = [
 		title: 'Help Us Improve',
 		subtitle: 'Share your feedback',
 		description: 'Have suggestions? We\'re always looking to add new features and improve your experience. Click \'Contact Us\' on the Account page.',
-		icon: 'feedback',
 		image: require('../assets/AccountPage.png'),
 	},
 ];
@@ -56,19 +51,19 @@ const onboardingSteps = [
 export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) {
 	const [currentStep, setCurrentStep] = useState(0);
 
-	const handleNext = () => {
+	const handleNext = async () => {
 		if (currentStep < onboardingSteps.length - 1) {
 			setCurrentStep(currentStep + 1);
 		} else {
 			// Complete onboarding
-			storage.set('hasCompletedOnboarding', true);
+			await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
 			onComplete();
 		}
 	};
 
-	const handleSkip = () => {
+	const handleSkip = async () => {
 		// Complete onboarding
-		storage.set('hasCompletedOnboarding', true);
+		await AsyncStorage.setItem('hasCompletedOnboarding', 'true');
 		onComplete();
 	};
 
@@ -92,14 +87,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 					/>
 				</View>
 
-				{/* Icon */}
-				<View style={styles.iconContainer}>
-									<MaterialIcons
-					name={currentStepData.icon as any}
-					size={40}
-					color={theme.colors.primary}
-				/>
-				</View>
+
 
 				{/* Text Content */}
 				<View style={styles.textContainer}>
@@ -164,48 +152,45 @@ const styles = StyleSheet.create({
 		paddingHorizontal: 20,
 	},
 	imageContainer: {
-		marginBottom: 32,
 		alignItems: 'center',
+        marginBottom: 10,
 	},
 	image: {
-		width: screenWidth * 0.9,
-		height: screenWidth * 0.7,
+		// width: screenWidth * 1.5,
+		height: screenWidth * 1.3,
 	},
-	iconContainer: {
-		marginBottom: 24,
-		alignItems: 'center',
-	},
+
 	textContainer: {
 		alignItems: 'center',
 	},
 	title: {
-		fontSize: 24,
+		fontSize: 18,
 		fontWeight: '700',
 		color: theme.colors.textPrimary,
 		textAlign: 'center',
-		marginBottom: 8,
+		marginBottom: 4,
 	},
 	subtitle: {
-		fontSize: 16,
+		fontSize: 13,
 		fontWeight: '600',
 		color: theme.colors.primary,
 		textAlign: 'center',
-		marginBottom: 12,
+		marginBottom: 6,
 	},
 	description: {
-		fontSize: 14,
+		fontSize: 11,
 		color: theme.colors.textMuted,
 		textAlign: 'center',
-		lineHeight: 20,
+		lineHeight: 16,
 	},
 	bottomSection: {
 		paddingHorizontal: 40,
-		paddingBottom: 60,
+		paddingBottom: 40,
 	},
 	progressContainer: {
 		flexDirection: 'row',
 		justifyContent: 'center',
-		marginBottom: 32,
+		marginBottom: 24,
 	},
 	progressDot: {
 		width: 8,
