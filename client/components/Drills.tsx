@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect, useContext, useEffect } from "react";
+import React, { useState, useLayoutEffect, useContext, useEffect, useRef } from "react";
 import {
 	View,
 	Text,
@@ -36,7 +36,16 @@ export default function Drills() {
 		type: [],
 	});
 	const [searchQuery, setSearchQuery] = useState("");
-
+	const [displayedDrills, setDisplayedDrills] = useState([]);
+	const [currentPage, setCurrentPage] = useState(1);
+	const [hasMoreDrills, setHasMoreDrills] = useState(true);
+	const [isLoadingMore, setIsLoadingMore] = useState(false);
+	const DRILLS_PER_PAGE = 20; // Show 20 drills per page
+	const prevFilteredDrillsRef = useRef([]);
+	
+	// Cache for storing already loaded drills by ID
+	const [drillCache, setDrillCache] = useState(new Map());
+	const [cachedDrillIds, setCachedDrillIds] = useState(new Set());
 
 	const skillFocusOptions = [
 		"Offense",
@@ -94,6 +103,20 @@ export default function Drills() {
 		);
 	}
 
+	// Show loading state only if we have no drills to display
+	if (loading && displayedDrills.length === 0) {
+		return (
+			<SafeAreaProvider>
+				<SafeAreaView style={styles.safeArea}>
+					<View style={styles.loadingContainer}>
+						<ActivityIndicator size="large" color={theme.colors.primary} />
+						<Text style={styles.loadingText}>Loading drills...</Text>
+					</View>
+				</SafeAreaView>
+			</SafeAreaProvider>
+		);
+	}
+
 	// Check if user has premium access
 	const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
 
@@ -124,6 +147,59 @@ export default function Drills() {
 
 	const clearAllFilters = () => {
 		setSelectedFilters({ skillFocus: [], difficulty: [], type: [] });
+	};
+
+	const loadMoreDrills = () => {
+		if (isLoadingMore || !hasMoreDrills) return;
+		
+		setIsLoadingMore(true);
+		
+		// Use cached data if available, otherwise load from filtered drills
+		const nextPage = currentPage + 1;
+		const startIndex = (nextPage - 1) * DRILLS_PER_PAGE;
+		const endIndex = startIndex + DRILLS_PER_PAGE;
+		
+		// Check if we have cached data for this page
+		const cachedPageDrills = [];
+		for (let i = startIndex; i < endIndex && i < filteredDrills.length; i++) {
+			const drill = filteredDrills[i];
+			if (drill && isDrillCached(drill.id)) {
+				cachedPageDrills.push(getCachedDrill(drill.id));
+			} else if (drill) {
+				cachedPageDrills.push(drill);
+			}
+		}
+		
+		// Cache any new drills
+		cacheDrills(cachedPageDrills);
+		
+		setDisplayedDrills(prev => [...prev, ...cachedPageDrills]);
+		setCurrentPage(nextPage);
+		setHasMoreDrills(endIndex < filteredDrills.length);
+		setIsLoadingMore(false);
+	};
+
+	const cacheDrills = (drillsToCache) => {
+		const newCache = new Map(drillCache);
+		const newCachedIds = new Set(cachedDrillIds);
+		
+		drillsToCache.forEach(drill => {
+			if (drill && drill.id) {
+				newCache.set(drill.id, drill);
+				newCachedIds.add(drill.id);
+			}
+		});
+		
+		setDrillCache(newCache);
+		setCachedDrillIds(newCachedIds);
+	};
+
+	const getCachedDrill = (drillId) => {
+		return drillCache.get(drillId);
+	};
+
+	const isDrillCached = (drillId) => {
+		return cachedDrillIds.has(drillId);
 	};
 
 	const filterDrills = (drillsToFilter) => {
@@ -212,6 +288,48 @@ export default function Drills() {
 	});
 
 	const filteredDrills = filterDrills(searchFilteredDrills);
+
+	// Handle pagination, caching, and preloading in a single useEffect
+	useEffect(() => {
+		if (drills.length > 0) {
+			// Aggressive preloading: cache all available drills in background
+			const allDrills = drills.slice(0, Math.min(drills.length, DRILLS_PER_PAGE * 10)); // Cache up to 10 pages
+			cacheDrills(allDrills);
+			
+			// If we don't have displayed drills yet, show first page immediately
+			if (displayedDrills.length === 0) {
+				const firstPage = drills.slice(0, DRILLS_PER_PAGE);
+				setDisplayedDrills(firstPage);
+				setCurrentPage(1);
+				setHasMoreDrills(drills.length > DRILLS_PER_PAGE);
+			}
+		}
+	}, [drills, displayedDrills.length]);
+
+	// Handle filtered drills changes separately
+	useEffect(() => {
+		// Check if the filtered drills have actually changed
+		const currentDrills = JSON.stringify(filteredDrills.map(d => d.id).sort());
+		const prevDrills = JSON.stringify(prevFilteredDrillsRef.current.map(d => d.id).sort());
+		
+		if (currentDrills !== prevDrills) {
+			prevFilteredDrillsRef.current = [...filteredDrills];
+			
+			if (filteredDrills.length > 0) {
+				// Reset pagination when filters change
+				setCurrentPage(1);
+				setHasMoreDrills(filteredDrills.length > DRILLS_PER_PAGE);
+				
+				// Show first page immediately and cache it
+				const firstPage = filteredDrills.slice(0, DRILLS_PER_PAGE);
+				cacheDrills(firstPage);
+				setDisplayedDrills(firstPage);
+			} else {
+				setDisplayedDrills([]);
+				setHasMoreDrills(false);
+			}
+		}
+	}, [filteredDrills]);
 
 	// No categorization - just use filtered drills directly
 
@@ -388,12 +506,42 @@ export default function Drills() {
 							</ScrollView>
 						</View>
 					)}
-					<ScrollView contentContainerStyle={styles.scrollView}>
+					<ScrollView 
+						contentContainerStyle={styles.scrollView}
+						onScroll={({ nativeEvent }) => {
+							const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
+							const paddingToBottom = 20;
+							if (layoutMeasurement.height + contentOffset.y >= contentSize.height - paddingToBottom) {
+								loadMoreDrills();
+							}
+						}}
+						scrollEventThrottle={400}
+					>
 						<Text style={styles.header}>
 							All Drills ({filteredDrills.length})
 						</Text>
-						{filteredDrills.map(renderDrillRow)}
-						{filteredDrills.length === 0 && (
+						{displayedDrills.map(renderDrillRow)}
+						
+						{/* Load More Indicator */}
+						{hasMoreDrills && (
+							<View style={styles.loadMoreContainer}>
+								{isLoadingMore ? (
+									<View style={styles.loadingMoreContainer}>
+										<ActivityIndicator size="small" color={theme.colors.primary} />
+										<Text style={styles.loadingMoreText}>Loading more drills...</Text>
+									</View>
+								) : (
+									<TouchableOpacity
+										style={styles.loadMoreButton}
+										onPress={loadMoreDrills}
+									>
+										<Text style={styles.loadMoreButtonText}>Load More Drills</Text>
+									</TouchableOpacity>
+								)}
+							</View>
+						)}
+						
+						{displayedDrills.length === 0 && (
 							<View style={styles.emptyState}>
 								<MaterialIcons
 									name="search-off"
@@ -498,18 +646,33 @@ const styles = StyleSheet.create({
 	},
 	drillCard: {
 		backgroundColor: theme.colors.surface,
-		borderRadius: 12,
-		marginBottom: 12,
-		flexDirection: "row",
-		alignItems: "center",
-		shadowColor: theme.colors.surface,
-		shadowOffset: { width: 0, height: 2 },
-		shadowOpacity: 0.1,
-		shadowRadius: 4,
-		elevation: 3,
-		borderWidth: 1,
-		borderColor: theme.colors.border,
 	},
+	loadMoreContainer: {
+		marginTop: 20,
+		marginBottom: 20,
+		alignItems: 'center',
+	},
+	loadingMoreContainer: {
+		flexDirection: 'row',
+		alignItems: 'center',
+		gap: 12,
+	},
+	loadingMoreText: {
+		fontSize: 16,
+		color: theme.colors.textMuted,
+	},
+	loadMoreButton: {
+		backgroundColor: theme.colors.primary,
+		paddingHorizontal: 24,
+		paddingVertical: 12,
+		borderRadius: 8,
+	},
+	loadMoreButtonText: {
+		color: theme.colors.white,
+		fontSize: 16,
+		fontWeight: '600',
+	},
+
 	drillCardContent: {
 		flex: 1,
 		padding: 16,
