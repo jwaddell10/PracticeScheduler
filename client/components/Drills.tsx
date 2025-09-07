@@ -16,19 +16,29 @@ import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
 import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
-import { useSubscription } from "../context/UserRoleContext";
+import { checkSubscription } from "../context/UserRoleContext";
 import DrillFilterModal from "./DrillFilterModal";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
+import { getCustomerInfo } from "../lib/revenueCat";
 
 export default function Drills() {
 	const navigation = useNavigation();
 	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
 	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
-	const { isPremium } = useSubscription();
+	const [isPremium, setIsPremium] = useState(false);
+	useEffect(() => {
+		const userInfo = getCustomerInfo()
+		console.log(userInfo, 'user info?')
 
+		const checkUserSubscription = async () => {
+			const hasPremium = await checkSubscription();
+			setIsPremium(hasPremium);
+		};
+		checkUserSubscription();
+	}, []);
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState({
 		skillFocus: [],
@@ -124,7 +134,7 @@ export default function Drills() {
 				<SafeAreaView style={styles.safeArea}>
 					<View style={styles.container}>
 						<View style={styles.centeredContainer}>
-							<UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />
+							<UpgradeToPremiumBanner />
 						</View>
 					</View>
 				</SafeAreaView>

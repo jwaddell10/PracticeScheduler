@@ -86,7 +86,7 @@ export default function Account({ session }: { session: Session | null }) {
 			</View>
 
 			{/* Show Upgrade Banner for non-premium users */}
-			{!subscriptionLoading && <UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />}
+			{!subscriptionLoading && <UpgradeToPremiumBanner />}
 
 			<View style={styles.section}>
 				<Text style={styles.sectionTitle}>Profile Information</Text>

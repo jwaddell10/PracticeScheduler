@@ -9,6 +9,18 @@ type UserRoleContextType = {
 	refreshSubscription: () => Promise<void>;
 };
 
+// Export the checkSubscription function for direct use
+export const checkSubscription = async () => {
+	try {
+		const subscriptionInfo = await getSubscriptionInfo();
+		console.log(subscriptionInfo, 'subscription info')
+		return subscriptionInfo.hasActivePremium;
+	} catch (error) {
+		console.error('Failed to check subscription status:', error);
+		return false;
+	}
+};
+
 const UserRoleContext = createContext<UserRoleContextType | undefined>(undefined);
 
 export function UserRoleProvider({ children }: { children: React.ReactNode }) {

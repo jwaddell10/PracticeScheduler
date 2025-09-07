@@ -143,8 +143,25 @@ export default function App() {
 		// Listen for auth state changes
 		const {
 			data: { subscription: authSubscription },
-		} = supabase.auth.onAuthStateChange((event, session) => {
+		} = supabase.auth.onAuthStateChange(async (event, session) => {
 			setSession(session);
+
+			// Set RevenueCat user ID when user signs in/out
+			if (event === "SIGNED_IN" && session?.user) {
+				try {
+					await setRevenueCatUser(session.user.id);
+					console.log('RevenueCat user ID set on sign in:', session.user.id);
+				} catch (error) {
+					console.warn('Failed to set RevenueCat user ID on sign in:', error);
+				}
+			} else if (event === "SIGNED_OUT") {
+				try {
+					await Purchases.logOut();
+					console.log('RevenueCat user logged out');
+				} catch (error) {
+					console.warn('Failed to log out RevenueCat user:', error);
+				}
+			}
 
 			// Handle successful email confirmation or sign in
 			// if (event === "SIGNED_IN" && session) {

@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
+import { checkSubscription } from "../context/UserRoleContext";
 
 type RootStackParamList = {
 	Home: undefined;
@@ -10,15 +11,31 @@ type RootStackParamList = {
 };
 
 interface UpgradeToPremiumBannerProps {
-	role?: string | null;
+	// No longer need role prop since we check subscription directly
 }
 
-export default function UpgradeToPremiumBanner({ role }: UpgradeToPremiumBannerProps) {
-	// Hide banner for premium and admin users
-	if (role === "Premium" || role === "premium" || role === "admin") {
+export default function UpgradeToPremiumBanner({}: UpgradeToPremiumBannerProps) {
+	const [isPremium, setIsPremium] = useState(false);
+	const [loading, setLoading] = useState(true);
+	const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+
+	useEffect(() => {
+		const checkUserSubscription = async () => {
+			const hasPremium = await checkSubscription();
+			setIsPremium(hasPremium);
+			setLoading(false);
+		};
+		checkUserSubscription();
+	}, []);
+
+	// Hide banner for premium users
+	if (loading) {
+		return null; // Don't show anything while loading
+	}
+
+	if (isPremium) {
 		return null;
 	}
-	const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
 	const handleUpgrade = () => {
 		navigation.navigate("Premium");
