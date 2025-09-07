@@ -20,7 +20,7 @@ import Clipboard from "./components/Clipboard";
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { ClipboardProvider } from "./context/ClipboardContext";
-import { UserRoleProvider, useUserRole } from "./context/UserRoleContext";
+import { UserRoleProvider, useSubscription } from "./context/UserRoleContext";
 
 import theme from "./components/styles/theme"; // Make sure this path is correct
 import YourDrills from "./components/YourDrills";
@@ -88,8 +88,8 @@ const DrillStack = createNativeStackNavigator();
 
 // Wrapper component to pass user role to Drills
 function DrillsWithRole() {
-	const { role } = useUserRole();
-	return <Drills userRole={role} />;
+	const { isPremium } = useSubscription();
+	return <Drills userRole={isPremium ? "premium" : "free"} />;
 }
 
 function DrillStackScreen() {

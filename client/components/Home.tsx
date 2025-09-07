@@ -14,7 +14,7 @@ import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFavorites } from "../context/FavoritesContext"; // Adjust path as needed
 import { usePractices } from "../context/PracticesContext";
 import { useDrills } from "../context/DrillsContext";
-import { useUserRole } from "../context/UserRoleContext";
+import { useSubscription } from "../context/UserRoleContext";
 import UpcomingPractices from "./UpcomingPractices";
 import theme from "./styles/theme";
 
@@ -24,7 +24,7 @@ export default function HomeScreen() {
 	const { favoriteDrills } = useFavorites();
 	const { practices, deletePractice } = usePractices();
 	const { refreshAllDrills, userDrills } = useDrills();
-	const { role } = useUserRole();
+	const { isPremium } = useSubscription();
 	const [selectedDate, setSelectedDate] = useState(null);
 	const [showAllPractices, setShowAllPractices] = useState(false);
 
@@ -106,8 +106,7 @@ export default function HomeScreen() {
 				<TouchableOpacity
 					style={styles.statCard}
 					onPress={() => {
-						const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
-						if (hasPremiumAccess) {
+						if (isPremium) {
 							navigation.navigate("DrillsTab");
 						} else {
 							navigation.navigate("Premium");

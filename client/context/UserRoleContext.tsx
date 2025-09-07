@@ -1,62 +1,62 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { useSession } from "./SessionContext";
-import { supabase } from "../lib/supabase";
+import { getSubscriptionInfo } from "../lib/revenueCat";
 
 type UserRoleContextType = {
-	role: string | null;
-	isAdmin: boolean;
+	isPremium: boolean;
 	loading: boolean;
 	error: string | null;
+	refreshSubscription: () => Promise<void>;
 };
 
 const UserRoleContext = createContext<UserRoleContextType | undefined>(undefined);
 
 export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 	const session = useSession();
-	const [role, setRole] = useState<string | null>(null);
+	const [isPremium, setIsPremium] = useState<boolean>(false);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
+	const checkSubscription = async () => {
+		if (!session?.user) {
+			setIsPremium(false);
+			setLoading(false);
+			return;
+		}
+
+		setLoading(true);
+		setError(null);
+
+		try {
+			// Check RevenueCat directly for active subscription
+			console.log('Checking RevenueCat subscription status...');
+			const subscriptionInfo = await getSubscriptionInfo();
+			
+			console.log('RevenueCat subscription check result:', {
+				hasActivePremium: subscriptionInfo.hasActivePremium,
+				subscriptionStatus: subscriptionInfo.subscriptionStatus,
+				expiresAt: subscriptionInfo.expiresAt
+			});
+			
+			setIsPremium(subscriptionInfo.hasActivePremium);
+		} catch (err) {
+			console.error('Failed to check subscription status:', err);
+			setError(err instanceof Error ? err.message : "Unknown error");
+			setIsPremium(false);
+		} finally {
+			setLoading(false);
+		}
+	};
+
 	useEffect(() => {
-		const fetchRole = async () => {
-			if (!session?.user) {
-				setRole(null);
-				setLoading(false);
-				return;
-			}
-
-			setLoading(true);
-			setError(null);
-
-			try {
-				const { data, error } = await supabase
-					.from("users")
-					.select("role")
-					.eq("id", session.user.id)
-					.single();
-
-				if (error) {
-					setError(error.message);
-					setRole(null);
-				} else {
-					setRole(data?.role ?? null);
-				}
-			} catch (err) {
-				setError(err instanceof Error ? err.message : "Unknown error");
-				setRole(null);
-			} finally {
-				setLoading(false);
-			}
-		};
-
-		fetchRole();
+		checkSubscription();
 	}, [session]);
 
 	const value = {
-		role,
-		isAdmin: role === "admin",
+		isPremium,
 		loading,
 		error,
+		refreshSubscription: checkSubscription,
 	};
 
 	return (
@@ -66,10 +66,10 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 	);
 }
 
-export function useUserRole(): UserRoleContextType {
+export function useSubscription(): UserRoleContextType {
 	const context = useContext(UserRoleContext);
 	if (context === undefined) {
-		throw new Error("useUserRole must be used within a UserRoleProvider");
+		throw new Error("useSubscription must be used within a UserRoleProvider");
 	}
 	return context;
 }

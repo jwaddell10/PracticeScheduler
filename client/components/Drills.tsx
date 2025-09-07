@@ -16,7 +16,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
 import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
-import { useUserRole } from "../context/UserRoleContext";
+import { useSubscription } from "../context/UserRoleContext";
 import DrillFilterModal from "./DrillFilterModal";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import theme from "./styles/theme";
@@ -27,7 +27,7 @@ export default function Drills() {
 	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
 	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
-	const { role } = useUserRole();
+	const { isPremium } = useSubscription();
 
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState({
@@ -117,17 +117,14 @@ export default function Drills() {
 		);
 	}
 
-	// Check if user has premium access
-	const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
-
 	// Show premium required message for non-premium users
-	if (!hasPremiumAccess) {
+	if (!isPremium) {
 		return (
 			<SafeAreaProvider>
 				<SafeAreaView style={styles.safeArea}>
 					<View style={styles.container}>
 						<View style={styles.centeredContainer}>
-							<UpgradeToPremiumBanner role={role} />
+							<UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />
 						</View>
 					</View>
 				</SafeAreaView>

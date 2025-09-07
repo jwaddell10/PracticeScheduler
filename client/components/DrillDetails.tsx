@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useUserRole } from "../context/UserRoleContext";
+import { useSubscription } from "../context/UserRoleContext";
 import { useSession } from "../context/SessionContext";
 import { useDrills } from "../context/DrillsContext";
 import theme from "./styles/theme";
@@ -33,7 +33,7 @@ export default function DrillDetails({ route }: { route: any }) {
 		);
 	}
 	const navigation = useNavigation();
-	const { isAdmin } = useUserRole();
+	const { isPremium } = useSubscription();
 	const { deleteDrill, publicDrills, userDrills } = useDrills();
 	const session = useSession();
 	
@@ -81,17 +81,13 @@ export default function DrillDetails({ route }: { route: any }) {
 
 	// Check if user can delete this drill
 	const canDeleteDrill = () => {
-		// Admin can delete any drill
-		if (isAdmin) return true;
-		// User can only delete their own drills
+		// User can only delete their own drills (admin functionality removed)
 		return currentDrill.user_id === session?.user?.id;
 	};
 
 	// Check if user can edit this drill
 	const canEditDrill = () => {
-		// Admin can edit any public drill
-		if (isAdmin && currentDrill.isPublic) return true;
-		// User can only edit their own drills
+		// User can only edit their own drills (admin functionality removed)
 		return currentDrill.user_id === session?.user?.id;
 	};
 

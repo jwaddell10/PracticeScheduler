@@ -24,7 +24,7 @@ import { usePractices } from "../context/PracticesContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useSession } from "../context/SessionContext";
 import { useDrillFilters } from "../hooks/useDrillFilters";
-import { useUserRole } from "../context/UserRoleContext";
+import { useSubscription } from "../context/UserRoleContext";
 import DrillFilterModal from "./DrillFilterModal";
 import DrillDetails from "./DrillDetails";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -46,7 +46,7 @@ const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const { addPractice } = usePractices();
-	const { role: userRole } = useUserRole();
+	const { isPremium } = useSubscription();
 	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
 	const [drillSelectionModalVisible, setDrillSelectionModalVisible] =
 		useState(false);
@@ -55,7 +55,7 @@ const CreatePractice = () => {
 		useState<DrillData | null>(null);
 	const [drillSourceToggle, setDrillSourceToggle] = useState<
 		"public" | "user"
-	>(userRole === "premium" ? "public" : "user");
+	>(isPremium ? "public" : "user");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showFilters, setShowFilters] = useState(false);
 
@@ -729,12 +729,6 @@ const CreatePractice = () => {
 										</View>
 									)}
 
-									{selectedDrills.length === 0 && (
-										<Text style={styles.noDrillsText}>
-											No drills selected yet
-										</Text>
-									)}
-
 									{/* Drill Selection Modal */}
 									<Modal
 										visible={drillSelectionModalVisible}
@@ -751,7 +745,7 @@ const CreatePractice = () => {
 												</Text>
 
 												{/* Drill Source Toggle - Only show for premium users */}
-												{userRole === "premium" && (
+												{isPremium && (
 													<View
 														style={
 															styles.toggleContainer

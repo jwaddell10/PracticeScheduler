@@ -5,7 +5,7 @@ import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
-import { useUserRole } from "../context/UserRoleContext";
+import { useSubscription } from "../context/UserRoleContext";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import ContactUs from "./ContactUs";
 
@@ -13,7 +13,7 @@ export default function Account({ session }: { session: Session | null }) {
 	const [loading, setLoading] = useState(true);
 	const [email, setEmail] = useState("");
 	const [drills, setDrills] = useState("");
-	const { role, loading: roleLoading } = useUserRole();
+	const { isPremium, loading: subscriptionLoading } = useSubscription();
 
 	useEffect(() => {
 		if (session) getProfile();
@@ -86,7 +86,7 @@ export default function Account({ session }: { session: Session | null }) {
 			</View>
 
 			{/* Show Upgrade Banner for non-premium users */}
-			{!roleLoading && <UpgradeToPremiumBanner role={role} />}
+			{!subscriptionLoading && <UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />}
 
 			<View style={styles.section}>
 				<Text style={styles.sectionTitle}>Profile Information</Text>
@@ -104,11 +104,11 @@ export default function Account({ session }: { session: Session | null }) {
 					<View style={styles.roleDisplay}>
 						<Text style={[
 							styles.roleText,
-							(role === "Premium" || role === "premium") && styles.premiumRoleText
+							isPremium && styles.premiumRoleText
 						]}>
-							{role || "Free"}
+							{isPremium ? "Premium" : "Free"}
 						</Text>
-						{(role === "Premium" || role === "premium") && (
+						{isPremium && (
 							<MaterialIcons name="verified" size={20} color={theme.colors.proPurple} />
 						)}
 					</View>

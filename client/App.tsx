@@ -12,8 +12,10 @@ import { SessionContext } from "./context/SessionContext";
 import { PracticesProvider } from "./context/PracticesContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { DrillsProvider } from "./context/DrillsContext";
+import { UserRoleProvider } from "./context/UserRoleContext";
 import { supabase } from "./lib/supabase";
 import { resetOnboarding } from "./util/onboardingUtils";
+import { setRevenueCatUser } from "./lib/revenueCat";
 import "react-native-get-random-values";
 
 // Expose reset function for testing
@@ -68,6 +70,14 @@ export default function App() {
 				
 				// If we have a session, pre-fetch data
 				if (initialSession) {
+					
+					// Set RevenueCat user ID
+					try {
+						await setRevenueCatUser(initialSession.user.id);
+						console.log('RevenueCat user ID set:', initialSession.user.id);
+					} catch (error) {
+						console.warn('Failed to set RevenueCat user ID:', error);
+					}
 					
 					// Set the session for RLS policies
 					await supabase.auth.setSession({
@@ -222,16 +232,18 @@ export default function App() {
 		<>
 			<StatusBar barStyle="light-content" backgroundColor="#000000" />
 			<SessionContext.Provider value={session}>
-				<FavoritesProvider>
-					<DrillsProvider 
-						initialPublicDrills={preFetchedData.publicDrills}
-						initialUserDrills={preFetchedData.userDrills}
-					>
-						<PracticesProvider initialPractices={preFetchedData.practices}>
-							<Navigation />
-						</PracticesProvider>
-					</DrillsProvider>
-				</FavoritesProvider>
+				<UserRoleProvider>
+					<FavoritesProvider>
+						<DrillsProvider 
+							initialPublicDrills={preFetchedData.publicDrills}
+							initialUserDrills={preFetchedData.userDrills}
+						>
+							<PracticesProvider initialPractices={preFetchedData.practices}>
+								<Navigation />
+							</PracticesProvider>
+						</DrillsProvider>
+					</FavoritesProvider>
+				</UserRoleProvider>
 			</SessionContext.Provider>
 		</>
 	);

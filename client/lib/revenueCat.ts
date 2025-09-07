@@ -102,11 +102,98 @@ export const hasActivePremium = async (): Promise<boolean> => {
     // Check for active premium entitlements
     // You'll need to configure these in your RevenueCat dashboard
     const hasPremium = customerInfo.entitlements.active['premium'] !== undefined;
-    const hasAdmin = customerInfo.entitlements.active['admin'] !== undefined;
     
-    return hasPremium || hasAdmin;
+    return hasPremium;
   } catch (error) {
     console.error('Failed to check premium status:', error);
     return false;
+  }
+};
+
+// Get detailed subscription information
+export const getSubscriptionInfo = async () => {
+  try {
+    const customerInfo = await Purchases.getCustomerInfo();
+    
+    // Check for active premium entitlements
+    const premiumEntitlement = customerInfo.entitlements.active['premium'];
+    
+    const hasActivePremium = premiumEntitlement !== undefined;
+    
+    // Get expiration date if subscription exists
+    let expiresAt: Date | null = null;
+    let subscriptionStatus: 'active' | 'expired' | 'cancelled' | 'grace_period' | 'free' = 'free';
+    
+    if (hasActivePremium) {
+      expiresAt = new Date(premiumEntitlement.expirationDate);
+      subscriptionStatus = 'active';
+    }
+    
+    // Check if subscription is in grace period or expired
+    if (expiresAt) {
+      const now = new Date();
+      if (expiresAt < now) {
+        subscriptionStatus = 'expired';
+      }
+    }
+    
+    return {
+      hasActivePremium,
+      subscriptionStatus,
+      expiresAt,
+      customerInfo,
+      premiumEntitlement
+    };
+  } catch (error) {
+    console.error('Failed to get subscription info:', error);
+    return {
+      hasActivePremium: false,
+      subscriptionStatus: 'free' as const,
+      expiresAt: null,
+      customerInfo: null,
+      premiumEntitlement: null
+    };
+  }
+};
+
+// Update user role in Supabase based on RevenueCat subscription status
+export const syncSubscriptionWithDatabase = async (userId: string) => {
+  try {
+    const subscriptionInfo = await getSubscriptionInfo();
+    
+    // Determine the role based on subscription status
+    let role = 'free';
+    if (subscriptionInfo.hasActivePremium) {
+      role = 'premium';
+    }
+    
+    console.log('Syncing subscription status:', {
+      userId,
+      role,
+      subscriptionStatus: subscriptionInfo.subscriptionStatus,
+      expiresAt: subscriptionInfo.expiresAt
+    });
+    
+    // Import supabase here to avoid circular dependencies
+    const { supabase } = await import('./supabase');
+    
+    // Update user role in database
+    const { error } = await supabase
+      .from('users')
+      .update({ 
+        role
+      })
+      .eq('id', userId);
+    
+    if (error) {
+      console.error('Failed to update user role in database:', error);
+      throw error;
+    }
+    
+    console.log('Successfully synced subscription status to database');
+    return { role, subscriptionStatus: subscriptionInfo.subscriptionStatus };
+  } catch (error) {
+    console.error('Failed to sync subscription with database:', error);
+    throw error;
   }
 };

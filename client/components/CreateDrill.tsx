@@ -19,7 +19,7 @@ import { useSession } from "../context/SessionContext";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
 import { supabase } from "../lib/supabase";
-import { useUserRole } from "../context/UserRoleContext"; // ⬅️ import our hook
+import { useSubscription } from "../context/UserRoleContext"; // ⬅️ import our hook
 import { useDrills } from "../context/DrillsContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import theme from "./styles/theme";
@@ -54,7 +54,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const session = useSession();
-	const { isAdmin, loading: roleLoading, error: roleError, role } = useUserRole(); // ⬅️ use the hook
+	const { isPremium, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
 	const { updateDrill } = useDrills(); // Add this to use the context's updateDrill function
 	
 	// Get params from route
@@ -73,7 +73,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const [notes, setNotes] = useState(existingDrill?.notes || "");
 	const [saving, setSaving] = useState(false);
 	const [imageUri, setImageUri] = useState(null);
-	const [isPublic, setIsPublic] = useState(existingDrill?.isPublic ?? isAdmin); // default to admin value
+	const [isPublic, setIsPublic] = useState(existingDrill?.isPublic ?? false); // default to false for non-admin users
 
 	// Set up header with back button and save button (only when not in modal)
 	useLayoutEffect(() => {
@@ -254,7 +254,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					difficulty,
 					notes,
 					imageUrl,
-					isPublic: isAdmin ? isPublic : existingDrill.isPublic,
+					isPublic: false, // Only admins can create public drills, but we don't have admin check anymore
 				});
 
 				Alert.alert("Success", "Drill updated successfully!", [
@@ -281,7 +281,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						difficulty,
 						notes,
 						imageUrl,
-						isPublic: isAdmin ? isPublic : false,
+						isPublic: false, // Only admins can create public drills
 					},
 				]);
 
@@ -319,11 +319,11 @@ export default function CreateDrill(props?: CreateDrillProps) {
 		setDifficulty([]);
 		setNotes("");
 		setImageUri(null);
-		setIsPublic(isAdmin);
+		setIsPublic(false);
 	};
 
-	// While role is loading, show a loading state (optional)
-	// if (roleLoading) {
+	// While subscription is loading, show a loading state (optional)
+	// if (subscriptionLoading) {
 	// 	return (
 	// 		<View style={styles.container}>
 	// 			<Text>Loading permissions...</Text>
@@ -331,10 +331,10 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	// 	);
 	// }
 
-	// if (roleError) {
+	// if (subscriptionError) {
 	// 	return (
 	// 		<View style={styles.container}>
-	// 			<Text>Error loading role: {roleError}</Text>
+	// 			<Text>Error loading subscription: {subscriptionError}</Text>
 	// 		</View>
 	// 	);
 	// }
@@ -389,8 +389,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					onSelect={setDifficulty}
 				/>
 
-				{/* Admin toggle for public drills */}
-				{isAdmin && (
+				{/* Admin toggle for public drills - disabled for now since we don't have admin check */}
+				{false && (
 					<View style={styles.toggleRow}>
 						<Text style={styles.toggleLabel}>
 							Make Public
@@ -402,8 +402,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					</View>
 				)}
 
-				{/* Only show image upload for premium users or admins */}
-				{role === 'premium' || role === 'Premium' || isAdmin ? (
+				{/* Only show image upload for premium users */}
+				{isPremium ? (
 					<>
 						<Text style={styles.label}>
 							Upload Image (optional)
@@ -430,7 +430,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						<Text style={styles.label}>
 							Upload Image (optional)
 						</Text>
-						<UpgradeToPremiumBanner role={role} />
+						<UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />
 					</>
 				)}
 				</ScrollView>

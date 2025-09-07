@@ -24,7 +24,7 @@ import ActiveFiltersBar from "../components/ActiveFiltersBar";
 import CreateDrill from "./CreateDrill";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
-import { useUserRole } from "../context/UserRoleContext";
+import { useSubscription } from "../context/UserRoleContext";
 
 export default function YourDrills() {
 	const {
@@ -44,15 +44,14 @@ export default function YourDrills() {
 
 	const session = useSession();
 	const navigation = useNavigation();
-	const { role, loading: roleLoading } = useUserRole();
+	const { isPremium, loading: subscriptionLoading } = useSubscription();
 	const [showFilters, setShowFilters] = useState(false);
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeTab, setActiveTab] = useState("myDrills"); // "myDrills" or "favorites"
 	
 	// Ensure non-premium users can't access favorites tab
-	const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
-	if (activeTab === "favorites" && !hasPremiumAccess) {
+	if (activeTab === "favorites" && !isPremium) {
 		setActiveTab("myDrills");
 	}
 
@@ -121,10 +120,9 @@ export default function YourDrills() {
 				});
 			}
 		} else if (activeTab === "favorites") {
-			// Show only favorited drills from drill library (for premium/admin users)
+			// Show only favorited drills from drill library (for premium users)
 			// Check if user has premium access
-			const hasPremiumAccess = role === "Premium" || role === "premium" || role === "admin";
-			if (!hasPremiumAccess) {
+			if (!isPremium) {
 				// Return empty array for non-premium users
 				return [];
 			}
@@ -170,7 +168,7 @@ export default function YourDrills() {
 
 	// No categorization - just use filtered drills directly
 
-	const loading = favoritesLoading || userDrillsLoading || roleLoading;
+	const loading = favoritesLoading || userDrillsLoading || subscriptionLoading;
 	const error = favoritesError || userDrillsError;
 
 	// Remove header filter button since we'll add it to search bar
@@ -320,7 +318,7 @@ export default function YourDrills() {
 
 			{/* Tab Toggle - Show for all users */}
 			{/* Only show tab container if user has premium access (for favorites tab) */}
-			{(role === "Premium" || role === "premium" || role === "admin") && (
+			{isPremium && (
 				<View style={styles.tabContainer}>
 					<TouchableOpacity
 						style={[
