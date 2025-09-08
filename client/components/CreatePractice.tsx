@@ -24,7 +24,7 @@ import { usePractices } from "../context/PracticesContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useSession } from "../context/SessionContext";
 import { useDrillFilters } from "../hooks/useDrillFilters";
-import { checkSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/UserRoleContext";
 import DrillFilterModal from "./DrillFilterModal";
 import DrillDetails from "./DrillDetails";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -46,15 +46,7 @@ const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const { addPractice } = usePractices();
-	const [isPremium, setIsPremium] = useState(false);
-
-	useEffect(() => {
-		const checkUserSubscription = async () => {
-			const hasPremium = await checkSubscription();
-			setIsPremium(hasPremium);
-		};
-		checkUserSubscription();
-	}, []);
+	const { isPremium } = useSubscription();
 	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
 	const [drillSelectionModalVisible, setDrillSelectionModalVisible] =
 		useState(false);
@@ -737,7 +729,6 @@ const CreatePractice = () => {
 										</View>
 									)}
 
-can 
 									{/* Drill Selection Modal */}
 									<Modal
 										visible={drillSelectionModalVisible}

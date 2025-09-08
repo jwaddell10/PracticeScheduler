@@ -430,7 +430,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						<Text style={styles.label}>
 							Upload Image (optional)
 						</Text>
-						<UpgradeToPremiumBanner />
+						<UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />
 					</>
 				)}
 				</ScrollView>

@@ -65,7 +65,6 @@ export const getOfferings = async (): Promise<PurchasesOffering | null> => {
 export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
   try {
     const customerInfo = await Purchases.getCustomerInfo();
-    console.log(customerInfo, 'customer info here')
     return customerInfo;
   } catch (error) {
     console.error('Failed to get customer info:', error);
