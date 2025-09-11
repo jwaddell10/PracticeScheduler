@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 let isInitialized = false;
 
 // Initialize RevenueCat SDK
-export const initializeRevenueCat = async () => {
+export const initializeRevenueCat = async (userId?: string) => {
   try {
     // If already initialized, return true
     if (isInitialized) {
@@ -24,13 +24,13 @@ export const initializeRevenueCat = async () => {
       return false;
     }
 
-    // Configure RevenueCat
+    // Configure RevenueCat with user ID if provided
     Purchases.configure({
       apiKey: apiKey,
-      appUserID: null, // Will be set when user logs in
+      appUserID: userId || null, // Use Supabase user ID if available
     });
 
-    console.log('RevenueCat SDK initialized successfully');
+    console.log('RevenueCat SDK initialized successfully with user ID:', userId || 'null');
     isInitialized = true;
     return true;
   } catch (error) {
@@ -42,18 +42,20 @@ export const initializeRevenueCat = async () => {
 // Set user ID when user logs in
 export const setRevenueCatUser = async (userId: string) => {
   try {
-    // Ensure RevenueCat is initialized first
+    // Ensure RevenueCat is initialized first with the user ID
     if (!isInitialized) {
-      console.log('RevenueCat not initialized, initializing before setting user...');
-      const initResult = await initializeRevenueCat();
+      console.log('RevenueCat not initialized, initializing with user ID...');
+      const initResult = await initializeRevenueCat(userId);
       if (!initResult) {
         console.error('Failed to initialize RevenueCat before setting user');
         return;
       }
+    } else {
+      // If already initialized, log in with the user ID
+      await Purchases.logIn(userId);
     }
-
-    await Purchases.logIn(userId);
-    console.log('RevenueCat user set:', userId);
+    
+    console.log('RevenueCat user set to Supabase user ID:', userId);
   } catch (error) {
     console.error('Failed to set RevenueCat user:', error);
   }
@@ -191,7 +193,7 @@ export const getSubscriptionInfo = async () => {
     let expiresAt: Date | null = null;
     let subscriptionStatus: 'active' | 'expired' | 'cancelled' | 'grace_period' | 'free' = 'free';
     
-    if (hasActivePremium) {
+    if (hasActivePremium && premiumEntitlement.expirationDate) {
       expiresAt = new Date(premiumEntitlement.expirationDate);
       subscriptionStatus = 'active';
     }
