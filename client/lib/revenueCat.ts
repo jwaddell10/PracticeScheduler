@@ -6,6 +6,12 @@ let isInitialized = false;
 // Initialize RevenueCat SDK
 export const initializeRevenueCat = async () => {
   try {
+    // If already initialized, return true
+    if (isInitialized) {
+      console.log('RevenueCat already initialized');
+      return true;
+    }
+
     // Get your RevenueCat API key from environment variables
     const apiKey = "appl_VTApErVWbdFRrWEYqfslhIgvWub";
     
@@ -36,8 +42,16 @@ export const initializeRevenueCat = async () => {
 // Set user ID when user logs in
 export const setRevenueCatUser = async (userId: string) => {
   try {
-    // Check if SDK is initialized by trying to get customer info
-    await Purchases.getCustomerInfo();
+    // Ensure RevenueCat is initialized first
+    if (!isInitialized) {
+      console.log('RevenueCat not initialized, initializing before setting user...');
+      const initResult = await initializeRevenueCat();
+      if (!initResult) {
+        console.error('Failed to initialize RevenueCat before setting user');
+        return;
+      }
+    }
+
     await Purchases.logIn(userId);
     console.log('RevenueCat user set:', userId);
   } catch (error) {
@@ -47,12 +61,17 @@ export const setRevenueCatUser = async (userId: string) => {
 
 // Get current offerings
 export const getOfferings = async (): Promise<PurchasesOffering | null> => {
-  if (!isInitialized) {
-    console.warn('RevenueCat SDK not initialized. Please wait for initialization to complete.');
-    return null;
-  }
-  
   try {
+    // Ensure RevenueCat is initialized
+    if (!isInitialized) {
+      console.warn('RevenueCat not initialized, attempting to initialize...');
+      const initResult = await initializeRevenueCat();
+      if (!initResult) {
+        console.error('Failed to initialize RevenueCat for getOfferings');
+        return null;
+      }
+    }
+    
     const offerings = await Purchases.getOfferings();
     return offerings.current;
   } catch (error) {
@@ -64,6 +83,16 @@ export const getOfferings = async (): Promise<PurchasesOffering | null> => {
 // Get customer info
 export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
   try {
+    // Ensure RevenueCat is initialized
+    if (!isInitialized) {
+      console.warn('RevenueCat not initialized, attempting to initialize...');
+      const initResult = await initializeRevenueCat();
+      if (!initResult) {
+        console.error('Failed to initialize RevenueCat for getCustomerInfo');
+        return null;
+      }
+    }
+
     const customerInfo = await Purchases.getCustomerInfo();
     return customerInfo;
   } catch (error) {
@@ -75,6 +104,15 @@ export const getCustomerInfo = async (): Promise<CustomerInfo | null> => {
 // Purchase a package
 export const purchasePackage = async (packageToPurchase: any) => {
   try {
+    // Ensure RevenueCat is initialized
+    if (!isInitialized) {
+      console.warn('RevenueCat not initialized, attempting to initialize...');
+      const initResult = await initializeRevenueCat();
+      if (!initResult) {
+        throw new Error('Failed to initialize RevenueCat for purchase');
+      }
+    }
+
     const { customerInfo } = await Purchases.purchasePackage(packageToPurchase);
     return customerInfo;
   } catch (error) {
@@ -86,6 +124,16 @@ export const purchasePackage = async (packageToPurchase: any) => {
 // Restore purchases
 export const restorePurchases = async (): Promise<CustomerInfo | null> => {
   try {
+    // Ensure RevenueCat is initialized
+    if (!isInitialized) {
+      console.warn('RevenueCat not initialized, attempting to initialize...');
+      const initResult = await initializeRevenueCat();
+      if (!initResult) {
+        console.error('Failed to initialize RevenueCat for restorePurchases');
+        return null;
+      }
+    }
+
     const customerInfo = await Purchases.restorePurchases();
     return customerInfo;
   } catch (error) {
@@ -97,6 +145,16 @@ export const restorePurchases = async (): Promise<CustomerInfo | null> => {
 // Check if user has active premium subscription
 export const hasActivePremium = async (): Promise<boolean> => {
   try {
+    // Ensure RevenueCat is initialized
+    if (!isInitialized) {
+      console.warn('RevenueCat not initialized, attempting to initialize...');
+      const initResult = await initializeRevenueCat();
+      if (!initResult) {
+        console.error('Failed to initialize RevenueCat for hasActivePremium');
+        return false;
+      }
+    }
+
     const customerInfo = await Purchases.getCustomerInfo();
     
     // Check for active premium entitlements
@@ -113,6 +171,15 @@ export const hasActivePremium = async (): Promise<boolean> => {
 // Get detailed subscription information
 export const getSubscriptionInfo = async () => {
   try {
+    // Ensure RevenueCat is initialized
+    if (!isInitialized) {
+      console.warn('RevenueCat not initialized, attempting to initialize...');
+      const initResult = await initializeRevenueCat();
+      if (!initResult) {
+        throw new Error('Failed to initialize RevenueCat');
+      }
+    }
+
     const customerInfo = await Purchases.getCustomerInfo();
     
     // Check for active premium entitlements

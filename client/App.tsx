@@ -39,26 +39,7 @@ export default function App() {
 		userDrills: [],
 	});
 
-	useEffect(() => {
-		try {
-			console.log('Initializing RevenueCat...');
-			Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
-
-			if (Platform.OS === 'ios') {
-				Purchases.configure({ apiKey: "appl_VTApErVWbdFRrWEYqfslhIgvWub" });
-				console.log('RevenueCat configured for iOS');
-			}
-			// } else if (Platform.OS === 'android') {
-			// 	Purchases.configure({ apiKey: "appl_VTApErVWbdFRrWEYqfslhIgvWub" });
-			// 	console.log('RevenueCat configured for Android');
-
-			// 	// OR: if building for Amazon, be sure to follow the installation instructions then:
-			// 	// Purchases.configure({ apiKey: <public_amazon_api_key>, useAmazon: true });
-			// }
-		} catch (error) {
-			console.error('Error initializing RevenueCat:', error);
-		}
-	}, []);
+	// RevenueCat initialization is now handled in UserRoleContext
 
 	// Handle authentication and deep links
 	useEffect(() => {

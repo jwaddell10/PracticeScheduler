@@ -54,7 +54,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const session = useSession();
-	const { isPremium, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
+	const { isSubscriber, isAdmin, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
 	const { updateDrill } = useDrills(); // Add this to use the context's updateDrill function
 	
 	// Get params from route
@@ -72,7 +72,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const [difficulty, setDifficulty] = useState(existingDrill?.difficulty ? JSON.parse(existingDrill.difficulty) : []);
 	const [notes, setNotes] = useState(existingDrill?.notes || "");
 	const [saving, setSaving] = useState(false);
-	const [imageUri, setImageUri] = useState(null);
+	const [imageUri, setImageUri] = useState<string | null>(null);
 	const [isPublic, setIsPublic] = useState(existingDrill?.isPublic ?? false); // default to false for non-admin users
 
 	// Set up header with back button and save button (only when not in modal)
@@ -97,13 +97,18 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	}, [navigation, name, type, skillFocus, difficulty, notes, saving, isEditMode, isModal]);
 
 	// Button selection component
-	const SelectionButtons = ({ title, options, selectedValues, onSelect }) => (
+	const SelectionButtons = ({ title, options, selectedValues, onSelect }: {
+		title: string;
+		options: { label: string; value: string }[];
+		selectedValues: string[];
+		onSelect: (values: string[]) => void;
+	}) => (
 		<View style={styles.selectionContainer}>
 			<Text style={styles.label}>
 				{title} {"(select all that apply)"}
 			</Text>
 			<View style={styles.buttonRow}>
-				{options.map((option) => {
+				{options.map((option: { label: string; value: string }) => {
 					const isSelected = selectedValues.includes(option.value);
 					return (
 						<TouchableOpacity
@@ -116,7 +121,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 								if (isSelected) {
 									onSelect(
 										selectedValues.filter(
-											(val) => val !== option.value
+											(val: string) => val !== option.value
 										)
 									);
 								} else {
@@ -172,7 +177,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 		}
 	};
 
-	const uploadImageAsync = async (uri) => {
+	const uploadImageAsync = async (uri: string) => {
 		if (!session?.user) {
 			throw new Error("Unable to get authenticated user.");
 		}
@@ -235,7 +240,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 		try {
 			let imageUrl = existingDrill?.imageUrl || null;
 			if (imageUri) {
-				let fixedUri = imageUri;
+				let fixedUri: string = imageUri;
 				let fileExt = imageUri.split(".").pop()?.toLowerCase();
 				if (fileExt === "heic") {
 					const jpegUri = imageUri.replace(/\.heic$/i, ".jpg");
@@ -254,7 +259,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					difficulty,
 					notes,
 					imageUrl,
-					isPublic: false, // Only admins can create public drills, but we don't have admin check anymore
+					isPublic: isAdmin ? isPublic : false, // Only admins can create public drills
 				});
 
 				Alert.alert("Success", "Drill updated successfully!", [
@@ -281,7 +286,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						difficulty,
 						notes,
 						imageUrl,
-						isPublic: false, // Only admins can create public drills
+						isPublic: isAdmin ? isPublic : false, // Only admins can create public drills
 					},
 				]);
 
@@ -306,7 +311,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 			}
 		} catch (error) {
 			console.error("Submit error:", error);
-			Alert.alert("Error", error.message || "Something went wrong.");
+			Alert.alert("Error", (error as Error).message || "Something went wrong.");
 		} finally {
 			setSaving(false);
 		}
@@ -389,8 +394,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					onSelect={setDifficulty}
 				/>
 
-				{/* Admin toggle for public drills - disabled for now since we don't have admin check */}
-				{false && (
+				{/* Admin toggle for public drills */}
+				{isAdmin && (
 					<View style={styles.toggleRow}>
 						<Text style={styles.toggleLabel}>
 							Make Public
@@ -402,8 +407,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					</View>
 				)}
 
-				{/* Only show image upload for premium users */}
-				{isPremium ? (
+				{/* Only show image upload for subscribers */}
+				{isSubscriber ? (
 					<>
 						<Text style={styles.label}>
 							Upload Image (optional)
@@ -430,7 +435,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						<Text style={styles.label}>
 							Upload Image (optional)
 						</Text>
-						<UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />
+						<UpgradeToPremiumBanner role={isSubscriber ? "premium" : "free"} />
 					</>
 				)}
 				</ScrollView>

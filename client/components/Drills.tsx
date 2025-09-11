@@ -27,25 +27,29 @@ export default function Drills() {
 	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
 	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
-	const { isPremium } = useSubscription();
+	const { isSubscriber, isAdmin, loading: roleLoading } = useSubscription();
 
 	const [showFilters, setShowFilters] = useState(false);
-	const [selectedFilters, setSelectedFilters] = useState({
+	const [selectedFilters, setSelectedFilters] = useState<{
+		skillFocus: string[];
+		difficulty: string[];
+		type: string[];
+	}>({
 		skillFocus: [],
 		difficulty: [],
 		type: [],
 	});
 	const [searchQuery, setSearchQuery] = useState("");
-	const [displayedDrills, setDisplayedDrills] = useState([]);
+	const [displayedDrills, setDisplayedDrills] = useState<any[]>([]);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [hasMoreDrills, setHasMoreDrills] = useState(true);
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const DRILLS_PER_PAGE = 20; // Show 20 drills per page
-	const prevFilteredDrillsRef = useRef([]);
+	const prevFilteredDrillsRef = useRef<any[]>([]);
 	
 	// Cache for storing already loaded drills by ID
-	const [drillCache, setDrillCache] = useState(new Map());
-	const [cachedDrillIds, setCachedDrillIds] = useState(new Set());
+	const [drillCache, setDrillCache] = useState(new Map<string, any>());
+	const [cachedDrillIds, setCachedDrillIds] = useState(new Set<string>());
 
 	const skillFocusOptions = [
 		"Offense",
@@ -76,6 +80,7 @@ export default function Drills() {
 
 
 
+
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			headerRight: () => null,
@@ -103,8 +108,8 @@ export default function Drills() {
 		);
 	}
 
-	// Show loading state only if we have no drills to display
-	if (loading && displayedDrills.length === 0) {
+	// Show loading state only if we have no drills to display or if role is still loading
+	if ((loading && displayedDrills.length === 0) || roleLoading) {
 		return (
 			<SafeAreaProvider>
 				<SafeAreaView style={styles.safeArea}>
@@ -117,14 +122,14 @@ export default function Drills() {
 		);
 	}
 
-	// Show premium required message for non-premium users
-	if (!isPremium) {
+	// Show subscription required message for non-subscribers
+	if (!isSubscriber) {
 		return (
 			<SafeAreaProvider>
 				<SafeAreaView style={styles.safeArea}>
 					<View style={styles.container}>
 						<View style={styles.centeredContainer}>
-							<UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />
+							<UpgradeToPremiumBanner role={isSubscriber ? "premium" : "free"} />
 						</View>
 					</View>
 				</SafeAreaView>
@@ -132,11 +137,11 @@ export default function Drills() {
 		);
 	}
 
-	const toggleFilter = (filterType, value) => {
+	const toggleFilter = (filterType: string, value: string) => {
 		setSelectedFilters((prev) => {
-			const currentFilters = prev[filterType];
+			const currentFilters = prev[filterType as keyof typeof prev];
 			const newFilters = currentFilters.includes(value)
-				? currentFilters.filter((f) => f !== value)
+				? currentFilters.filter((f: string) => f !== value)
 				: [...currentFilters, value];
 			return { ...prev, [filterType]: newFilters };
 		});
@@ -157,7 +162,7 @@ export default function Drills() {
 		const endIndex = startIndex + DRILLS_PER_PAGE;
 		
 		// Check if we have cached data for this page
-		const cachedPageDrills = [];
+		const cachedPageDrills: any[] = [];
 		for (let i = startIndex; i < endIndex && i < filteredDrills.length; i++) {
 			const drill = filteredDrills[i];
 			if (drill && isDrillCached(drill.id)) {
@@ -176,11 +181,11 @@ export default function Drills() {
 		setIsLoadingMore(false);
 	};
 
-	const cacheDrills = (drillsToCache) => {
+	const cacheDrills = (drillsToCache: any[]) => {
 		const newCache = new Map(drillCache);
 		const newCachedIds = new Set(cachedDrillIds);
 		
-		drillsToCache.forEach(drill => {
+		drillsToCache.forEach((drill: any) => {
 			if (drill && drill.id) {
 				newCache.set(drill.id, drill);
 				newCachedIds.add(drill.id);
@@ -191,15 +196,15 @@ export default function Drills() {
 		setCachedDrillIds(newCachedIds);
 	};
 
-	const getCachedDrill = (drillId) => {
+	const getCachedDrill = (drillId: string) => {
 		return drillCache.get(drillId);
 	};
 
-	const isDrillCached = (drillId) => {
+	const isDrillCached = (drillId: string) => {
 		return cachedDrillIds.has(drillId);
 	};
 
-	const filterDrills = (drillsToFilter) => {
+	const filterDrills = (drillsToFilter: any[]) => {
 		if (
 			selectedFilters.skillFocus.length === 0 &&
 			selectedFilters.difficulty.length === 0 &&
@@ -208,7 +213,7 @@ export default function Drills() {
 			return drillsToFilter;
 		}
 
-		return drillsToFilter.filter((drill) => {
+		return drillsToFilter.filter((drill: any) => {
 			let drillSkillFocus = [];
 			let drillDifficulty = [];
 			let drillType = [];
@@ -330,7 +335,7 @@ export default function Drills() {
 
 	// No categorization - just use filtered drills directly
 
-	const renderDrillRow = (drill) => {
+	const renderDrillRow = (drill: any) => {
 		let drillSkillFocus = [];
 		let drillDifficulty = [];
 		let drillType = [];
@@ -770,15 +775,6 @@ const styles = StyleSheet.create({
 	headerButtonActive: {
 		backgroundColor: "#007AFF",
 		borderColor: "#007AFF",
-	},
-	filterBadge: {
-		position: "absolute",
-		top: 2,
-		right: 2,
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		backgroundColor: "#FF3B30",
 	},
 	// Active filters styles
 	activeFiltersContainer: {
