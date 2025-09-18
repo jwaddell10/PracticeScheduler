@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import theme from './styles/theme';
 
-const { width: screenWidth } = Dimensions.get('window');
+const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const isTablet = screenWidth >= 768 || screenHeight >= 1024;
 
 interface OnboardingScreenProps {
 	onComplete: () => void;
@@ -16,14 +17,14 @@ const onboardingSteps = [
 		title: 'Welcome to PracticePro',
 		subtitle: 'Your complete volleyball practice management solution',
 		description: 'Create, organize, and manage your volleyball practices with ease. Build custom drills and access professional content.',
-		image: require('../assets/HomePage.png'),
+		image: require('../assets/CreatePractice.png'),
 	},
 	{
 		id: 2,
 		title: 'Create Custom Drills',
 		subtitle: 'Build drills tailored to your team',
 		description: 'Design drills that match your team\'s skill level and focus areas. Add images and detailed instructions.',
-		image: require('../assets/CreateDrill.png'),
+		image: require('../assets/FilterDrills.png'),
 	},
 	{
 		id: 3,
@@ -32,13 +33,13 @@ const onboardingSteps = [
 		description: 'Browse expertly crafted drills created by volleyball professionals. Filter by skill focus and difficulty level.',
 		image: require('../assets/DrillLibrary.png'),
 	},
-	{
-		id: 4,
-		title: 'Plan Your Practices',
-		subtitle: 'Organize with ease',
-		description: 'Schedule practices, add drills to your clipboard, and create comprehensive practice plans.',
-		image: require('../assets/CreatePractice.png'),
-	},
+	// {
+	// 	id: 4,
+	// 	title: 'Plan Your Practices',
+	// 	subtitle: 'Organize with ease',
+	// 	description: 'Schedule practices, add drills to your clipboard, and create comprehensive practice plans.',
+	// 	image: require('../assets/CreatePractice.png'),
+	// },
 	{
 		id: 5,
 		title: 'Help Us Improve',
@@ -135,13 +136,13 @@ const styles = StyleSheet.create({
 	},
 	skipButton: {
 		position: 'absolute',
-		top: 60,
-		right: 20,
+		top: isTablet ? 80 : 60,
+		right: isTablet ? 40 : 20,
 		zIndex: 1,
-		padding: 8,
+		padding: isTablet ? 12 : 8,
 	},
 	skipText: {
-		fontSize: 16,
+		fontSize: isTablet ? 20 : 16,
 		color: theme.colors.textMuted,
 		fontWeight: '500',
 	},
@@ -153,61 +154,68 @@ const styles = StyleSheet.create({
 	},
 	imageContainer: {
 		alignItems: 'center',
-        marginBottom: 10,
+        marginBottom: isTablet ? 20 : 10,
+		flex: isTablet ? 0.6 : 0.7,
+		justifyContent: 'center',
 	},
 	image: {
-		// width: screenWidth * 1.5,
-		height: screenWidth * 1.3,
+		width: isTablet ? screenWidth * 0.6 : screenWidth * 0.8,
+		height: isTablet ? screenHeight * 0.4 : screenWidth * 1.3,
+		maxHeight: isTablet ? screenHeight * 0.4 : undefined,
 	},
 
 	textContainer: {
 		alignItems: 'center',
+		flex: isTablet ? 0.4 : 0.3,
+		justifyContent: 'center',
+		paddingHorizontal: isTablet ? 40 : 20,
 	},
 	title: {
-		fontSize: 18,
+		fontSize: isTablet ? 28 : 18,
 		fontWeight: '700',
 		color: theme.colors.textPrimary,
 		textAlign: 'center',
-		marginBottom: 4,
+		marginBottom: isTablet ? 8 : 4,
 	},
 	subtitle: {
-		fontSize: 13,
+		fontSize: isTablet ? 18 : 13,
 		fontWeight: '600',
 		color: theme.colors.primary,
 		textAlign: 'center',
-		marginBottom: 6,
+		marginBottom: isTablet ? 12 : 6,
 	},
 	description: {
-		fontSize: 11,
+		fontSize: isTablet ? 16 : 11,
 		color: theme.colors.textMuted,
 		textAlign: 'center',
-		lineHeight: 16,
+		lineHeight: isTablet ? 24 : 16,
+		maxWidth: isTablet ? 500 : undefined,
 	},
 	bottomSection: {
-		paddingHorizontal: 40,
-		paddingBottom: 40,
+		paddingHorizontal: isTablet ? 60 : 40,
+		paddingBottom: isTablet ? 60 : 40,
 	},
 	progressContainer: {
 		flexDirection: 'row',
 		justifyContent: 'center',
-		marginBottom: 24,
+		marginBottom: isTablet ? 32 : 24,
 	},
 	progressDot: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
+		width: isTablet ? 12 : 8,
+		height: isTablet ? 12 : 8,
+		borderRadius: isTablet ? 6 : 4,
 		backgroundColor: theme.colors.border,
-		marginHorizontal: 4,
+		marginHorizontal: isTablet ? 6 : 4,
 	},
 	progressDotActive: {
 		backgroundColor: theme.colors.primary,
-		width: 24,
+		width: isTablet ? 32 : 24,
 	},
 	nextButton: {
 		backgroundColor: theme.colors.primary,
-		paddingVertical: 16,
-		paddingHorizontal: 32,
-		borderRadius: 12,
+		paddingVertical: isTablet ? 20 : 16,
+		paddingHorizontal: isTablet ? 40 : 32,
+		borderRadius: isTablet ? 16 : 12,
 		flexDirection: 'row',
 		alignItems: 'center',
 		justifyContent: 'center',
@@ -219,8 +227,8 @@ const styles = StyleSheet.create({
 	},
 	nextButtonText: {
 		color: theme.colors.white,
-		fontSize: 18,
+		fontSize: isTablet ? 22 : 18,
 		fontWeight: '600',
-		marginRight: 8,
+		marginRight: isTablet ? 12 : 8,
 	},
 });

@@ -27,8 +27,8 @@ export default function Drills() {
 	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
 	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
-	const { isSubscriber, isAdmin, loading: roleLoading } = useSubscription();
-
+	const { isSubscriber, isAdmin, subscriptionStatus, loading: roleLoading } = useSubscription();
+	console.log(subscriptionStatus, 'sub status drills')
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState<{
 		skillFocus: string[];
@@ -122,14 +122,14 @@ export default function Drills() {
 		);
 	}
 
-	// Show subscription required message for non-subscribers
-	if (!isSubscriber) {
+	// Show subscription required message for non-active subscribers
+	if (subscriptionStatus !== 'active') {
 		return (
 			<SafeAreaProvider>
 				<SafeAreaView style={styles.safeArea}>
 					<View style={styles.container}>
 						<View style={styles.centeredContainer}>
-							<UpgradeToPremiumBanner role={isSubscriber ? "premium" : "free"} />
+							<UpgradeToPremiumBanner role="free" />
 						</View>
 					</View>
 				</SafeAreaView>

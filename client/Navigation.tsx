@@ -86,10 +86,9 @@ function HomeStackScreen() {
 
 const DrillStack = createNativeStackNavigator();
 
-// Wrapper component to pass user role to Drills
+// Wrapper component for Drills
 function DrillsWithRole() {
-	const { isPremium } = useSubscription();
-	return <Drills userRole={isPremium ? "premium" : "free"} />;
+	return <Drills />;
 }
 
 function DrillStackScreen() {

@@ -5,6 +5,7 @@ import { supabase } from "../lib/supabase";
 type UserRoleContextType = {
 	isSubscriber: boolean;
 	isAdmin: boolean;
+	subscriptionStatus: 'active' | 'expired' | 'none';
 	loading: boolean;
 	error: string | null;
 	refreshSubscription: () => Promise<void>;
@@ -16,6 +17,7 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 	const session = useSession();
 	const [isSubscriber, setIsSubscriber] = useState<boolean>(false);
 	const [isAdmin, setIsAdmin] = useState<boolean>(false);
+	const [subscriptionStatus, setSubscriptionStatus] = useState<'active' | 'expired' | 'none'>('none');
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 
@@ -23,6 +25,7 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 		if (!session?.user) {
 			setIsSubscriber(false);
 			setIsAdmin(false);
+			setSubscriptionStatus('none');
 			setLoading(false);
 			return;
 		}
@@ -56,16 +59,35 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 				// PGRST116 is "not found" error, which is expected for non-subscribers
 				console.warn('Failed to fetch subscription:', subscriptionError);
 				setIsSubscriber(false);
+				setSubscriptionStatus('none');
+			} else if (subscriptionData) {
+				// Check if subscription is active or expired based on expires_at
+				const now = new Date();
+				const expiresAt = new Date(subscriptionData.expires_at);
+				
+				if (expiresAt > now && subscriptionData.status === 'active') {
+					setSubscriptionStatus('active');
+					setIsSubscriber(true);
+				} else {
+					setSubscriptionStatus('expired');
+					setIsSubscriber(false);
+				}
 			} else {
-				// User has a subscription record, so they're a subscriber
-				// Also check if they're admin (admins get subscriber access too)
-				setIsSubscriber(!!subscriptionData || userData?.role === "admin");
+				// No subscription found
+				setSubscriptionStatus('none');
+				setIsSubscriber(false);
+			}
+
+			// Admins always get subscriber access regardless of subscription status
+			if (userData?.role === "admin") {
+				setIsSubscriber(true);
 			}
 		} catch (err) {
 			console.error('Failed to check user role and subscription:', err);
 			setError(err instanceof Error ? err.message : "Unknown error");
 			setIsSubscriber(false);
 			setIsAdmin(false);
+			setSubscriptionStatus('none');
 		} finally {
 			setLoading(false);
 		}
@@ -78,6 +100,7 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 	const value = {
 		isSubscriber,
 		isAdmin,
+		subscriptionStatus,
 		loading,
 		error,
 		refreshSubscription: checkUserRole,

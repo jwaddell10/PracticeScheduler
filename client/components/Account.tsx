@@ -13,7 +13,7 @@ export default function Account({ session }: { session: Session | null }) {
 	const [loading, setLoading] = useState(true);
 	const [email, setEmail] = useState("");
 	const [drills, setDrills] = useState("");
-	const { isPremium, loading: subscriptionLoading } = useSubscription();
+	const { isSubscriber, subscriptionStatus, loading: subscriptionLoading } = useSubscription();
 
 	useEffect(() => {
 		if (session) getProfile();
@@ -77,6 +77,56 @@ export default function Account({ session }: { session: Session | null }) {
 		}
 	}
 
+ 		async function deleteAccount() {
+		Alert.alert(
+			"Delete Account",
+			"Are you sure you want to delete your account? This action cannot be undone and will permanently remove all your data including drills, practices, and account information.",
+			[
+				{
+					text: "Cancel",
+					style: "cancel",
+				},
+				{
+					text: "Delete",
+					style: "destructive",
+					onPress: async () => {
+						try {
+							setLoading(true);
+							if (!session?.user) throw new Error("No user on the session!");
+
+							// First, delete user data from the User table
+							const { error: userError } = await supabase
+								.from("User")
+								.delete()
+								.eq("id", session.user.id);
+
+							if (userError) {
+								throw userError;
+							}
+
+							// Then delete the auth user
+							const { error: authError } = await supabase.auth.admin.deleteUser(
+								session.user.id
+							);
+
+							if (authError) {
+								throw authError;
+							}
+
+							Alert.alert("Account Deleted", "Your account has been successfully deleted.");
+						} catch (error) {
+							if (error instanceof Error) {
+								Alert.alert("Error", `Failed to delete account: ${error.message}`);
+							}
+						} finally {
+							setLoading(false);
+						}
+					},
+				},
+			]
+		);
+	}
+
 	return (
 		<ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
 			<View style={styles.header}>
@@ -85,8 +135,8 @@ export default function Account({ session }: { session: Session | null }) {
 				<Text style={styles.headerSubtitle}>Manage your profile and settings</Text>
 			</View>
 
-			{/* Show Upgrade Banner for non-premium users */}
-			{!subscriptionLoading && <UpgradeToPremiumBanner role={isPremium ? "premium" : "free"} />}
+			{/* Show Upgrade Banner for non-active subscribers */}
+			{!subscriptionLoading && subscriptionStatus !== 'active' && <UpgradeToPremiumBanner role={isSubscriber ? "premium" : "free"} />}
 
 			<View style={styles.section}>
 				<Text style={styles.sectionTitle}>Profile Information</Text>
@@ -104,11 +154,11 @@ export default function Account({ session }: { session: Session | null }) {
 					<View style={styles.roleDisplay}>
 						<Text style={[
 							styles.roleText,
-							isPremium && styles.premiumRoleText
+							subscriptionStatus === 'active' && styles.premiumRoleText
 						]}>
-							{isPremium ? "Premium" : "Free"}
+							{subscriptionStatus === 'active' ? "Premium" : subscriptionStatus === 'expired' ? "Expired" : "Free"}
 						</Text>
-						{isPremium && (
+						{subscriptionStatus === 'active' && (
 							<MaterialIcons name="verified" size={20} color={theme.colors.proPurple} />
 						)}
 					</View>
@@ -123,6 +173,11 @@ export default function Account({ session }: { session: Session | null }) {
 				<TouchableOpacity style={styles.actionButton} onPress={() => supabase.auth.signOut()}>
 					<MaterialIcons name="logout" size={24} color={theme.colors.error} />
 					<Text style={styles.actionButtonText}>Sign Out</Text>
+				</TouchableOpacity>
+
+				<TouchableOpacity style={[styles.actionButton, styles.deleteButton]} onPress={deleteAccount}>
+					<MaterialIcons name="delete-forever" size={24} color={theme.colors.error} />
+					<Text style={[styles.actionButtonText, styles.deleteButtonText]}>Delete Account</Text>
 				</TouchableOpacity>
 			</View>
 		</ScrollView>
@@ -212,11 +267,20 @@ const styles = StyleSheet.create({
 		borderRadius: 10,
 		borderWidth: 1,
 		borderColor: theme.colors.error,
+		marginBottom: 12,
 	},
 	actionButtonText: {
 		fontSize: 16,
 		color: theme.colors.error,
 		fontWeight: '600',
 		marginLeft: 12,
+	},
+	deleteButton: {
+		backgroundColor: theme.colors.error + '10',
+		borderColor: theme.colors.error,
+	},
+	deleteButtonText: {
+		color: theme.colors.error,
+		fontWeight: '700',
 	},
 });

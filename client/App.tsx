@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Platform, Alert, StatusBar } from "react-native";
 import * as Linking from "expo-linking";
-import Purchases from "react-native-purchases";
 import { Session } from "@supabase/supabase-js";
 
 import Navigation from "./Navigation";
@@ -15,7 +14,7 @@ import { DrillsProvider } from "./context/DrillsContext";
 import { UserRoleProvider } from "./context/UserRoleContext";
 import { supabase } from "./lib/supabase";
 import { resetOnboarding } from "./util/onboardingUtils";
-import { setRevenueCatUser } from "./lib/revenueCat";
+import { setRevenueCatUser, initializeRevenueCat } from "./lib/revenueCat";
 import "react-native-get-random-values";
 
 // Expose reset function for testing
@@ -39,12 +38,21 @@ export default function App() {
 		userDrills: [],
 	});
 
-	// RevenueCat initialization is now handled in UserRoleContext
+	// RevenueCat initialization is now handled early in app startup
+
 
 	// Handle authentication and deep links
 	useEffect(() => {
 		const initializeApp = async () => {
 			try {
+				// Initialize RevenueCat first, before any other operations
+				try {
+					await initializeRevenueCat();
+					console.log('RevenueCat initialized successfully');
+				} catch (error) {
+					console.warn('Failed to initialize RevenueCat:', error);
+				}
+				
 				// Get initial session
 				const { data: { session: initialSession } } = await supabase.auth.getSession();
 				setSession(initialSession);

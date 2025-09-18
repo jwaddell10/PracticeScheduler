@@ -46,7 +46,7 @@ const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const { addPractice } = usePractices();
-	const { isPremium } = useSubscription();
+	const { isSubscriber, subscriptionStatus } = useSubscription();
 	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
 	const [drillSelectionModalVisible, setDrillSelectionModalVisible] =
 		useState(false);
@@ -55,7 +55,7 @@ const CreatePractice = () => {
 		useState<DrillData | null>(null);
 	const [drillSourceToggle, setDrillSourceToggle] = useState<
 		"public" | "user"
-	>(isPremium ? "public" : "user");
+	>(subscriptionStatus === 'active' ? "public" : "user");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showFilters, setShowFilters] = useState(false);
 
@@ -745,7 +745,7 @@ const CreatePractice = () => {
 												</Text>
 
 												{/* Drill Source Toggle - Only show for premium users */}
-												{isPremium && (
+												{subscriptionStatus === 'active' && (
 													<View
 														style={
 															styles.toggleContainer

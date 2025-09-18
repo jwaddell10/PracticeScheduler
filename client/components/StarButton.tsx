@@ -2,11 +2,19 @@ import React, { useState, useRef } from "react";
 import { TouchableOpacity, StyleSheet } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
 
-const StarButton = ({
+interface StarButtonProps {
+	drillId: string;
+	initialIsFavorited?: boolean;
+	size?: number;
+	onToggle?: (drillId: string, isFavorited: boolean) => Promise<void>;
+	style?: any;
+}
+
+const StarButton: React.FC<StarButtonProps> = ({
 	drillId,
 	initialIsFavorited = false,
 	size = 24,
-	onToggle = () => {},
+	onToggle = async () => {},
 	style = {},
 }) => {
 	const [isLoading, setIsLoading] = useState(false);

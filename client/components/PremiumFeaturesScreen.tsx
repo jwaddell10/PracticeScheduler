@@ -3,6 +3,7 @@ import { View, StyleSheet, Alert, Text, TouchableOpacity } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import RevenueCatUI from "react-native-purchases-ui";
 import Purchases, { CustomerInfo, PurchasesOffering } from "react-native-purchases";
+import { getOfferings, restorePurchases } from "../lib/revenueCat";
 import theme from "./styles/theme";
 
 export default function PremiumScreen() {
@@ -18,11 +19,11 @@ export default function PremiumScreen() {
 				setError(null);
 				
 				// Wait a bit for RevenueCat to be initialized
-				await new Promise(resolve => setTimeout(resolve, 1000));
+				await new Promise(resolve => setTimeout(resolve, 2000));
 				
-				const offerings = await Purchases.getOfferings();
-				if (offerings.current) {
-					setOffering(offerings.current);
+				const offering = await getOfferings();
+				if (offering) {
+					setOffering(offering);
 				} else {
 					setError("No premium offerings available at this time.");
 				}
@@ -40,9 +41,9 @@ export default function PremiumScreen() {
 				// If still not initialized, try again after a longer delay
 				setTimeout(async () => {
 					try {
-						const offerings = await Purchases.getOfferings();
-						if (offerings.current) {
-							setOffering(offerings.current);
+						const offering = await getOfferings();
+						if (offering) {
+							setOffering(offering);
 							setError(null);
 						}
 					} catch (retryError) {
@@ -91,9 +92,9 @@ export default function PremiumScreen() {
 		// Re-fetch offerings
 		setTimeout(async () => {
 			try {
-				const offerings = await Purchases.getOfferings();
-				if (offerings.current) {
-					setOffering(offerings.current);
+				const offering = await getOfferings();
+				if (offering) {
+					setOffering(offering);
 					setError(null);
 				} else {
 					setError("No premium offerings available at this time.");

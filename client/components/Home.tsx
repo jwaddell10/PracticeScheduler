@@ -24,7 +24,7 @@ export default function HomeScreen() {
 	const { favoriteDrills } = useFavorites();
 	const { practices, deletePractice } = usePractices();
 	const { refreshAllDrills, userDrills } = useDrills();
-	const { isPremium } = useSubscription();
+	const { isSubscriber, subscriptionStatus } = useSubscription();
 	const [selectedDate, setSelectedDate] = useState(null);
 	const [showAllPractices, setShowAllPractices] = useState(false);
 
@@ -106,7 +106,7 @@ export default function HomeScreen() {
 				<TouchableOpacity
 					style={styles.statCard}
 					onPress={() => {
-						if (isPremium) {
+						if (subscriptionStatus === 'active') {
 							navigation.navigate("DrillsTab");
 						} else {
 							navigation.navigate("Premium");

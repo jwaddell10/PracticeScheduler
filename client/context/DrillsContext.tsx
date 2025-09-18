@@ -29,8 +29,8 @@ interface DrillsContextType {
 	fetchUserDrills: () => Promise<void>;
 	refreshAllDrills: () => Promise<void>;
 	addDrill: (drill: Omit<Drill, 'id'>) => Promise<void>;
-	updateDrill: (id: string, updates: Partial<Drill>) => Promise<void>;
-	deleteDrill: (id: string) => Promise<void>;
+	updateDrill: (id: string, updates: Partial<Drill>, isAdmin?: boolean) => Promise<void>;
+	deleteDrill: (id: string, isAdmin?: boolean) => Promise<void>;
 }
 
 const DrillsContext = createContext<DrillsContextType | undefined>(undefined);
@@ -190,13 +190,20 @@ export const DrillsProvider: React.FC<DrillsProviderProps> = ({
 		}
 	};
 
-	const updateDrill = async (id: string, updates: Partial<Drill>) => {
+	const updateDrill = async (id: string, updates: Partial<Drill>, isAdmin: boolean = false) => {
 		try {
-			const { data, error: supabaseError } = await supabase
+			// Build the query - admins can update any drill, regular users can only update their own
+			let query = supabase
 				.from("Drill")
 				.update(updates)
-				.eq("id", id)
-				.eq("user_id", session?.user?.id)
+				.eq("id", id);
+
+			// Only add user_id filter for non-admin users
+			if (!isAdmin) {
+				query = query.eq("user_id", session?.user?.id);
+			}
+
+			const { data, error: supabaseError } = await query
 				.select(
 					`
           *,
@@ -232,13 +239,20 @@ export const DrillsProvider: React.FC<DrillsProviderProps> = ({
 		}
 	};
 
-	const deleteDrill = async (id: string) => {
+	const deleteDrill = async (id: string, isAdmin: boolean = false) => {
 		try {
-			const { error: supabaseError } = await supabase
+			// Build the query - admins can delete any drill, regular users can only delete their own
+			let query = supabase
 				.from("Drill")
 				.delete()
-				.eq("id", id)
-				.eq("user_id", session?.user?.id);
+				.eq("id", id);
+
+			// Only add user_id filter for non-admin users
+			if (!isAdmin) {
+				query = query.eq("user_id", session?.user?.id);
+			}
+
+			const { error: supabaseError } = await query;
 
 			if (supabaseError) {
 				console.error("Delete error:", supabaseError.message);

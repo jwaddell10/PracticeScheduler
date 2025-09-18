@@ -33,7 +33,7 @@ export default function DrillDetails({ route }: { route: any }) {
 		);
 	}
 	const navigation = useNavigation();
-	const { isPremium } = useSubscription();
+	const { isSubscriber, subscriptionStatus, isAdmin } = useSubscription();
 	const { deleteDrill, publicDrills, userDrills } = useDrills();
 	const session = useSession();
 	
@@ -109,7 +109,7 @@ export default function DrillDetails({ route }: { route: any }) {
 					onPress: async () => {
 						try {
 							setIsDeleting(true);
-							await deleteDrill(currentDrill.id);
+							await deleteDrill(currentDrill.id, isAdmin);
 							Alert.alert("Success", "Drill deleted successfully.");
 							navigation.goBack();
 						} catch (error) {

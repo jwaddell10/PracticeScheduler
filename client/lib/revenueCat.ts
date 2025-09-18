@@ -2,6 +2,7 @@ import Purchases, { PurchasesOffering, CustomerInfo } from 'react-native-purchas
 import Constants from 'expo-constants';
 
 let isInitialized = false;
+let initializationPromise: Promise<boolean> | null = null;
 
 // Initialize RevenueCat SDK
 export const initializeRevenueCat = async (userId?: string) => {
@@ -12,6 +13,26 @@ export const initializeRevenueCat = async (userId?: string) => {
       return true;
     }
 
+    // If initialization is in progress, wait for it
+    if (initializationPromise) {
+      console.log('RevenueCat initialization in progress, waiting...');
+      return await initializationPromise;
+    }
+
+    // Start initialization
+    initializationPromise = performInitialization(userId);
+    const result = await initializationPromise;
+    initializationPromise = null;
+    return result;
+  } catch (error) {
+    console.error('Failed to initialize RevenueCat SDK:', error);
+    initializationPromise = null;
+    return false;
+  }
+};
+
+const performInitialization = async (userId?: string): Promise<boolean> => {
+  try {
     // Get your RevenueCat API key from environment variables
     const apiKey = "appl_VTApErVWbdFRrWEYqfslhIgvWub";
     
@@ -20,21 +41,23 @@ export const initializeRevenueCat = async (userId?: string) => {
     
     if (!apiKey) {
       console.warn('RevenueCat API key not found. Please add REVENUECAT_API_KEY to your environment variables.');
-      console.log('Available extra config keys:', Object.keys(Constants.expoConfig?.extra || {}));
       return false;
     }
 
     // Configure RevenueCat with user ID if provided
-    Purchases.configure({
+    await Purchases.configure({
       apiKey: apiKey,
       appUserID: userId || null, // Use Supabase user ID if available
     });
+
+    Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
 
     console.log('RevenueCat SDK initialized successfully with user ID:', userId || 'null');
     isInitialized = true;
     return true;
   } catch (error) {
-    console.error('Failed to initialize RevenueCat SDK:', error);
+    console.error('Failed to perform RevenueCat initialization:', error);
+    isInitialized = false;
     return false;
   }
 };

@@ -54,7 +54,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const session = useSession();
-	const { isSubscriber, isAdmin, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
+	const { isSubscriber, isAdmin, subscriptionStatus, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
 	const { updateDrill } = useDrills(); // Add this to use the context's updateDrill function
 	
 	// Get params from route
@@ -260,7 +260,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					notes,
 					imageUrl,
 					isPublic: isAdmin ? isPublic : false, // Only admins can create public drills
-				});
+				}, isAdmin);
 
 				Alert.alert("Success", "Drill updated successfully!", [
 					{
@@ -407,8 +407,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					</View>
 				)}
 
-				{/* Only show image upload for subscribers */}
-				{isSubscriber ? (
+				{/* Only show image upload for active subscribers */}
+				{subscriptionStatus === 'active' ? (
 					<>
 						<Text style={styles.label}>
 							Upload Image (optional)
@@ -435,7 +435,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 						<Text style={styles.label}>
 							Upload Image (optional)
 						</Text>
-						<UpgradeToPremiumBanner role={isSubscriber ? "premium" : "free"} />
+						<UpgradeToPremiumBanner role="free" />
 					</>
 				)}
 				</ScrollView>

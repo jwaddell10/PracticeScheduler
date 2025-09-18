@@ -44,14 +44,14 @@ export default function YourDrills() {
 
 	const session = useSession();
 	const navigation = useNavigation();
-	const { isPremium, loading: subscriptionLoading } = useSubscription();
+	const { isSubscriber, subscriptionStatus, loading: subscriptionLoading } = useSubscription();
 	const [showFilters, setShowFilters] = useState(false);
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeTab, setActiveTab] = useState("myDrills"); // "myDrills" or "favorites"
 	
 	// Ensure non-premium users can't access favorites tab
-	if (activeTab === "favorites" && !isPremium) {
+	if (activeTab === "favorites" && subscriptionStatus !== 'active') {
 		setActiveTab("myDrills");
 	}
 
@@ -122,7 +122,7 @@ export default function YourDrills() {
 		} else if (activeTab === "favorites") {
 			// Show only favorited drills from drill library (for premium users)
 			// Check if user has premium access
-			if (!isPremium) {
+			if (subscriptionStatus !== 'active') {
 				// Return empty array for non-premium users
 				return [];
 			}
@@ -318,7 +318,7 @@ export default function YourDrills() {
 
 			{/* Tab Toggle - Show for all users */}
 			{/* Only show tab container if user has premium access (for favorites tab) */}
-			{isPremium && (
+			{subscriptionStatus === 'active' && (
 				<View style={styles.tabContainer}>
 					<TouchableOpacity
 						style={[
