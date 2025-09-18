@@ -49,8 +49,7 @@ export default function DrillCard({
 	const navigation = useNavigation();
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
 	const { clipboardStatus, updateClipboardStatus, refreshClipboard } = useClipboard();
-	const { isAdmin } = useSubscription();
-	const { deleteDrill } = useDrills();
+	// Remove isAdmin and deleteDrill since admin actions are no longer in this component
 
 	const isAdminDrill = drill.users?.role === "admin";
 	const isOwnDrill = drill.user_id === drill.user_id; // This will be passed from parent
@@ -116,40 +115,7 @@ export default function DrillCard({
 		}
 	};
 
-	const handleEditDrill = () => {
-		navigation.navigate("CreateDrill", {
-			mode: 'edit',
-			drill: drill,
-			refreshDrills: onRefresh
-		});
-	};
-
-	const handleDeleteDrill = () => {
-		Alert.alert(
-			"Delete Drill",
-			`Are you sure you want to delete "${drill.name}"? This action cannot be undone.`,
-			[
-				{
-					text: "Cancel",
-					style: "cancel"
-				},
-				{
-					text: "Delete",
-					style: "destructive",
-					onPress: async () => {
-						try {
-							await deleteDrill(drill.id, isAdmin);
-							Alert.alert("Success", "Drill deleted successfully");
-							onRefresh?.();
-						} catch (error) {
-							console.error("Error deleting drill:", error);
-							Alert.alert("Error", "Failed to delete drill");
-						}
-					}
-				}
-			]
-		);
-	};
+	// Admin actions removed - now only available in drill details screen
 
 	return (
 		<TouchableOpacity
@@ -277,36 +243,6 @@ export default function DrillCard({
 						</TouchableOpacity>
 					)}
 
-					{/* Admin Actions - Only show for admins on public drills */}
-					{isAdmin && isPublicDrill && (
-						<View style={styles.adminActionsContainer}>
-							<TouchableOpacity
-								style={styles.adminButton}
-								onPress={handleEditDrill}
-								activeOpacity={0.7}
-							>
-								<MaterialIcons
-									name="edit"
-									size={16}
-									color={theme.colors.primary}
-								/>
-								<Text style={styles.adminButtonText}>Edit</Text>
-							</TouchableOpacity>
-							
-							<TouchableOpacity
-								style={[styles.adminButton, styles.deleteButton]}
-								onPress={handleDeleteDrill}
-								activeOpacity={0.7}
-							>
-								<MaterialIcons
-									name="delete"
-									size={16}
-									color={theme.colors.error}
-								/>
-								<Text style={[styles.adminButtonText, styles.deleteButtonText]}>Delete</Text>
-							</TouchableOpacity>
-						</View>
-					)}
 				</View>
 			</View>
 		</TouchableOpacity>
@@ -441,16 +377,17 @@ const styles = StyleSheet.create({
 		gap: 8,
 	},
 	clipboardButton: {
-		flex: 1,
 		flexDirection: "row",
 		alignItems: "center",
 		justifyContent: "center",
-		padding: 12,
+		paddingHorizontal: 16,
+		paddingVertical: 10,
 		borderRadius: 8,
 		borderWidth: 1,
 		borderColor: theme.colors.primary,
 		backgroundColor: "transparent",
-		gap: 8,
+		gap: 6,
+		alignSelf: "flex-start",
 	},
 	clipboardButtonActive: {
 		backgroundColor: theme.colors.primary,
@@ -466,31 +403,5 @@ const styles = StyleSheet.create({
 	topStarButton: {
 		marginRight: 4,
 	},
-	adminActionsContainer: {
-		flexDirection: "row",
-		gap: 8,
-		marginTop: 8,
-	},
-	adminButton: {
-		flexDirection: "row",
-		alignItems: "center",
-		paddingHorizontal: 12,
-		paddingVertical: 8,
-		borderRadius: 6,
-		borderWidth: 1,
-		borderColor: theme.colors.primary,
-		backgroundColor: "transparent",
-		gap: 4,
-	},
-	deleteButton: {
-		borderColor: theme.colors.error,
-	},
-	adminButtonText: {
-		fontSize: 12,
-		fontWeight: "600",
-		color: theme.colors.primary,
-	},
-	deleteButtonText: {
-		color: theme.colors.error,
-	},
+	// Admin action styles removed since they're no longer used
 });
