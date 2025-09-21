@@ -47,7 +47,7 @@ const performInitialization = async (userId?: string): Promise<boolean> => {
     // Configure RevenueCat with user ID if provided
     await Purchases.configure({
       apiKey: apiKey,
-      appUserID: userId || null, // Use Supabase user ID if available
+      appUserID: userId
     });
 
     Purchases.setLogLevel(Purchases.LOG_LEVEL.VERBOSE);
@@ -245,6 +245,19 @@ export const getSubscriptionInfo = async () => {
       customerInfo: null,
       premiumEntitlement: null
     };
+  }
+};
+
+// Add purchase listener to automatically refresh subscription status
+export const addPurchaseListener = (onPurchaseSuccess: () => void) => {
+  try {
+    Purchases.addCustomerInfoUpdateListener((customerInfo) => {
+      console.log('🛒 Purchase detected - customer info updated');
+      onPurchaseSuccess();
+    });
+    console.log('Purchase listener added successfully');
+  } catch (error) {
+    console.error('Failed to add purchase listener:', error);
   }
 };
 

@@ -25,6 +25,7 @@ import CreateDrill from "./CreateDrill";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
 import { useSubscription } from "../context/UserRoleContext";
+import { useSubscriptionCheck } from "../context/SubscriptionCheckContext";
 
 export default function YourDrills() {
 	const {
@@ -44,17 +45,29 @@ export default function YourDrills() {
 
 	const session = useSession();
 	const navigation = useNavigation();
-	const { isSubscriber, subscriptionStatus, loading: subscriptionLoading } = useSubscription();
+	const {
+		isSubscriber,
+		subscriptionStatus,
+		loading: subscriptionLoading,
+	} = useSubscription();
+	const { subscriptionCheckResult, loading: subscriptionCheckLoading } = useSubscriptionCheck();
+
+	// Log subscription check result when it changes
+	useEffect(() => {
+		if (subscriptionCheckResult) {
+			console.log('🎯 Your Drills tab - subscription check result:', subscriptionCheckResult);
+		}
+	}, [subscriptionCheckResult]);
+
 	const [showFilters, setShowFilters] = useState(false);
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [activeTab, setActiveTab] = useState("myDrills"); // "myDrills" or "favorites"
-	
+
 	// Ensure non-premium users can't access favorites tab
-	if (activeTab === "favorites" && subscriptionStatus !== 'active') {
+	if (activeTab === "favorites" && subscriptionStatus !== "active") {
 		setActiveTab("myDrills");
 	}
-
 
 	const {
 		selectedFilters,
@@ -69,18 +82,18 @@ export default function YourDrills() {
 
 	// Smart refresh on focus - only refresh if data is older than 30 seconds
 	const [lastRefreshTime, setLastRefreshTime] = useState(Date.now());
-	
+
 	// Fetch user drills when component mounts
 	useEffect(() => {
 		fetchUserDrills();
 	}, []);
-	
+
 	// Smart refresh on focus
 	useEffect(() => {
 		const unsubscribe = navigation.addListener("focus", () => {
 			const now = Date.now();
 			const timeSinceLastRefresh = now - lastRefreshTime;
-			
+
 			// Only refresh if it's been more than 30 seconds since last refresh
 			if (timeSinceLastRefresh > 30000) {
 				fetchUserDrills();
@@ -95,10 +108,6 @@ export default function YourDrills() {
 		fetchUserDrills();
 		setLastRefreshTime(Date.now());
 	};
-
-
-
-
 
 	// Combine user's own drills and favorites based on active tab
 	const combineDrills = () => {
@@ -122,11 +131,11 @@ export default function YourDrills() {
 		} else if (activeTab === "favorites") {
 			// Show only favorited drills from drill library (for premium users)
 			// Check if user has premium access
-			if (subscriptionStatus !== 'active') {
+			if (subscriptionStatus !== "active") {
 				// Return empty array for non-premium users
 				return [];
 			}
-			
+
 			if (favoriteDrills && favoriteDrills.length > 0) {
 				favoriteDrills.forEach((drill) => {
 					if (
@@ -151,24 +160,24 @@ export default function YourDrills() {
 	const filteredDrills = filterDrills(combinedDrills || []);
 
 	// Apply search filter
-	const searchFilteredDrills = searchQuery.trim() === "" 
-		? filteredDrills 
-		: filteredDrills.filter((drill) => {
-			const searchLower = searchQuery.toLowerCase();
-			return (
-				drill.name?.toLowerCase().includes(searchLower) ||
-				drill.skillFocus?.toLowerCase().includes(searchLower) ||
-				drill.type?.toLowerCase().includes(searchLower) ||
-				drill.difficulty?.toLowerCase().includes(searchLower) ||
-				drill.notes?.toLowerCase().includes(searchLower)
-			);
-		});
-
-
+	const searchFilteredDrills =
+		searchQuery.trim() === ""
+			? filteredDrills
+			: filteredDrills.filter((drill) => {
+					const searchLower = searchQuery.toLowerCase();
+					return (
+						drill.name?.toLowerCase().includes(searchLower) ||
+						drill.skillFocus?.toLowerCase().includes(searchLower) ||
+						drill.type?.toLowerCase().includes(searchLower) ||
+						drill.difficulty?.toLowerCase().includes(searchLower) ||
+						drill.notes?.toLowerCase().includes(searchLower)
+					);
+			  });
 
 	// No categorization - just use filtered drills directly
 
-	const loading = favoritesLoading || userDrillsLoading || subscriptionLoading;
+	const loading =
+		favoritesLoading || userDrillsLoading || subscriptionLoading;
 	const error = favoritesError || userDrillsError;
 
 	// Remove header filter button since we'll add it to search bar
@@ -235,14 +244,14 @@ export default function YourDrills() {
 
 	const renderDrill = ({ item }) => {
 		return (
-							<DrillCard
-					key={item.id}
-					drill={item}
-					showStarButton={true}
-					showClipboardButton={true}
-					showStarOnlyIfFavorited={true}
-					onRefresh={refreshDrills}
-				/>
+			<DrillCard
+				key={item.id}
+				drill={item}
+				showStarButton={true}
+				showClipboardButton={true}
+				showStarOnlyIfFavorited={true}
+				onRefresh={refreshDrills}
+			/>
 		);
 	};
 
@@ -302,9 +311,15 @@ export default function YourDrills() {
 						<MaterialIcons
 							name="filter-list"
 							size={20}
-							color={hasActiveFilters() ? theme.colors.white : theme.colors.textMuted}
+							color={
+								hasActiveFilters()
+									? theme.colors.white
+									: theme.colors.textMuted
+							}
 						/>
-						{hasActiveFilters() && <View style={styles.filterBadge} />}
+						{hasActiveFilters() && (
+							<View style={styles.filterBadge} />
+						)}
 					</TouchableOpacity>
 				</View>
 			</View>
@@ -318,33 +333,39 @@ export default function YourDrills() {
 
 			{/* Tab Toggle - Show for all users */}
 			{/* Only show tab container if user has premium access (for favorites tab) */}
-			{subscriptionStatus === 'active' && (
+			{subscriptionStatus === "active" && (
 				<View style={styles.tabContainer}>
 					<TouchableOpacity
 						style={[
 							styles.tabButton,
-							activeTab === "myDrills" && styles.activeTabButton
+							activeTab === "myDrills" && styles.activeTabButton,
 						]}
 						onPress={() => setActiveTab("myDrills")}
 					>
-						<Text style={[
-							styles.tabButtonText,
-							activeTab === "myDrills" && styles.activeTabButtonText
-						]}>
+						<Text
+							style={[
+								styles.tabButtonText,
+								activeTab === "myDrills" &&
+									styles.activeTabButtonText,
+							]}
+						>
 							My Drills
 						</Text>
 					</TouchableOpacity>
 					<TouchableOpacity
 						style={[
 							styles.tabButton,
-							activeTab === "favorites" && styles.activeTabButton
+							activeTab === "favorites" && styles.activeTabButton,
 						]}
 						onPress={() => setActiveTab("favorites")}
 					>
-						<Text style={[
-							styles.tabButtonText,
-							activeTab === "favorites" && styles.activeTabButtonText
-						]}>
+						<Text
+							style={[
+								styles.tabButtonText,
+								activeTab === "favorites" &&
+									styles.activeTabButtonText,
+							]}
+						>
 							Favorites
 						</Text>
 					</TouchableOpacity>
@@ -358,18 +379,19 @@ export default function YourDrills() {
 			>
 				<View style={styles.headerContainer}>
 					<Text style={styles.headerTitle}>
-						{activeTab === "myDrills" ? "My Drills" : "Favorites"} ({searchFilteredDrills.length}
+						{activeTab === "myDrills" ? "My Drills" : "Favorites"} (
+						{searchFilteredDrills.length}
 						{(hasActiveFilters() || searchQuery.trim() !== "") &&
 							` of ${combinedDrills.length}`}
 						)
 					</Text>
 				</View>
 				{searchFilteredDrills.map((drill) => (
-					<View key={drill.id}>
-						{renderDrill({ item: drill })}
-					</View>
+					<View key={drill.id}>{renderDrill({ item: drill })}</View>
 				))}
-				{searchFilteredDrills.length === 0 && (hasActiveFilters() || searchQuery.trim() !== "") && renderEmptyFiltered}
+				{searchFilteredDrills.length === 0 &&
+					(hasActiveFilters() || searchQuery.trim() !== "") &&
+					renderEmptyFiltered}
 			</ScrollView>
 
 			{/* Floating Action Button */}
@@ -503,7 +525,11 @@ const styles = StyleSheet.create({
 		borderBottomColor: theme.colors.border,
 		paddingBottom: 6,
 	},
-	headerTitle: { fontSize: 18, fontWeight: "600", color: theme.colors.textPrimary },
+	headerTitle: {
+		fontSize: 18,
+		fontWeight: "600",
+		color: theme.colors.textPrimary,
+	},
 	header: {
 		fontSize: 26,
 		fontWeight: "700",
@@ -524,7 +550,11 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderColor: theme.colors.border,
 	},
-	drillImage: { width: 100, height: 120, backgroundColor: theme.colors.border },
+	drillImage: {
+		width: 100,
+		height: 120,
+		backgroundColor: theme.colors.border,
+	},
 	placeholderImage: { justifyContent: "center", alignItems: "center" },
 	drillContent: { flex: 1, padding: 12 },
 	drillHeader: {
@@ -608,10 +638,20 @@ const styles = StyleSheet.create({
 		alignItems: "flex-start",
 		marginBottom: 4,
 	},
-	infoLabel: { fontSize: 12, fontWeight: "600", color: theme.colors.textMuted, minWidth: 60 },
+	infoLabel: {
+		fontSize: 12,
+		fontWeight: "600",
+		color: theme.colors.textMuted,
+		minWidth: 60,
+	},
 	infoText: { flex: 1, fontSize: 12, color: theme.colors.textPrimary },
 	notesContainer: { marginTop: 4 },
-	notesText: { fontSize: 12, color: theme.colors.textMuted, lineHeight: 16, marginTop: 2 },
+	notesText: {
+		fontSize: 12,
+		color: theme.colors.textMuted,
+		lineHeight: 16,
+		marginTop: 2,
+	},
 	emptyFilteredContainer: {
 		flex: 1,
 		justifyContent: "center",
@@ -632,7 +672,11 @@ const styles = StyleSheet.create({
 		borderRadius: 8,
 		marginTop: 16,
 	},
-	clearFiltersButtonText: { color: theme.colors.white, fontSize: 14, fontWeight: "600" },
+	clearFiltersButtonText: {
+		color: theme.colors.white,
+		fontSize: 14,
+		fontWeight: "600",
+	},
 	// Search styles
 	searchContainer: {
 		backgroundColor: theme.colors.surface,
@@ -708,12 +752,16 @@ const styles = StyleSheet.create({
 		borderBottomColor: theme.colors.border,
 		backgroundColor: theme.colors.surface,
 	},
-	modalTitle: { fontSize: 18, fontWeight: "600", color: theme.colors.textPrimary },
+	modalTitle: {
+		fontSize: 18,
+		fontWeight: "600",
+		color: theme.colors.textPrimary,
+	},
 	modalCloseButton: { padding: 4 },
-	closeButtonText: { 
-		fontSize: 20, 
-		color: theme.colors.primary, 
-		fontWeight: "500" 
+	closeButtonText: {
+		fontSize: 20,
+		color: theme.colors.primary,
+		fontWeight: "500",
 	},
 	// Clipboard button styles
 	actionButtonsContainer: {

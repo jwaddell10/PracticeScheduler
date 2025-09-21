@@ -1,8 +1,9 @@
 import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from "react-native";
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
+import { useSubscription } from "../context/UserRoleContext";
 
 type RootStackParamList = {
 	Home: undefined;
@@ -19,13 +20,26 @@ export default function UpgradeToPremiumBanner({ role }: UpgradeToPremiumBannerP
 		return null;
 	}
 	const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+	const { refreshSubscription } = useSubscription();
+	
+	// Get screen dimensions to determine if it's a tablet/iPad
+	const { width: screenWidth } = Dimensions.get('window');
+	const isTablet = screenWidth >= 700; // iPad starts at 768px width
 
 	const handleUpgrade = () => {
 		navigation.navigate("Premium");
 	};
 
+	const handleRefresh = () => {
+		console.log('🔄 Manually refreshing subscription status');
+		refreshSubscription();
+	};
+
 	return (
-		<View style={styles.bannerContainer}>
+		<View style={[
+			styles.bannerContainer,
+			isTablet && styles.bannerContainerTablet
+		]}>
 			<View style={styles.topRow}>
 				<MaterialCommunityIcons
 					name="crown"
@@ -42,7 +56,10 @@ export default function UpgradeToPremiumBanner({ role }: UpgradeToPremiumBannerP
 			</View>
 
 			<TouchableOpacity
-				style={styles.upgradeButton}
+				style={[
+					styles.upgradeButton,
+					isTablet && styles.upgradeButtonTablet
+				]}
 				onPress={handleUpgrade}
 			>
 				<Text style={styles.upgradeButtonText}>Upgrade</Text>
@@ -65,6 +82,10 @@ const styles = StyleSheet.create({
 		shadowRadius: 4,
 		elevation: 2,
 		width: "100%",
+	},
+	bannerContainerTablet: {
+		width: "50%",
+		alignSelf: "center",
 	},
 	topRow: {
 		flexDirection: "row",
@@ -99,6 +120,9 @@ const styles = StyleSheet.create({
 		shadowOpacity: 0.2,
 		shadowRadius: 4,
 		elevation: 3,
+	},
+	upgradeButtonTablet: {
+		width: "100%", // Button stays full width within the 50% container
 	},
 	upgradeButtonText: {
 		color: theme.colors.white,

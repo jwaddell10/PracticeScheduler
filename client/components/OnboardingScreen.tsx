@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Dimensions, Platform, SafeAreaView } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import theme from './styles/theme';
@@ -17,7 +17,7 @@ const onboardingSteps = [
 		title: 'Welcome to PracticePro',
 		subtitle: 'Your complete volleyball practice management solution',
 		description: 'Create, organize, and manage your volleyball practices with ease. Build custom drills and access professional content.',
-		image: require('../assets/CreatePractice.png'),
+		image: require('../assets/Home.png'),
 	},
 	{
 		id: 2,
@@ -33,19 +33,19 @@ const onboardingSteps = [
 		description: 'Browse expertly crafted drills created by volleyball professionals. Filter by skill focus and difficulty level.',
 		image: require('../assets/DrillLibrary.png'),
 	},
-	// {
-	// 	id: 4,
-	// 	title: 'Plan Your Practices',
-	// 	subtitle: 'Organize with ease',
-	// 	description: 'Schedule practices, add drills to your clipboard, and create comprehensive practice plans.',
-	// 	image: require('../assets/CreatePractice.png'),
-	// },
+	{
+		id: 4,
+		title: 'Plan Your Practices',
+		subtitle: 'Organize with ease',
+		description: 'Schedule practices, add drills to your clipboard, and create comprehensive practice plans.',
+		image: require('../assets/CreatePractice.png'),
+	},
 	{
 		id: 5,
 		title: 'Help Us Improve',
 		subtitle: 'Share your feedback',
 		description: 'Have suggestions? We\'re always looking to add new features and improve your experience. Click \'Contact Us\' on the Account page.',
-		image: require('../assets/AccountPage.png'),
+		image: require('../assets/Account.png'),
 	},
 ];
 
@@ -71,7 +71,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 	const currentStepData = onboardingSteps[currentStep];
 
 	return (
-		<View style={styles.container}>
+		<SafeAreaView style={styles.container}>
 			{/* Skip Button */}
 			<TouchableOpacity style={styles.skipButton} onPress={handleSkip}>
 				<Text style={styles.skipText}>Skip</Text>
@@ -125,7 +125,7 @@ export default function OnboardingScreen({ onComplete }: OnboardingScreenProps) 
 					/>
 				</TouchableOpacity>
 			</View>
-		</View>
+		</SafeAreaView>
 	);
 }
 
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
 	},
 	skipButton: {
 		position: 'absolute',
-		top: isTablet ? 80 : 60,
+		top: isTablet ? 60 : 40,
 		right: isTablet ? 40 : 20,
 		zIndex: 1,
 		padding: isTablet ? 12 : 8,
@@ -155,18 +155,19 @@ const styles = StyleSheet.create({
 	imageContainer: {
 		alignItems: 'center',
         marginBottom: isTablet ? 20 : 10,
-		flex: isTablet ? 0.6 : 0.7,
-		justifyContent: 'center',
+		flex: isTablet ? 0.6 : 0.6,
+		justifyContent: 'flex-start',
+		paddingTop: isTablet ? 40 : 30,
 	},
 	image: {
 		width: isTablet ? screenWidth * 0.6 : screenWidth * 0.8,
-		height: isTablet ? screenHeight * 0.4 : screenWidth * 1.3,
-		maxHeight: isTablet ? screenHeight * 0.4 : undefined,
+		height: isTablet ? screenHeight * 0.4 : screenHeight * 0.45,
+		maxHeight: isTablet ? screenHeight * 0.4 : screenHeight * 0.5,
 	},
 
 	textContainer: {
 		alignItems: 'center',
-		flex: isTablet ? 0.4 : 0.3,
+		flex: isTablet ? 0.4 : 0.4,
 		justifyContent: 'center',
 		paddingHorizontal: isTablet ? 40 : 20,
 	},

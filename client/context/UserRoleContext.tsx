@@ -53,8 +53,7 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 				.from("subscriptions")
 				.select("*")
 				.eq("user_id", session.user.id)
-				.single();
-
+				.maybeSingle();
 			if (subscriptionError && subscriptionError.code !== 'PGRST116') {
 				// PGRST116 is "not found" error, which is expected for non-subscribers
 				console.warn('Failed to fetch subscription:', subscriptionError);
@@ -96,6 +95,43 @@ export function UserRoleProvider({ children }: { children: React.ReactNode }) {
 	useEffect(() => {
 		checkUserRole();
 	}, [session]);
+
+	// Listen for purchase events to refresh subscription status
+	useEffect(() => {
+		const handleSubscriptionUpdate = async () => {
+			console.log('🔄 Subscription update event received - refreshing status');
+			
+			// Retry logic with delays
+			let attempts = 0;
+			const maxAttempts = 3;
+			
+			const retryCheck = async () => {
+				attempts++;
+				console.log(`🔄 Attempt ${attempts}/${maxAttempts} to check subscription status`);
+				
+				await checkUserRole();
+				
+				// If still not a subscriber and we haven't reached max attempts, retry
+				if (!isSubscriber && attempts < maxAttempts) {
+					console.log(`⏳ Subscription not found yet, retrying in 2 seconds...`);
+					setTimeout(retryCheck, 2000);
+				} else if (isSubscriber) {
+					console.log('✅ Subscription status updated successfully!');
+				} else {
+					console.log('❌ Subscription still not found after all attempts');
+				}
+			};
+			
+			retryCheck();
+		};
+
+		// Listen for subscription update events
+		window.addEventListener('subscriptionUpdated', handleSubscriptionUpdate);
+
+		return () => {
+			window.removeEventListener('subscriptionUpdated', handleSubscriptionUpdate);
+		};
+	}, []);
 
 	const value = {
 		isSubscriber,

@@ -12,22 +12,24 @@ import { PracticesProvider } from "./context/PracticesContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { DrillsProvider } from "./context/DrillsContext";
 import { UserRoleProvider } from "./context/UserRoleContext";
+import { SubscriptionCheckProvider } from "./context/SubscriptionCheckContext";
 import { supabase } from "./lib/supabase";
 import { resetOnboarding } from "./util/onboardingUtils";
-import { setRevenueCatUser, initializeRevenueCat } from "./lib/revenueCat";
+import { setRevenueCatUser, initializeRevenueCat, addPurchaseListener } from "./lib/revenueCat";
+import { checkSubscriptionStatus } from "./util/checkSubscriptionStatus";
 import "react-native-get-random-values";
 
 // Expose reset function for testing
-if (__DEV__) {
-	(global as any).resetOnboarding = resetOnboarding;
-}
+// if (__DEV__) {
+// 	(global as any).resetOnboarding = resetOnboarding;
+// }
 
 export default function App() {
 	const [session, setSession] = useState<Session | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isInitialized, setIsInitialized] = useState(false);
-	const [showOnboarding, setShowOnboarding] = useState(false);
-	const [showSplash, setShowSplash] = useState(true);
+	const [showOnboarding, setShowOnboarding] = useState(true);
+	const [showSplash, setShowSplash] = useState(false);
 	const [preFetchedData, setPreFetchedData] = useState<{
 		practices: any[];
 		publicDrills: any[];
@@ -40,32 +42,52 @@ export default function App() {
 
 	// RevenueCat initialization is now handled early in app startup
 
+	// TEMPORARY: Force onboarding to show for testing
+	// Remove this when done testing
+	const [forceOnboarding] = useState(true);
 
 	// Handle authentication and deep links
 	useEffect(() => {
 		const initializeApp = async () => {
 			try {
-				// Initialize RevenueCat first, before any other operations
+				// Get initial session first
+				const { data: { session: initialSession } } = await supabase.auth.getSession();
+				setSession(initialSession);
+				
+				// Initialize RevenueCat first
 				try {
 					await initializeRevenueCat();
 					console.log('RevenueCat initialized successfully');
+					
+					// Add purchase listener to refresh subscription status on purchase
+					addPurchaseListener(() => {
+						console.log('🛒 Purchase completed - waiting for subscription to process...');
+						// Wait 3 seconds for subscription to be processed
+						setTimeout(() => {
+							console.log('🔄 Refreshing subscription status after delay');
+							window.dispatchEvent(new Event('subscriptionUpdated'));
+						}, 3000);
+					});
 				} catch (error) {
 					console.warn('Failed to initialize RevenueCat:', error);
 				}
 				
-				// Get initial session
-				const { data: { session: initialSession } } = await supabase.auth.getSession();
-				setSession(initialSession);
-				
-				// If we have a session, pre-fetch data
+				// If we have a session, set the user ID and pre-fetch data
 				if (initialSession) {
-					
-					// Set RevenueCat user ID
+					// Set RevenueCat user ID to Supabase user ID
 					try {
 						await setRevenueCatUser(initialSession.user.id);
-						console.log('RevenueCat user ID set:', initialSession.user.id);
+						console.log('RevenueCat user ID set to Supabase ID:', initialSession.user.id);
 					} catch (error) {
 						console.warn('Failed to set RevenueCat user ID:', error);
+					}
+					
+					// Check subscription status on app startup
+					try {
+						console.log('🚀 App startup - checking subscription status');
+						await checkSubscriptionStatus(initialSession.user.id);
+					} catch (error) {
+						console.warn('Failed to check subscription status on startup:', error);
 					}
 					
 					// Set the session for RLS policies
@@ -175,7 +197,8 @@ export default function App() {
 	}, []);
 
 	// Show splash screen while checking onboarding status
-	if (showSplash) {
+	if (showSplash && !forceOnboarding) {
+		console.log('🎬 Showing splash screen');
 		return (
 			<>
 				<StatusBar barStyle="light-content" backgroundColor="#000000" />
@@ -194,13 +217,15 @@ export default function App() {
 	}
 
 	// Show onboarding screen
-	if (showOnboarding) {
+	if (showOnboarding || forceOnboarding) {
+		console.log('🎯 Showing onboarding screen - showOnboarding:', showOnboarding, 'forceOnboarding:', forceOnboarding);
 		return (
 			<>
 				<StatusBar barStyle="light-content" backgroundColor="#000000" />
 				<OnboardingScreen
 					onComplete={() => {
 						setShowOnboarding(false);
+						// Note: forceOnboarding will still be true, so you'll need to change it back manually
 					}}
 				/>
 			</>
@@ -222,16 +247,18 @@ export default function App() {
 			<StatusBar barStyle="light-content" backgroundColor="#000000" />
 			<SessionContext.Provider value={session}>
 				<UserRoleProvider>
-					<FavoritesProvider>
-						<DrillsProvider 
-							initialPublicDrills={preFetchedData.publicDrills}
-							initialUserDrills={preFetchedData.userDrills}
-						>
-							<PracticesProvider initialPractices={preFetchedData.practices}>
-								<Navigation />
-							</PracticesProvider>
-						</DrillsProvider>
-					</FavoritesProvider>
+					<SubscriptionCheckProvider>
+						<FavoritesProvider>
+							<DrillsProvider 
+								initialPublicDrills={preFetchedData.publicDrills}
+								initialUserDrills={preFetchedData.userDrills}
+							>
+								<PracticesProvider initialPractices={preFetchedData.practices}>
+									<Navigation />
+								</PracticesProvider>
+							</DrillsProvider>
+						</FavoritesProvider>
+					</SubscriptionCheckProvider>
 				</UserRoleProvider>
 			</SessionContext.Provider>
 		</>

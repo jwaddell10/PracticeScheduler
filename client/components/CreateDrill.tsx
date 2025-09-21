@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from "react";
+import React, { useState, useLayoutEffect, useEffect } from "react";
 import {
 	View,
 	Text,
@@ -24,6 +24,7 @@ import { useDrills } from "../context/DrillsContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import theme from "./styles/theme";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
+import { useSubscriptionCheck } from "../context/SubscriptionCheckContext";
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -54,8 +55,16 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const session = useSession();
-	const { isSubscriber, isAdmin, subscriptionStatus, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
+	// const { isSubscriber, isAdmin, subscriptionStatus, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
 	const { updateDrill } = useDrills(); // Add this to use the context's updateDrill function
+	const { subscriptionCheckResult, loading: subscriptionCheckLoading } = useSubscriptionCheck();
+	
+	// Log subscription check result when it changes
+	useEffect(() => {
+		if (subscriptionCheckResult) {
+			console.log('🎯 Create Drill tab - subscription check result:', subscriptionCheckResult);
+		}
+	}, [subscriptionCheckResult]);
 	
 	// Get params from route
 	const { mode = 'create', drill: existingDrill } = (route.params as any) || {};

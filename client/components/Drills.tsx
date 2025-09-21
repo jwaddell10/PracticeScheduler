@@ -21,14 +21,24 @@ import DrillFilterModal from "./DrillFilterModal";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
+import { supabase } from "../lib/supabase";
+import { useSubscriptionCheck } from "../context/SubscriptionCheckContext";
 
 export default function Drills() {
+
 	const navigation = useNavigation();
 	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
 	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
 	const { isSubscriber, isAdmin, subscriptionStatus, loading: roleLoading } = useSubscription();
-	console.log(subscriptionStatus, 'sub status drills')
+	const { subscriptionCheckResult, loading: subscriptionCheckLoading } = useSubscriptionCheck();
+	
+	// Log subscription check result when it changes
+	useEffect(() => {
+		if (subscriptionCheckResult) {
+			console.log('🎯 Drills tab - subscription check result:', subscriptionCheckResult);
+		}
+	}, [subscriptionCheckResult]);
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState<{
 		skillFocus: string[];
