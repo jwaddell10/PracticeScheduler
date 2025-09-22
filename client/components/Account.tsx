@@ -14,7 +14,6 @@ export default function Account({ session }: { session: Session | null }) {
 	const [email, setEmail] = useState("");
 	const [drills, setDrills] = useState("");
 	const { isSubscriber, subscriptionStatus, loading: subscriptionLoading } = useSubscription();
-	console.log(subscriptionStatus, 'sub status account')
 	useEffect(() => {
 		if (session) getProfile();
 	}, [session]);

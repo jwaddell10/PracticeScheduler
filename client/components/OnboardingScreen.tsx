@@ -45,7 +45,7 @@ const onboardingSteps = [
 		title: 'Help Us Improve',
 		subtitle: 'Share your feedback',
 		description: 'Have suggestions? We\'re always looking to add new features and improve your experience. Click \'Contact Us\' on the Account page.',
-		image: require('../assets/Account.png'),
+		image: require('../assets/AccountPage.png'),
 	},
 ];
 

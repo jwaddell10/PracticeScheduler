@@ -234,12 +234,12 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: theme.colors.background,
 		paddingHorizontal: 20,
-		paddingTop: 24,
+		paddingTop: 8,
 	},
 	header: {
 		fontSize: 28,
 		fontWeight: "700",
-		marginBottom: 16,
+		marginBottom: 8,
 		color: theme.colors.textPrimary,
 	},
 	statsContainer: {
@@ -253,8 +253,8 @@ const styles = StyleSheet.create({
 		flex: 1,
 		backgroundColor: theme.colors.surface,
 		borderRadius: theme.roundness,
-		paddingVertical: 16,
-		paddingHorizontal: 8,
+		paddingVertical: 10,
+		paddingHorizontal: 6,
 		alignItems: "center",
 		justifyContent: "center",
 		borderWidth: 1,
@@ -268,20 +268,20 @@ const styles = StyleSheet.create({
 	},
 
 	statNumber: {
-		fontSize: 20,
+		fontSize: 16,
 		fontWeight: "700",
 		color: "#F1F5F9",
-		marginTop: 6,
-		marginBottom: 2,
+		marginTop: 4,
+		marginBottom: 1,
 		textAlign: "center",
 	},
 
 	statLabel: {
-		fontSize: 12,
+		fontSize: 10,
 		fontWeight: "600",
 		color: theme.colors.textMuted,
 		textAlign: "center",
-		lineHeight: 14,
+		lineHeight: 12,
 	},
 
 	calendar: {

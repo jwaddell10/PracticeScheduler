@@ -22,7 +22,6 @@ import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
 import { supabase } from "../lib/supabase";
-import { useSubscriptionCheck } from "../context/SubscriptionCheckContext";
 
 export default function Drills() {
 
@@ -31,14 +30,8 @@ export default function Drills() {
 	// console.log(drills, 'drills')
 	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
 	const { isSubscriber, isAdmin, subscriptionStatus, loading: roleLoading } = useSubscription();
-	const { subscriptionCheckResult, loading: subscriptionCheckLoading } = useSubscriptionCheck();
 	
 	// Log subscription check result when it changes
-	useEffect(() => {
-		if (subscriptionCheckResult) {
-			console.log('🎯 Drills tab - subscription check result:', subscriptionCheckResult);
-		}
-	}, [subscriptionCheckResult]);
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState<{
 		skillFocus: string[];
@@ -97,55 +90,43 @@ export default function Drills() {
 		});
 	}, [navigation]);
 
-	if (error) {
-		return (
-			<SafeAreaProvider>
-				<SafeAreaView style={styles.safeArea}>
-					<View style={styles.errorContainer}>
-						<MaterialIcons name="error" size={48} color="#ff4444" />
-						<Text style={styles.errorText}>
-							Error loading drills: {error}
-						</Text>
-						<TouchableOpacity
-							style={styles.retryButton}
-							onPress={refreshDrills}
-						>
-							<Text style={styles.retryButtonText}>Retry</Text>
-						</TouchableOpacity>
-					</View>
-				</SafeAreaView>
-			</SafeAreaProvider>
-		);
-	}
+	// if (error) {
+	// 	return (
+	// 		<SafeAreaProvider>
+	// 			<SafeAreaView style={styles.safeArea}>
+	// 				<View style={styles.errorContainer}>
+	// 					<MaterialIcons name="error" size={48} color="#ff4444" />
+	// 					<Text style={styles.errorText}>
+	// 						Error loading drills: {error}
+	// 					</Text>
+	// 					<TouchableOpacity
+	// 						style={styles.retryButton}
+	// 						onPress={refreshDrills}
+	// 					>
+	// 						<Text style={styles.retryButtonText}>Retry</Text>
+	// 					</TouchableOpacity>
+	// 				</View>
+	// 			</SafeAreaView>
+	// 		</SafeAreaProvider>
+	// 	);
+	// }
 
 	// Show loading state only if we have no drills to display or if role is still loading
-	if ((loading && displayedDrills.length === 0) || roleLoading) {
-		return (
-			<SafeAreaProvider>
-				<SafeAreaView style={styles.safeArea}>
-					<View style={styles.loadingContainer}>
-						<ActivityIndicator size="large" color={theme.colors.primary} />
-						<Text style={styles.loadingText}>Loading drills...</Text>
-					</View>
-				</SafeAreaView>
-			</SafeAreaProvider>
-		);
-	}
+	// if ((loading && displayedDrills.length === 0) || roleLoading) {
+	// 	return (
+	// 		<SafeAreaProvider>
+	// 			<SafeAreaView style={styles.safeArea}>
+	// 				<View style={styles.loadingContainer}>
+	// 					<ActivityIndicator size="large" color={theme.colors.primary} />
+	// 					<Text style={styles.loadingText}>Loading drills...</Text>
+	// 				</View>
+	// 			</SafeAreaView>
+	// 		</SafeAreaProvider>
+	// 	);
+	// }
 
 	// Show subscription required message for non-active subscribers
-	if (subscriptionStatus !== 'active') {
-		return (
-			<SafeAreaProvider>
-				<SafeAreaView style={styles.safeArea}>
-					<View style={styles.container}>
-						<View style={styles.centeredContainer}>
-							<UpgradeToPremiumBanner role="free" />
-						</View>
-					</View>
-				</SafeAreaView>
-			</SafeAreaProvider>
-		);
-	}
+	
 
 	const toggleFilter = (filterType: string, value: string) => {
 		setSelectedFilters((prev) => {
@@ -392,10 +373,23 @@ export default function Drills() {
 	};
 
 
-
+	if (subscriptionStatus !== 'active') {
+		return (
+			<SafeAreaProvider>
+				<SafeAreaView style={styles.safeArea}>
+					<View style={styles.container}>
+						<View style={styles.centeredContainer}>
+							<UpgradeToPremiumBanner role="free" />
+						</View>
+					</View>
+				</SafeAreaView>
+			</SafeAreaProvider>
+		);
+	}
 
 
 	return (
+		
 		<SafeAreaProvider>
 			<SafeAreaView style={styles.safeArea}>
 				<View style={styles.container}>	

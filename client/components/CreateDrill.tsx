@@ -24,7 +24,6 @@ import { useDrills } from "../context/DrillsContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import theme from "./styles/theme";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
-import { useSubscriptionCheck } from "../context/SubscriptionCheckContext";
 
 const drillTypes = [
 	{ label: "Individual", value: "individual" },
@@ -53,32 +52,55 @@ interface CreateDrillProps {
 
 export default function CreateDrill(props?: CreateDrillProps) {
 	const navigation = useNavigation();
-	const route = useRoute();
 	const session = useSession();
-	// const { isSubscriber, isAdmin, subscriptionStatus, loading: subscriptionLoading, error: subscriptionError } = useSubscription(); // ⬅️ use the hook
+	const {
+		isSubscriber,
+		isAdmin,
+		subscriptionStatus,
+		loading: subscriptionLoading,
+		error: subscriptionError,
+	} = useSubscription(); // ⬅️ use the hook
 	const { updateDrill } = useDrills(); // Add this to use the context's updateDrill function
-	const { subscriptionCheckResult, loading: subscriptionCheckLoading } = useSubscriptionCheck();
+
+	// Only use route when not in modal to prevent crashes
+	const isModal = props?.isModal || false;
+	const route = !isModal ? useRoute() : null;
 	
-	// Log subscription check result when it changes
-	useEffect(() => {
-		if (subscriptionCheckResult) {
-			console.log('🎯 Create Drill tab - subscription check result:', subscriptionCheckResult);
-		}
-	}, [subscriptionCheckResult]);
-	
-	// Get params from route
-	const { mode = 'create', drill: existingDrill } = (route.params as any) || {};
-	
+	// Get params from route (only when not in modal)
+	const { mode = "create", drill: existingDrill } = route 
+		? (route.params as any) || {} 
+		: { mode: "create", drill: undefined };
+
 	// Use props if available (for modal usage), otherwise use route params
-	const refreshDrills = props?.refreshDrills || (route.params as any)?.refreshDrills;
-	const onClose = props?.onClose || (route.params as any)?.onClose;
-	const isModal = props?.isModal || (route.params as any)?.isModal || false;
-	const isEditMode = mode === 'edit';
+	const refreshDrills = props?.refreshDrills || (route?.params as any)?.refreshDrills;
+	const onClose = props?.onClose || (route?.params as any)?.onClose;
+	const isEditMode = mode === "edit";
 
 	const [name, setName] = useState(existingDrill?.name || "");
-	const [type, setType] = useState(existingDrill?.type ? JSON.parse(existingDrill.type) : []);
-	const [skillFocus, setSkillFocus] = useState(existingDrill?.skillFocus ? JSON.parse(existingDrill.skillFocus) : []);
-	const [difficulty, setDifficulty] = useState(existingDrill?.difficulty ? JSON.parse(existingDrill.difficulty) : []);
+	const [type, setType] = useState(() => {
+		try {
+			return existingDrill?.type ? JSON.parse(existingDrill.type) : [];
+		} catch (error) {
+			console.warn('Error parsing drill type:', error);
+			return [];
+		}
+	});
+	const [skillFocus, setSkillFocus] = useState(() => {
+		try {
+			return existingDrill?.skillFocus ? JSON.parse(existingDrill.skillFocus) : [];
+		} catch (error) {
+			console.warn('Error parsing drill skillFocus:', error);
+			return [];
+		}
+	});
+	const [difficulty, setDifficulty] = useState(() => {
+		try {
+			return existingDrill?.difficulty ? JSON.parse(existingDrill.difficulty) : [];
+		} catch (error) {
+			console.warn('Error parsing drill difficulty:', error);
+			return [];
+		}
+	});
 	const [notes, setNotes] = useState(existingDrill?.notes || "");
 	const [saving, setSaving] = useState(false);
 	const [imageUri, setImageUri] = useState<string | null>(null);
@@ -96,17 +118,41 @@ export default function CreateDrill(props?: CreateDrillProps) {
 				),
 				headerRight: () => (
 					<TouchableOpacity onPress={handleSubmit} disabled={saving}>
-						<Text style={[styles.headerButton, saving && styles.headerButtonDisabled]}>
-							{saving ? "Saving..." : (isEditMode ? "Update" : "Save")}
+						<Text
+							style={[
+								styles.headerButton,
+								saving && styles.headerButtonDisabled,
+							]}
+						>
+							{saving
+								? "Saving..."
+								: isEditMode
+								? "Update"
+								: "Save"}
 						</Text>
 					</TouchableOpacity>
 				),
 			});
 		}
-	}, [navigation, name, type, skillFocus, difficulty, notes, saving, isEditMode, isModal]);
+	}, [
+		navigation,
+		name,
+		type,
+		skillFocus,
+		difficulty,
+		notes,
+		saving,
+		isEditMode,
+		isModal,
+	]);
 
 	// Button selection component
-	const SelectionButtons = ({ title, options, selectedValues, onSelect }: {
+	const SelectionButtons = ({
+		title,
+		options,
+		selectedValues,
+		onSelect,
+	}: {
 		title: string;
 		options: { label: string; value: string }[];
 		selectedValues: string[];
@@ -130,7 +176,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 								if (isSelected) {
 									onSelect(
 										selectedValues.filter(
-											(val: string) => val !== option.value
+											(val: string) =>
+												val !== option.value
 										)
 									);
 								} else {
@@ -227,7 +274,12 @@ export default function CreateDrill(props?: CreateDrillProps) {
 
 	const handleSubmit = async () => {
 		if (!session?.user) {
-			Alert.alert("Error", `You must be logged in to ${isEditMode ? 'edit' : 'create'} a drill.`);
+			Alert.alert(
+				"Error",
+				`You must be logged in to ${
+					isEditMode ? "edit" : "create"
+				} a drill.`
+			);
 			return;
 		}
 
@@ -261,15 +313,19 @@ export default function CreateDrill(props?: CreateDrillProps) {
 
 			if (isEditMode) {
 				// Update existing drill using context function
-				await updateDrill(existingDrill.id, {
-					name,
-					type,
-					skillFocus,
-					difficulty,
-					notes,
-					imageUrl,
-					isPublic: isAdmin ? isPublic : false, // Only admins can create public drills
-				}, isAdmin);
+				await updateDrill(
+					existingDrill.id,
+					{
+						name,
+						type,
+						skillFocus,
+						difficulty,
+						notes,
+						imageUrl,
+						isPublic: isAdmin ? isPublic : false, // Only admins can create public drills
+					},
+					isAdmin
+				);
 
 				Alert.alert("Success", "Drill updated successfully!", [
 					{
@@ -286,18 +342,20 @@ export default function CreateDrill(props?: CreateDrillProps) {
 				]);
 			} else {
 				// Create new drill
-				const { error: insertError } = await supabase.from("Drill").insert([
-					{
-						user_id: session.user.id,
-						name,
-						type,
-						skillFocus,
-						difficulty,
-						notes,
-						imageUrl,
-						isPublic: isAdmin ? isPublic : false, // Only admins can create public drills
-					},
-				]);
+				const { error: insertError } = await supabase
+					.from("Drill")
+					.insert([
+						{
+							user_id: session.user.id,
+							name,
+							type,
+							skillFocus,
+							difficulty,
+							notes,
+							imageUrl,
+							isPublic: isAdmin ? isPublic : false, // Only admins can create public drills
+						},
+					]);
 
 				if (insertError) throw insertError;
 
@@ -320,7 +378,10 @@ export default function CreateDrill(props?: CreateDrillProps) {
 			}
 		} catch (error) {
 			console.error("Submit error:", error);
-			Alert.alert("Error", (error as Error).message || "Something went wrong.");
+			Alert.alert(
+				"Error",
+				(error as Error).message || "Something went wrong."
+			);
 		} finally {
 			setSaving(false);
 		}
@@ -362,113 +423,126 @@ export default function CreateDrill(props?: CreateDrillProps) {
 					keyboardShouldPersistTaps="handled"
 					showsVerticalScrollIndicator={false}
 				>
-				<Text style={styles.label}>Drill Name</Text>
-				<TextInput
-					style={styles.input}
-					placeholder="Enter drill name"
-					placeholderTextColor={theme.colors.textMuted}
-					value={name}
-					onChangeText={setName}
-					keyboardAppearance="dark"
-				/>
+					<Text style={styles.label}>Drill Name</Text>
+					<TextInput
+						style={styles.input}
+						placeholder="Enter drill name"
+						placeholderTextColor={theme.colors.textMuted}
+						value={name}
+						onChangeText={setName}
+						keyboardAppearance="dark"
+					/>
 
-				<Text style={styles.label}>Description</Text>
-				<TextInput
-					style={[styles.input, styles.notesInput]}
-					placeholder="Optional description about the drill"
-					placeholderTextColor={theme.colors.textMuted}
-					value={notes}
-					onChangeText={setNotes}
-					multiline
-					numberOfLines={4}
-					keyboardAppearance="dark"
-				/>
+					<Text style={styles.label}>Description</Text>
+					<TextInput
+						style={[styles.input, styles.notesInput]}
+						placeholder="Optional description about the drill"
+						placeholderTextColor={theme.colors.textMuted}
+						value={notes}
+						onChangeText={setNotes}
+						multiline
+						numberOfLines={4}
+						keyboardAppearance="dark"
+					/>
 
-				<SelectionButtons
-					title="Type"
-					options={drillTypes}
-					selectedValues={type}
-					onSelect={setType}
-				/>
-				<SelectionButtons
-					title="Skill Focus"
-					options={drillCategories}
-					selectedValues={skillFocus}
-					onSelect={setSkillFocus}
-				/>
-				<SelectionButtons
-					title="Difficulty"
-					options={drillDifficulties}
-					selectedValues={difficulty}
-					onSelect={setDifficulty}
-				/>
+					<SelectionButtons
+						title="Type"
+						options={drillTypes}
+						selectedValues={type}
+						onSelect={setType}
+					/>
+					<SelectionButtons
+						title="Skill Focus"
+						options={drillCategories}
+						selectedValues={skillFocus}
+						onSelect={setSkillFocus}
+					/>
+					<SelectionButtons
+						title="Difficulty"
+						options={drillDifficulties}
+						selectedValues={difficulty}
+						onSelect={setDifficulty}
+					/>
 
-				{/* Admin toggle for public drills */}
-				{isAdmin && (
-					<View style={styles.toggleRow}>
-						<Text style={styles.toggleLabel}>
-							Make Public
-						</Text>
-						<Switch
-							value={isPublic}
-							onValueChange={setIsPublic}
-						/>
-					</View>
-				)}
+					{/* Admin toggle for public drills */}
+{subscriptionLoading ? (
+	<View style={styles.loadingContainer}>
+		<Text style={styles.loadingText}>Loading...</Text>
+	</View>
+) : isAdmin && (
+	<View style={styles.toggleRow}>
+		<Text style={styles.toggleLabel}>Make Public</Text>
+		<TouchableOpacity
+			style={[styles.toggle, isPublic && styles.toggleActive]}
+			onPress={() => setIsPublic(!isPublic)}
+		>
+			<View style={[styles.toggleButton, isPublic && styles.toggleButtonActive]} />
+		</TouchableOpacity>
+	</View>
+)}
 
-				{/* Only show image upload for active subscribers */}
-				{subscriptionStatus === 'active' ? (
-					<>
-						<Text style={styles.label}>
-							Upload Image (optional)
-						</Text>
-						<TouchableOpacity
-							style={styles.imageUploadButton}
-							onPress={pickImage}
-						>
-							<Text style={styles.imageUploadButtonText}>
-								{imageUri ? "Change Image" : "Pick an Image"}
+					{/* Only show image upload for active subscribers */}
+					{/* Only show image upload for active subscribers */}
+					{subscriptionLoading ? (
+						<View style={styles.loadingContainer}>
+							<Text style={styles.loadingText}>
+								Loading subscription status...
 							</Text>
-						</TouchableOpacity>
+						</View>
+					) : subscriptionStatus === "active" ? (
+						<>
+							<Text style={styles.label}>
+								Upload Image (optional)
+							</Text>
+							<TouchableOpacity
+								style={styles.imageUploadButton}
+								onPress={pickImage}
+							>
+								<Text style={styles.imageUploadButtonText}>
+									{imageUri
+										? "Change Image"
+										: "Pick an Image"}
+								</Text>
+							</TouchableOpacity>
 
-						{imageUri && (
-							<Image
-								source={{ uri: imageUri }}
-								style={styles.previewImage}
-								resizeMode="cover"
-							/>
-						)}
-					</>
-				) : (
-					<>
-						<Text style={styles.label}>
-							Upload Image (optional)
-						</Text>
-						<UpgradeToPremiumBanner role="free" />
-					</>
-				)}
+							{imageUri && (
+								<Image
+									source={{ uri: imageUri }}
+									style={styles.previewImage}
+									resizeMode="cover"
+								/>
+							)}
+						</>
+					) : (
+						<>
+							<Text style={styles.label}>
+								Upload Image (optional)
+							</Text>
+							<UpgradeToPremiumBanner role="free" />
+						</>
+					)}
 				</ScrollView>
 			</View>
-			
+
 			{/* Sticky Submit Button */}
 			<View style={styles.stickyButtonContainer}>
 				<TouchableOpacity
-					style={[
-						styles.button,
-						saving && styles.buttonDisabled,
-					]}
+					style={[styles.button, saving && styles.buttonDisabled]}
 					onPress={handleSubmit}
 					disabled={saving}
 				>
 					<Text style={styles.buttonText}>
-						{saving ? "Saving..." : (isEditMode ? "Update Drill" : "Create Drill")}
+						{saving
+							? "Saving..."
+							: isEditMode
+							? "Update Drill"
+							: "Create Drill"}
 					</Text>
 				</TouchableOpacity>
 			</View>
 		</View>
 	);
 }
-
 
 const styles = StyleSheet.create({
 	container: {
@@ -560,7 +634,7 @@ const styles = StyleSheet.create({
 		marginBottom: 40,
 	},
 	stickyButtonContainer: {
-		position: 'absolute',
+		position: "absolute",
 		bottom: 0,
 		left: 0,
 		right: 0,
@@ -594,5 +668,34 @@ const styles = StyleSheet.create({
 	headerButtonDisabled: {
 		color: theme.colors.textMuted,
 	},
-
+	loadingContainer: {
+		padding: 16,
+		alignItems: 'center',
+		justifyContent: 'center',
+	},
+	loadingText: {
+		fontSize: 14,
+		color: theme.colors.textMuted,
+	},
+	toggle: {
+		width: 50,
+		height: 30,
+		borderRadius: 15,
+		backgroundColor: theme.colors.border,
+		justifyContent: 'center',
+		paddingHorizontal: 2,
+	},
+	toggleActive: {
+		backgroundColor: theme.colors.primary,
+	},
+	toggleButton: {
+		width: 26,
+		height: 26,
+		borderRadius: 13,
+		backgroundColor: theme.colors.white,
+		alignSelf: 'flex-start',
+	},
+	toggleButtonActive: {
+		alignSelf: 'flex-end',
+	},
 });

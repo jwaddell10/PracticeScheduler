@@ -4,9 +4,9 @@ import "dotenv/config";
 export default () => ({
 	expo: {
 		scheme: "practicepro",
-		name: "PracticePro Volleyball",
+		name: "PracticePro",
 		slug: "PracticeScheduler",
-		version: "1.0.0",
+		version: "1.0.1",
 		orientation: "portrait",
 		icon: "./assets/PPlogo.png",
 		userInterfaceStyle: "dark",
@@ -14,7 +14,7 @@ export default () => ({
 			style: "light",
 			backgroundColor: "#000000",
 		},
-		newArchEnabled: true,
+		newArchEnabled: false,
 		splash: {
 			image: "./assets/splash-icon.png",
 			resizeMode: "contain",

@@ -7,12 +7,12 @@ import Navigation from "./Navigation";
 import LoadingScreen from "./components/LoadingScreen";
 import SplashScreen from "./components/SplashScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
+import PurchaseHandler from "./components/PurchaseHandler";
 import { SessionContext } from "./context/SessionContext";
 import { PracticesProvider } from "./context/PracticesContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { DrillsProvider } from "./context/DrillsContext";
 import { UserRoleProvider } from "./context/UserRoleContext";
-import { SubscriptionCheckProvider } from "./context/SubscriptionCheckContext";
 import { supabase } from "./lib/supabase";
 import { resetOnboarding } from "./util/onboardingUtils";
 import { setRevenueCatUser, initializeRevenueCat, addPurchaseListener } from "./lib/revenueCat";
@@ -28,7 +28,7 @@ export default function App() {
 	const [session, setSession] = useState<Session | null>(null);
 	const [isLoading, setIsLoading] = useState(true);
 	const [isInitialized, setIsInitialized] = useState(false);
-	const [showOnboarding, setShowOnboarding] = useState(true);
+	const [showOnboarding, setShowOnboarding] = useState(false);
 	const [showSplash, setShowSplash] = useState(false);
 	const [preFetchedData, setPreFetchedData] = useState<{
 		practices: any[];
@@ -44,8 +44,6 @@ export default function App() {
 
 	// TEMPORARY: Force onboarding to show for testing
 	// Remove this when done testing
-	const [forceOnboarding] = useState(true);
-
 	// Handle authentication and deep links
 	useEffect(() => {
 		const initializeApp = async () => {
@@ -57,17 +55,17 @@ export default function App() {
 				// Initialize RevenueCat first
 				try {
 					await initializeRevenueCat();
-					console.log('RevenueCat initialized successfully');
+					console.warn('RevenueCat initialized successfully');
 					
-					// Add purchase listener to refresh subscription status on purchase
-					addPurchaseListener(() => {
-						console.log('🛒 Purchase completed - waiting for subscription to process...');
-						// Wait 3 seconds for subscription to be processed
-						setTimeout(() => {
-							console.log('🔄 Refreshing subscription status after delay');
-							window.dispatchEvent(new Event('subscriptionUpdated'));
-						}, 3000);
-					});
+					// // Add purchase listener to refresh subscription status on purchase
+					// addPurchaseListener(() => {
+					// 	console.log('🛒 Purchase completed - waiting for subscription to process...');
+					// 	// Wait 3 seconds for subscription to be processed
+					// 	setTimeout(() => {
+					// 		console.log('🔄 Refreshing subscription status after delay');
+					// 		window.dispatchEvent(new Event('subscriptionUpdated'));
+					// 	}, 3000);
+					// });
 				} catch (error) {
 					console.warn('Failed to initialize RevenueCat:', error);
 				}
@@ -77,7 +75,7 @@ export default function App() {
 					// Set RevenueCat user ID to Supabase user ID
 					try {
 						await setRevenueCatUser(initialSession.user.id);
-						console.log('RevenueCat user ID set to Supabase ID:', initialSession.user.id);
+						console.warn('RevenueCat user ID set to Supabase ID:', initialSession.user.id);
 					} catch (error) {
 						console.warn('Failed to set RevenueCat user ID:', error);
 					}
@@ -197,7 +195,7 @@ export default function App() {
 	}, []);
 
 	// Show splash screen while checking onboarding status
-	if (showSplash && !forceOnboarding) {
+	if (showSplash) {
 		console.log('🎬 Showing splash screen');
 		return (
 			<>
@@ -217,15 +215,13 @@ export default function App() {
 	}
 
 	// Show onboarding screen
-	if (showOnboarding || forceOnboarding) {
-		console.log('🎯 Showing onboarding screen - showOnboarding:', showOnboarding, 'forceOnboarding:', forceOnboarding);
+	if (showOnboarding) {
 		return (
 			<>
 				<StatusBar barStyle="light-content" backgroundColor="#000000" />
 				<OnboardingScreen
 					onComplete={() => {
 						setShowOnboarding(false);
-						// Note: forceOnboarding will still be true, so you'll need to change it back manually
 					}}
 				/>
 			</>
@@ -246,9 +242,9 @@ export default function App() {
 		<>
 			<StatusBar barStyle="light-content" backgroundColor="#000000" />
 			<SessionContext.Provider value={session}>
-				<UserRoleProvider>
-					<SubscriptionCheckProvider>
-						<FavoritesProvider>
+			<UserRoleProvider>
+				<PurchaseHandler />
+					<FavoritesProvider>
 							<DrillsProvider 
 								initialPublicDrills={preFetchedData.publicDrills}
 								initialUserDrills={preFetchedData.userDrills}
@@ -258,7 +254,6 @@ export default function App() {
 								</PracticesProvider>
 							</DrillsProvider>
 						</FavoritesProvider>
-					</SubscriptionCheckProvider>
 				</UserRoleProvider>
 			</SessionContext.Provider>
 		</>

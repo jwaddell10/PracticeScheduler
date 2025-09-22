@@ -25,7 +25,6 @@ import CreateDrill from "./CreateDrill";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
 import { useSubscription } from "../context/UserRoleContext";
-import { useSubscriptionCheck } from "../context/SubscriptionCheckContext";
 
 export default function YourDrills() {
 	const {
@@ -45,19 +44,15 @@ export default function YourDrills() {
 
 	const session = useSession();
 	const navigation = useNavigation();
-	const {
-		isSubscriber,
-		subscriptionStatus,
-		loading: subscriptionLoading,
-	} = useSubscription();
-	const { subscriptionCheckResult, loading: subscriptionCheckLoading } = useSubscriptionCheck();
+	const { isSubscriber, subscriptionStatus, loading: subscriptionLoading } = useSubscription();
+	// const {
+	// 	isSubscriber,
+	// 	subscriptionStatus,
+	// 	loading: subscriptionLoading,
+	// } = useSubscription();
 
-	// Log subscription check result when it changes
-	useEffect(() => {
-		if (subscriptionCheckResult) {
-			console.log('🎯 Your Drills tab - subscription check result:', subscriptionCheckResult);
-		}
-	}, [subscriptionCheckResult]);
+
+	// Log subscription check result when it change
 
 	const [showFilters, setShowFilters] = useState(false);
 	const [showCreateDrill, setShowCreateDrill] = useState(false);
@@ -65,7 +60,9 @@ export default function YourDrills() {
 	const [activeTab, setActiveTab] = useState("myDrills"); // "myDrills" or "favorites"
 
 	// Ensure non-premium users can't access favorites tab
+	// Ensure non-premium users can't access favorites tab
 	if (activeTab === "favorites" && subscriptionStatus !== "active") {
+		console.log(subscriptionStatus, 'sub status')
 		setActiveTab("myDrills");
 	}
 

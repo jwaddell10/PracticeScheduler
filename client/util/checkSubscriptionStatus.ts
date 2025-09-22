@@ -25,7 +25,7 @@ export const checkSubscriptionStatus = async (userId: string) => {
     }
     
     if (!data || data.length === 0) {
-      console.log('🚫 No subscription found');
+      console.warn('🚫 No subscription found');
       return {
         isSubscriber: false,
         status: 'none',
@@ -37,14 +37,14 @@ export const checkSubscriptionStatus = async (userId: string) => {
     const activeSubscription = data.find(sub => sub.status === 'active');
     
     if (activeSubscription) {
-      console.log('✅ User has active subscription');
+      console.warn('✅ User has active subscription');
       return {
         isSubscriber: true,
         status: 'active',
         reason: 'Active subscription found'
       };
     } else {
-      console.log('❌ No active subscription found');
+      console.warn('❌ No active subscription found');
       return {
         isSubscriber: false,
         status: 'inactive',

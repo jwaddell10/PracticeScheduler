@@ -47,18 +47,6 @@ export function SubscriptionCheckProvider({ children }: { children: React.ReactN
 	}, [session?.user?.id]);
 
 	// Listen for subscription update events
-	useEffect(() => {
-		const handleSubscriptionUpdate = () => {
-			console.log('🔄 Subscription update event received - running check from context');
-			runSubscriptionCheck();
-		};
-
-		window.addEventListener('subscriptionUpdated', handleSubscriptionUpdate);
-
-		return () => {
-			window.removeEventListener('subscriptionUpdated', handleSubscriptionUpdate);
-		};
-	}, [session?.user?.id]);
 
 	const value = {
 		subscriptionCheckResult,
