@@ -7,7 +7,6 @@ import Navigation from "./Navigation";
 import LoadingScreen from "./components/LoadingScreen";
 import SplashScreen from "./components/SplashScreen";
 import OnboardingScreen from "./components/OnboardingScreen";
-import PurchaseHandler from "./components/PurchaseHandler";
 import { SessionContext } from "./context/SessionContext";
 import { PracticesProvider } from "./context/PracticesContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
@@ -15,8 +14,6 @@ import { DrillsProvider } from "./context/DrillsContext";
 import { UserRoleProvider } from "./context/UserRoleContext";
 import { supabase } from "./lib/supabase";
 import { resetOnboarding } from "./util/onboardingUtils";
-import { setRevenueCatUser, initializeRevenueCat, addPurchaseListener } from "./lib/revenueCat";
-import { checkSubscriptionStatus } from "./util/checkSubscriptionStatus";
 import "react-native-get-random-values";
 
 // Expose reset function for testing
@@ -54,39 +51,12 @@ export default function App() {
 				
 				// Initialize RevenueCat first
 				try {
-					await initializeRevenueCat();
-					console.warn('RevenueCat initialized successfully');
-					
-					// // Add purchase listener to refresh subscription status on purchase
-					// addPurchaseListener(() => {
-					// 	console.log('🛒 Purchase completed - waiting for subscription to process...');
-					// 	// Wait 3 seconds for subscription to be processed
-					// 	setTimeout(() => {
-					// 		console.log('🔄 Refreshing subscription status after delay');
-					// 		window.dispatchEvent(new Event('subscriptionUpdated'));
-					// 	}, 3000);
-					// });
 				} catch (error) {
 					console.warn('Failed to initialize RevenueCat:', error);
 				}
 				
 				// If we have a session, set the user ID and pre-fetch data
 				if (initialSession) {
-					// Set RevenueCat user ID to Supabase user ID
-					try {
-						await setRevenueCatUser(initialSession.user.id);
-						console.warn('RevenueCat user ID set to Supabase ID:', initialSession.user.id);
-					} catch (error) {
-						console.warn('Failed to set RevenueCat user ID:', error);
-					}
-					
-					// Check subscription status on app startup
-					try {
-						console.log('🚀 App startup - checking subscription status');
-						await checkSubscriptionStatus(initialSession.user.id);
-					} catch (error) {
-						console.warn('Failed to check subscription status on startup:', error);
-					}
 					
 					// Set the session for RLS policies
 					await supabase.auth.setSession({
@@ -243,7 +213,6 @@ export default function App() {
 			<StatusBar barStyle="light-content" backgroundColor="#000000" />
 			<SessionContext.Provider value={session}>
 			<UserRoleProvider>
-				<PurchaseHandler />
 					<FavoritesProvider>
 							<DrillsProvider 
 								initialPublicDrills={preFetchedData.publicDrills}
