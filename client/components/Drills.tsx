@@ -16,21 +16,18 @@ import { MaterialIcons } from "@expo/vector-icons";
 import StarButton from "./StarButton";
 import { useDrills } from "../context/DrillsContext";
 import { useFavorites } from "../context/FavoritesContext";
-import { useSubscription } from "../context/UserRoleContext";
 import DrillFilterModal from "./DrillFilterModal";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
 import { supabase } from "../lib/supabase";
-
+import { useSubscription } from "../context/SubscriptionContext";
 export default function Drills() {
 
 	const navigation = useNavigation();
-	const { publicDrills: drills, loading, error, refreshAllDrills: refreshDrills } = useDrills();
+	const { publicDrills: drills, loading: drillsLoading, error: drillsError, refreshAllDrills: refreshDrills } = useDrills();
 	// console.log(drills, 'drills')
-	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();
-	const { isSubscriber, isAdmin, subscriptionStatus, loading: roleLoading } = useSubscription();
-	
+	const { favoriteDrillIds, handleFavoriteToggle } = useFavorites();	
 	// Log subscription check result when it changes
 	const [showFilters, setShowFilters] = useState(false);
 	const [selectedFilters, setSelectedFilters] = useState<{
@@ -49,7 +46,7 @@ export default function Drills() {
 	const [isLoadingMore, setIsLoadingMore] = useState(false);
 	const DRILLS_PER_PAGE = 20; // Show 20 drills per page
 	const prevFilteredDrillsRef = useRef<any[]>([]);
-	
+	const { isSubscriber, isAdmin, loading: subscriptionLoading, error: subscriptionError, refreshSubscription } = useSubscription();
 	// Cache for storing already loaded drills by ID
 	const [drillCache, setDrillCache] = useState(new Map<string, any>());
 	const [cachedDrillIds, setCachedDrillIds] = useState(new Set<string>());
@@ -81,51 +78,11 @@ export default function Drills() {
 		return unsubscribe;
 	}, [navigation, refreshDrills, lastRefreshTime]);
 
-
-
-
 	useLayoutEffect(() => {
 		navigation.setOptions({
 			headerRight: () => null,
 		});
 	}, [navigation]);
-
-	// if (error) {
-	// 	return (
-	// 		<SafeAreaProvider>
-	// 			<SafeAreaView style={styles.safeArea}>
-	// 				<View style={styles.errorContainer}>
-	// 					<MaterialIcons name="error" size={48} color="#ff4444" />
-	// 					<Text style={styles.errorText}>
-	// 						Error loading drills: {error}
-	// 					</Text>
-	// 					<TouchableOpacity
-	// 						style={styles.retryButton}
-	// 						onPress={refreshDrills}
-	// 					>
-	// 						<Text style={styles.retryButtonText}>Retry</Text>
-	// 					</TouchableOpacity>
-	// 				</View>
-	// 			</SafeAreaView>
-	// 		</SafeAreaProvider>
-	// 	);
-	// }
-
-	// Show loading state only if we have no drills to display or if role is still loading
-	// if ((loading && displayedDrills.length === 0) || roleLoading) {
-	// 	return (
-	// 		<SafeAreaProvider>
-	// 			<SafeAreaView style={styles.safeArea}>
-	// 				<View style={styles.loadingContainer}>
-	// 					<ActivityIndicator size="large" color={theme.colors.primary} />
-	// 					<Text style={styles.loadingText}>Loading drills...</Text>
-	// 				</View>
-	// 			</SafeAreaView>
-	// 		</SafeAreaProvider>
-	// 	);
-	// }
-
-	// Show subscription required message for non-active subscribers
 	
 
 	const toggleFilter = (filterType: string, value: string) => {
@@ -368,12 +325,13 @@ export default function Drills() {
 				showStarButton={true}
 				showClipboardButton={true}
 				onRefresh={refreshDrills}
+				showAdminActions={true}
 			/>
 		);
 	};
 
 
-	if (subscriptionStatus !== 'active') {
+	if (!isSubscriber) {
 		return (
 			<SafeAreaProvider>
 				<SafeAreaView style={styles.safeArea}>

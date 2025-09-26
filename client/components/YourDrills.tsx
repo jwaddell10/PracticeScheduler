@@ -24,7 +24,7 @@ import ActiveFiltersBar from "../components/ActiveFiltersBar";
 import CreateDrill from "./CreateDrill";
 import theme from "./styles/theme";
 import DrillCard from "./DrillCard";
-import { useSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/SubscriptionContext";
 
 export default function YourDrills() {
 	const {
@@ -44,7 +44,7 @@ export default function YourDrills() {
 
 	const session = useSession();
 	const navigation = useNavigation();
-	const { isSubscriber, subscriptionStatus, loading: subscriptionLoading } = useSubscription();
+	const { isSubscriber, loading: subscriptionLoading } = useSubscription();
 	// const {
 	// 	isSubscriber,
 	// 	subscriptionStatus,
@@ -61,8 +61,8 @@ export default function YourDrills() {
 
 	// Ensure non-premium users can't access favorites tab
 	// Ensure non-premium users can't access favorites tab
-	if (activeTab === "favorites" && subscriptionStatus !== "active") {
-		console.log(subscriptionStatus, 'sub status')
+	if (activeTab === "favorites" && !isSubscriber) {
+		console.log('User is not a subscriber, switching to myDrills tab')
 		setActiveTab("myDrills");
 	}
 
@@ -128,7 +128,7 @@ export default function YourDrills() {
 		} else if (activeTab === "favorites") {
 			// Show only favorited drills from drill library (for premium users)
 			// Check if user has premium access
-			if (subscriptionStatus !== "active") {
+			if (!isSubscriber) {
 				// Return empty array for non-premium users
 				return [];
 			}
@@ -174,7 +174,7 @@ export default function YourDrills() {
 	// No categorization - just use filtered drills directly
 
 	const loading =
-		favoritesLoading || userDrillsLoading || subscriptionLoading;
+		favoritesLoading || userDrillsLoading;
 	const error = favoritesError || userDrillsError;
 
 	// Remove header filter button since we'll add it to search bar
@@ -330,7 +330,7 @@ export default function YourDrills() {
 
 			{/* Tab Toggle - Show for all users */}
 			{/* Only show tab container if user has premium access (for favorites tab) */}
-			{subscriptionStatus === "active" && (
+			{isSubscriber && (
 				<View style={styles.tabContainer}>
 					<TouchableOpacity
 						style={[

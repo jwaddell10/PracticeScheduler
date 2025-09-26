@@ -18,6 +18,7 @@ import * as WebBrowser from "expo-web-browser";
 import * as Linking from "expo-linking";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
+import Purchases from "react-native-purchases";
 
 // WebBrowser.maybeCompleteAuthSession(); // required for web only
 
@@ -144,6 +145,7 @@ export default function Auth() {
 	}, []);
 
 	async function signInWithEmail() {
+		console.log('signin with email runs')
 		if (!email || !password) {
 			Alert.alert("Error", "Please enter both email and password");
 			return;
@@ -152,11 +154,13 @@ export default function Auth() {
 		setLoading(true);
 		try {
 			console.log("Signing in...");
-			const { error } = await supabase.auth.signInWithPassword({
+			const { error, data: { session } } = await supabase.auth.signInWithPassword({
 				email: email,
 				password: password,
 			});
 
+			const { customerInfo, created } = await Purchases.logIn(session?.user?.id);
+			console.log("Customer info rev cat:", customerInfo);
 			if (error) {
 				console.error("Sign in error:", error);
 				Alert.alert("Sign In Error", error.message);

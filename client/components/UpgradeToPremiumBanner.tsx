@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, Dimensions } from "rea
 import { useNavigation, NavigationProp } from "@react-navigation/native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
-import { useSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/SubscriptionContext";
 
 type RootStackParamList = {
 	Home: undefined;

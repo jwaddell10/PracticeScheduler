@@ -2,17 +2,18 @@ import React from "react";
 import { View, Text, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import theme from "./styles/theme";
+import RevenueCatUI from 'react-native-purchases-ui';
 
 export default function PremiumScreen() {
 	const navigation = useNavigation();
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>Premium Features</Text>
-			<Text style={styles.subtitle}>Coming Soon</Text>
-			<Text style={styles.description}>
-				Premium features will be available here once RevenueCat is properly configured.
-			</Text>
+		<View style={{ flex: 1 }}>
+			<RevenueCatUI.Paywall 
+			  onDismiss={() => {
+				navigation.goBack()
+			  }}
+			/>
 		</View>
 	);
 }

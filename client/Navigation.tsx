@@ -20,7 +20,6 @@ import Clipboard from "./components/Clipboard";
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { ClipboardProvider } from "./context/ClipboardContext";
-import { UserRoleProvider, useSubscription } from "./context/UserRoleContext";
 
 import theme from "./components/styles/theme"; // Make sure this path is correct
 import YourDrills from "./components/YourDrills";
@@ -175,7 +174,6 @@ export default function Navigation() {
 		<NavigationContainer theme={navigationTheme}>
 			<FavoritesProvider>
 				<ClipboardProvider>
-					<UserRoleProvider>
 						<Tab.Navigator
 							detachInactiveScreens={false}
 							screenOptions={({ route }) => ({
@@ -256,7 +254,6 @@ export default function Navigation() {
 						/>
 					)}
 										</Tab.Navigator>
-					</UserRoleProvider>
 				</ClipboardProvider>
 			</FavoritesProvider>
 		</NavigationContainer>

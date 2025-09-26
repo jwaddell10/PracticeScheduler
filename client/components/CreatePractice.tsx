@@ -24,7 +24,7 @@ import { usePractices } from "../context/PracticesContext";
 import { useFavorites } from "../context/FavoritesContext";
 import { useSession } from "../context/SessionContext";
 import { useDrillFilters } from "../hooks/useDrillFilters";
-import { useSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import DrillFilterModal from "./DrillFilterModal";
 import DrillDetails from "./DrillDetails";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -46,7 +46,7 @@ const CreatePractice = () => {
 	const navigation = useNavigation();
 	const route = useRoute();
 	const { addPractice } = usePractices();
-	const { isSubscriber, subscriptionStatus } = useSubscription();
+	const { isSubscriber } = useSubscription();
 	const [availableDrills, setAvailableDrills] = useState<string[]>([]);
 	const [drillSelectionModalVisible, setDrillSelectionModalVisible] =
 		useState(false);
@@ -55,7 +55,7 @@ const CreatePractice = () => {
 		useState<DrillData | null>(null);
 	const [drillSourceToggle, setDrillSourceToggle] = useState<
 		"public" | "user"
-	>(subscriptionStatus === 'active' ? "public" : "user");
+	>(isSubscriber ? "public" : "user");
 	const [searchQuery, setSearchQuery] = useState("");
 	const [showFilters, setShowFilters] = useState(false);
 
@@ -745,7 +745,7 @@ const CreatePractice = () => {
 												</Text>
 
 												{/* Drill Source Toggle - Only show for premium users */}
-												{subscriptionStatus === 'active' && (
+												{isSubscriber && (
 													<View
 														style={
 															styles.toggleContainer

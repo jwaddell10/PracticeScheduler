@@ -5,7 +5,7 @@ import { Button, Input } from "@rneui/themed";
 import { Session } from "@supabase/supabase-js";
 import { MaterialIcons } from "@expo/vector-icons";
 import theme from "./styles/theme";
-import { useSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import UpgradeToPremiumBanner from "./UpgradeToPremiumBanner";
 import ContactUs from "./ContactUs";
 
@@ -13,7 +13,7 @@ export default function Account({ session }: { session: Session | null }) {
 	const [loading, setLoading] = useState(true);
 	const [email, setEmail] = useState("");
 	const [drills, setDrills] = useState("");
-	const { isSubscriber, subscriptionStatus, loading: subscriptionLoading } = useSubscription();
+	const { isSubscriber, isAdmin, loading: subscriptionLoading } = useSubscription();
 	useEffect(() => {
 		if (session) getProfile();
 	}, [session]);
@@ -135,7 +135,7 @@ export default function Account({ session }: { session: Session | null }) {
 			</View>
 
 			{/* Show Upgrade Banner for non-active subscribers */}
-			{!subscriptionLoading && subscriptionStatus !== 'active' && <UpgradeToPremiumBanner role={isSubscriber ? "premium" : "free"} />}
+			{!subscriptionLoading && !isSubscriber && <UpgradeToPremiumBanner role={isSubscriber ? "premium" : "free"} />}
 
 			<View style={styles.section}>
 				<Text style={styles.sectionTitle}>Profile Information</Text>
@@ -153,11 +153,11 @@ export default function Account({ session }: { session: Session | null }) {
 					<View style={styles.roleDisplay}>
 						<Text style={[
 							styles.roleText,
-							subscriptionStatus === 'active' && styles.premiumRoleText
+							(isSubscriber || isAdmin) && styles.premiumRoleText
 						]}>
-							{subscriptionStatus === 'active' ? "Premium" : subscriptionStatus === 'expired' ? "Expired" : "Free"}
+							{isAdmin ? "Admin" : isSubscriber ? "Premium" : "Free"}
 						</Text>
-						{subscriptionStatus === 'active' && (
+						{(isSubscriber || isAdmin) && (
 							<MaterialIcons name="verified" size={20} color={theme.colors.proPurple} />
 						)}
 					</View>

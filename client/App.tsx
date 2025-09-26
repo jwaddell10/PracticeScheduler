@@ -11,10 +11,12 @@ import { SessionContext } from "./context/SessionContext";
 import { PracticesProvider } from "./context/PracticesContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
 import { DrillsProvider } from "./context/DrillsContext";
-import { UserRoleProvider } from "./context/UserRoleContext";
 import { supabase } from "./lib/supabase";
 import { resetOnboarding } from "./util/onboardingUtils";
 import "react-native-get-random-values";
+import Purchases, { LOG_LEVEL } from "react-native-purchases";
+import { getCustomerInfo } from "./lib/revenueCat";
+import { SubscriptionProvider } from "./context/SubscriptionContext";
 
 // Expose reset function for testing
 // if (__DEV__) {
@@ -37,80 +39,96 @@ export default function App() {
 		userDrills: [],
 	});
 
-	// RevenueCat initialization is now handled early in app startup
+	useEffect(() => {
+		const fetchCustomerInfo = async () => {
+			const info = await getCustomerInfo();
+			console.log("Customer info rev cat appjs:", info);
+			// You could save it to state here if needed
+		};
 
-	// TEMPORARY: Force onboarding to show for testing
-	// Remove this when done testing
-	// Handle authentication and deep links
+		fetchCustomerInfo();
+	}, []);
+
+	useEffect(() => {
+		Purchases.setLogLevel(LOG_LEVEL.VERBOSE);
+		Purchases.configure({ apiKey: "appl_VTApErVWbdFRrWEYqfslhIgvWub" });
+	}, []);
+
 	useEffect(() => {
 		const initializeApp = async () => {
 			try {
 				// Get initial session first
-				const { data: { session: initialSession } } = await supabase.auth.getSession();
+				const {
+					data: { session: initialSession },
+				} = await supabase.auth.getSession();
 				setSession(initialSession);
-				
+
 				// Initialize RevenueCat first
 				try {
 				} catch (error) {
-					console.warn('Failed to initialize RevenueCat:', error);
+					console.warn("Failed to initialize RevenueCat:", error);
 				}
-				
+
 				// If we have a session, set the user ID and pre-fetch data
 				if (initialSession) {
-					
 					// Set the session for RLS policies
 					await supabase.auth.setSession({
 						access_token: initialSession.access_token,
 						refresh_token: initialSession.refresh_token,
 					});
-					
+
 					// Pre-fetch practices
 					const { data: practices } = await supabase
 						.from("Practice")
-						.select("id, title, startTime, endTime, drills, practiceDuration, notes, teamId, user_id")
+						.select(
+							"id, title, startTime, endTime, drills, practiceDuration, notes, teamId, user_id"
+						)
 						.eq("user_id", initialSession.user.id)
 						.order("startTime", { ascending: true });
-					
+
 					// Pre-fetch public drills
 					const { data: publicDrills } = await supabase
 						.from("Drill")
-						.select(`
+						.select(
+							`
 							*,
 							users!Drill_user_id_fkey (
 								id,
 								email,
 								role
 							)
-						`)
+						`
+						)
 						.eq("isPublic", true)
 						.order("name");
-					
+
 					// Pre-fetch user drills
 					const { data: userDrills } = await supabase
 						.from("Drill")
-						.select(`
+						.select(
+							`
 							*,
 							users!Drill_user_id_fkey (
 								id,
 								email,
 								role
 							)
-						`)
+						`
+						)
 						.eq("user_id", initialSession.user.id)
 						.order("name");
-					
+
 					// Store pre-fetched data
 					setPreFetchedData({
 						practices: practices || [],
 						publicDrills: publicDrills || [],
 						userDrills: userDrills || [],
 					});
-					
 				}
-				
+
 				setIsInitialized(true);
 			} catch (error) {
-				console.error('Error during app initialization:', error);
+				console.error("Error during app initialization:", error);
 				setIsInitialized(true);
 			} finally {
 				setIsLoading(false);
@@ -136,7 +154,6 @@ export default function App() {
 
 		// Handle deep links for email confirmation
 		const handleDeepLink = (url: string) => {
-
 			// Check if this is an auth callback
 			if (url.includes("auth/callback")) {
 				// Supabase will automatically handle the auth callback
@@ -166,7 +183,7 @@ export default function App() {
 
 	// Show splash screen while checking onboarding status
 	if (showSplash) {
-		console.log('🎬 Showing splash screen');
+		console.log("🎬 Showing splash screen");
 		return (
 			<>
 				<StatusBar barStyle="light-content" backgroundColor="#000000" />
@@ -212,18 +229,22 @@ export default function App() {
 		<>
 			<StatusBar barStyle="light-content" backgroundColor="#000000" />
 			<SessionContext.Provider value={session}>
-			<UserRoleProvider>
-					<FavoritesProvider>
-							<DrillsProvider 
-								initialPublicDrills={preFetchedData.publicDrills}
+				<SubscriptionProvider>
+						<FavoritesProvider>
+							<DrillsProvider
+								initialPublicDrills={
+									preFetchedData.publicDrills
+								}
 								initialUserDrills={preFetchedData.userDrills}
 							>
-								<PracticesProvider initialPractices={preFetchedData.practices}>
+								<PracticesProvider
+									initialPractices={preFetchedData.practices}
+								>
 									<Navigation />
 								</PracticesProvider>
 							</DrillsProvider>
 						</FavoritesProvider>
-				</UserRoleProvider>
+				</SubscriptionProvider>
 			</SessionContext.Provider>
 		</>
 	);

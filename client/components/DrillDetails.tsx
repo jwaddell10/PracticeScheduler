@@ -13,7 +13,7 @@ import {
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useSession } from "../context/SessionContext";
 import { useDrills } from "../context/DrillsContext";
 import theme from "./styles/theme";
@@ -33,7 +33,7 @@ export default function DrillDetails({ route }: { route: any }) {
 		);
 	}
 	const navigation = useNavigation();
-	const { isSubscriber, subscriptionStatus, isAdmin } = useSubscription();
+	const { isSubscriber, isAdmin } = useSubscription();
 	const { deleteDrill, publicDrills, userDrills } = useDrills();
 	const session = useSession();
 	

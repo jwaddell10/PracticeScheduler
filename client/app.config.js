@@ -14,7 +14,6 @@ export default () => ({
 			style: "light",
 			backgroundColor: "#000000",
 		},
-		newArchEnabled: false,
 		splash: {
 			image: "./assets/splash-icon.png",
 			resizeMode: "contain",

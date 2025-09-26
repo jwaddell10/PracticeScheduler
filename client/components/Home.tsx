@@ -14,7 +14,7 @@ import { MaterialIcons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFavorites } from "../context/FavoritesContext"; // Adjust path as needed
 import { usePractices } from "../context/PracticesContext";
 import { useDrills } from "../context/DrillsContext";
-import { useSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import UpcomingPractices from "./UpcomingPractices";
 import theme from "./styles/theme";
 
@@ -24,7 +24,7 @@ export default function HomeScreen() {
 	const { favoriteDrills } = useFavorites();
 	const { practices, deletePractice } = usePractices();
 	const { refreshAllDrills, userDrills } = useDrills();
-	const { isSubscriber, subscriptionStatus } = useSubscription();
+	const { isSubscriber } = useSubscription();
 	const [selectedDate, setSelectedDate] = useState(null);
 	const [showAllPractices, setShowAllPractices] = useState(false);
 
@@ -106,7 +106,7 @@ export default function HomeScreen() {
 				<TouchableOpacity
 					style={styles.statCard}
 					onPress={() => {
-						if (subscriptionStatus === 'active') {
+						if (isSubscriber) {
 							navigation.navigate("DrillsTab");
 						} else {
 							navigation.navigate("Premium");
@@ -121,6 +121,12 @@ export default function HomeScreen() {
 
 			{/* Upcoming Practices */}
 			<UpcomingPractices limit={3} />
+
+			{/* Schedule Practice Section */}
+			<View style={styles.scheduleSection}>
+				<Text style={styles.scheduleSectionTitle}>Schedule Practice</Text>
+				<Text style={styles.scheduleSectionSubtext}>Click on calendar date to schedule a practice</Text>
+			</View>
 
 			<Calendar
 				markedDates={getMarkedDates()}
@@ -147,12 +153,6 @@ export default function HomeScreen() {
 				style={styles.calendar}
 			/>
 
-			<TouchableOpacity
-				style={styles.scheduleButton}
-				onPress={() => navigation.navigate("Practice")}
-			>
-				<Text style={styles.scheduleButtonText}>Schedule Practice</Text>
-			</TouchableOpacity>
 
 			{/* All Practices Modal */}
 			<Modal
@@ -289,19 +289,6 @@ const styles = StyleSheet.create({
 		overflow: "hidden",
 		marginBottom: 24,
 	},
-	scheduleButton: {
-		backgroundColor: theme.colors.primary,
-		paddingVertical: 16,
-		borderRadius: theme.roundness,
-		alignItems: "center",
-		marginBottom: 32,
-	},
-	scheduleButtonText: {
-		color: theme.colors.white,
-		fontWeight: "700",
-		fontSize: 18,
-	},
-
 	// Premium Banner Styles
 	bannerContainer: {
 		backgroundColor: theme.colors.surface,
@@ -437,5 +424,24 @@ const styles = StyleSheet.create({
 		color: theme.colors.white,
 		fontSize: 12,
 		fontWeight: "600",
+	},
+	scheduleSection: {
+		marginBottom: 20,
+		paddingVertical: 16,
+		paddingHorizontal: 20,
+		backgroundColor: theme.colors.cardBackground,
+		borderRadius: 12,
+		borderWidth: 1,
+		borderColor: theme.colors.border,
+	},
+	scheduleSectionTitle: {
+		fontSize: 18,
+		fontWeight: "700",
+		color: theme.colors.textPrimary,
+		marginBottom: 4,
+	},
+	scheduleSectionSubtext: {
+		fontSize: 14,
+		color: theme.colors.textMuted,
 	},
 });

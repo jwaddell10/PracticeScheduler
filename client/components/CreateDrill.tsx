@@ -19,7 +19,7 @@ import { useSession } from "../context/SessionContext";
 import { decode } from "base64-arraybuffer";
 import * as FileSystem from "expo-file-system";
 import { supabase } from "../lib/supabase";
-import { useSubscription } from "../context/UserRoleContext"; // ⬅️ import our hook
+import { useSubscription } from "../context/SubscriptionContext"; // ⬅️ import our hook
 import { useDrills } from "../context/DrillsContext";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import theme from "./styles/theme";
@@ -56,7 +56,6 @@ export default function CreateDrill(props?: CreateDrillProps) {
 	const {
 		isSubscriber,
 		isAdmin,
-		subscriptionStatus,
 		loading: subscriptionLoading,
 		error: subscriptionError,
 	} = useSubscription(); // ⬅️ use the hook
@@ -489,7 +488,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 								Loading subscription status...
 							</Text>
 						</View>
-					) : subscriptionStatus === "active" ? (
+					) : isSubscriber ? (
 						<>
 							<Text style={styles.label}>
 								Upload Image (optional)

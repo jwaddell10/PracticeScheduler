@@ -25,7 +25,7 @@ import DraggableFlatList from "react-native-draggable-flatlist";
 import theme from "./styles/theme";
 import { useSession } from "../context/SessionContext";
 import { usePractices } from "../context/PracticesContext";
-import { useSubscription } from "../context/UserRoleContext";
+import { useSubscription } from "../context/SubscriptionContext";
 import { useDrills } from "../context/DrillsContext";
 
 // Custom Cancel Button Component
@@ -78,7 +78,7 @@ export default function PracticeDetails({ route }) {
 	const navigation = useNavigation();
 	const { practiceId } = route.params;
 	const { addPractice, updatePractice, deletePractice: deletePracticeFromContext } = usePractices();
-	const { isSubscriber, subscriptionStatus } = useSubscription();
+	const { isSubscriber } = useSubscription();
 	const { publicDrills, userDrills } = useDrills();
 	const session = useSession();
 	const [practice, setPractice] = useState(null);
@@ -637,7 +637,7 @@ export default function PracticeDetails({ route }) {
 										const drillObject = allDrills.find(d => d.name === drill);
 										
 										// If user is free and drill is not in their user drills, hide it
-										if (subscriptionStatus !== 'active' && drillObject && drillObject.isPublic && session?.user?.id && drillObject.user_id !== session.user.id) {
+										if (!isSubscriber && drillObject && drillObject.isPublic && session?.user?.id && drillObject.user_id !== session.user.id) {
 											return null;
 										}
 										
