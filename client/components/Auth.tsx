@@ -3,7 +3,6 @@ import {
 	Alert,
 	StyleSheet,
 	View,
-	AppState,
 	TouchableOpacity,
 	Text,
 	TextInput,
@@ -11,184 +10,188 @@ import {
 	Platform,
 	ScrollView,
 } from "react-native";
-import { supabase } from "../lib/supabase";
-import { makeRedirectUri } from "expo-auth-session";
+import * as Linking from "expo-linking";
 import * as QueryParams from "expo-auth-session/build/QueryParams";
 import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import theme from "./styles/theme";
+
+import { supabase } from "../lib/supabase";
 import Purchases from "react-native-purchases";
+import { makeRedirectUri } from "expo-auth-session";
 
-// WebBrowser.maybeCompleteAuthSession(); // required for web only
+// Add Buffer shim for query parameter parsing
+global.Buffer = global.Buffer || require("buffer").Buffer;
 
-// Use explicit redirect URI instead of makeRedirectUri() to avoid malformed URLs
-const redirectTo = makeRedirectUri();
-console.log("Using redirect URI:", redirectTo);
-const createSessionFromUrl = async (url: string) => {
-	try {
-		console.log("Creating session from URL:", url);
-		const { params, errorCode } = QueryParams.getQueryParams(url);
-		if (errorCode) {
-			console.error("Query params error:", errorCode);
-			throw new Error(errorCode);
-		}
-		const { access_token, refresh_token } = params;
-		if (!access_token) {
-			console.log("No access token found in URL");
-			return;
-		}
-		console.log("Found access token, setting session...");
-		const { data, error } = await supabase.auth.setSession({
-			access_token,
-			refresh_token,
-		});
-		if (error) {
-			console.error("Session error:", error);
-			throw error;
-		}
-		console.log("Session created successfully");
-		return data.session;
-	} catch (error) {
-		console.error("Error creating session from URL:", error);
-		throw error;
+const parseSupabaseUrl = (url: string): string => {
+	// Supabase uses # instead of ? for query parameters
+	let parsedUrl = url;
+	if (url.includes("#")) {
+		parsedUrl = url.replace("#", "?");
 	}
-};
-const performOAuth = async () => {
-	const { data, error } = await supabase.auth.signInWithOAuth({
-		provider: "github",
-		options: {
-			redirectTo,
-			skipBrowserRedirect: true,
-		},
-	});
-	if (error) throw error;
-	const res = await WebBrowser.openAuthSessionAsync(
-		data?.url ?? "",
-		redirectTo
-	);
-	if (res.type === "success") {
-		const { url } = res;
-		await createSessionFromUrl(url);
-	}
-};
-const sendMagicLink = async (email: string) => {
-	try {
-		console.log(`Sending magic link to: ${email}`);
-		const { error } = await supabase.auth.signInWithOtp({
-			email: email,
-			options: {
-				emailRedirectTo: redirectTo,
-			},
-		});
-		
-		if (error) {
-			console.error("Magic link error:", error);
-			Alert.alert("Magic Link Error", error.message);
-		} else {
-			console.log("Magic link sent successfully");
-			Alert.alert(
-				"Magic Link Sent!", 
-				"Check your email and click the link to sign in. The link will open your app automatically."
-			);
-		}
-	} catch (error) {
-		console.error("Magic link exception:", error);
-		Alert.alert(
-			"Magic Link Failed", 
-			error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
-		);
-	}
+	return parsedUrl;
 };
 
-export default function Auth() {
+const Auth = () => {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 	const [loading, setLoading] = useState(false);
+	const navigation = useNavigation();
 
-	// Handle linking into app from email app.
+	// Compute redirect URI (must match scheme / whitelisted in Supabase)
+	const redirectTo = makeRedirectUri();
+	console.log("Using redirect URI:", redirectTo);
+
+	// Deep link / incoming URL handler
 	useEffect(() => {
-		const handleDeepLink = async (url: string) => {
-			console.log("Deep link URL received:", url);
+		const handleDeepLink = async (rawUrl: string) => {
+			console.log("🔍 DEBUG - Raw URL:", rawUrl);
 			
-			// Only process URLs that contain auth parameters and are properly formatted
-			if (url && url.includes('access_token') && !url.endsWith(':///')) {
-				console.log("✅ Processing auth URL:", url);
+			// Parse the Supabase URL format
+			const transformedUrl = parseSupabaseUrl(rawUrl);
+			console.log("🔍 DEBUG - Transformed URL:", transformedUrl);
+			
+			const parsedUrl = Linking.parse(transformedUrl);
+			console.log("🔍 DEBUG - Parsed URL:", parsedUrl);
+			
+			const access_token = parsedUrl.queryParams?.access_token;
+			const refresh_token = parsedUrl.queryParams?.refresh_token;
+			const type = parsedUrl.queryParams?.type;
+			
+			console.log("🔍 DEBUG - Type:", type);
+			console.log("🔍 DEBUG - Access token exists:", !!access_token);
+			console.log("🔍 DEBUG - Refresh token exists:", !!refresh_token);
+
+			// Handle password recovery flow
+			if (type === "recovery" && access_token && refresh_token) {
+				console.log("🔄 Password recovery detected - setting session and navigating");
+				
 				try {
-					await createSessionFromUrl(url);
-					console.log("✅ Session created successfully from deep link");
-				} catch (error) {
-					console.error("❌ Failed to create session from deep link:", error);
+					// Set the session using the tokens from the URL
+					const { data, error } = await supabase.auth.setSession({
+						access_token: access_token as string,
+						refresh_token: refresh_token as string,
+					});
+					
+					if (error) {
+						console.error("❌ Error setting recovery session:", error);
+						Alert.alert(
+							"Recovery Error", 
+							"Unable to verify recovery link. Please try requesting a new password reset."
+						);
+						return;
+					}
+					
+					console.log("✅ Recovery session established:", data.session?.user?.email);
+					
+					// Navigate to reset password screen
+					(navigation as any).navigate("ResetPassword", {
+						recovery: true,
+						sessionEstablished: true
+					});
+					
+				} catch (err) {
+					console.error("❌ Recovery session error:", err);
+					Alert.alert(
+						"Recovery Error", 
+						"Failed to establish recovery session. Please try again."
+					);
 				}
-			} else if (url && url.endsWith(':///')) {
-				console.log("⚠️  Ignoring malformed deep link (empty path):", url);
-				console.log("   This usually happens when testing with 'practicepro://'");
-				console.log("   Use a proper auth callback URL for testing");
-			} else if (url) {
-				console.log("ℹ️  Received non-auth deep link:", url);
+			}
+			// Handle other auth flows (normal login, magic links, etc.)
+			else if (access_token && refresh_token && type !== "recovery") {
+				console.log("🔄 Normal auth flow detected");
+				try {
+					const { data, error } = await supabase.auth.setSession({
+						access_token: access_token as string,
+						refresh_token: refresh_token as string,
+					});
+					
+					if (error) {
+						console.error("❌ Error setting session:", error);
+					} else {
+						console.log("✅ Normal session established:", data.session?.user?.email);
+						// User is logged in normally
+					}
+				} catch (err) {
+					console.error("❌ Session error:", err);
+				}
+			}
+			else if (rawUrl && rawUrl.endsWith(":///")) {
+				console.log("⚠️ Ignoring malformed deep link (empty path):", rawUrl);
+			} else {
+				console.log("ℹ️ Received non-auth / unrelated deep link:", rawUrl);
 			}
 		};
 
-		// Check for initial URL if app was opened via deep link
-		Linking.getInitialURL().then((url) => {
-			if (url) {
-				handleDeepLink(url);
+		// If app is launched via deep link
+		Linking.getInitialURL().then((initialUrl) => {
+			if (initialUrl) {
+				handleDeepLink(initialUrl);
 			}
 		});
 
-		// Listen for incoming links when app is already running
-		const subscription = Linking.addEventListener('url', (event) => {
+		const subscription = Linking.addEventListener("url", (event) => {
 			handleDeepLink(event.url);
 		});
+		
+		return () => {
+			subscription.remove();
+		};
+	}, [navigation]);
 
-		return () => subscription?.remove();
-	}, []);
-
-	async function signInWithEmail() {
-		console.log('signin with email runs')
+	const signInWithEmail = async () => {
 		if (!email || !password) {
 			Alert.alert("Error", "Please enter both email and password");
 			return;
 		}
-
 		setLoading(true);
 		try {
-			console.log("Signing in...");
-			const { error, data: { session } } = await supabase.auth.signInWithPassword({
-				email: email,
-				password: password,
+			const {
+				data: { session },
+				error,
+			} = await supabase.auth.signInWithPassword({
+				email,
+				password,
 			});
 
-			const { customerInfo, created } = await Purchases.logIn(session?.user?.id);
-			console.log("Customer info rev cat:", customerInfo);
 			if (error) {
 				console.error("Sign in error:", error);
 				Alert.alert("Sign In Error", error.message);
 			} else {
-				console.log("Sign in successful");
+				console.log("Sign in successful:", session);
+				if (session?.user?.id) {
+					const { customerInfo } = await Purchases.logIn(
+						session.user.id
+					);
+					console.log("RevenueCat customer:", customerInfo);
+				}
 			}
-		} catch (error) {
-			console.error("Sign in exception:", error);
-			Alert.alert("Sign In Failed", error instanceof Error ? error.message : "An unexpected error occurred");
+		} catch (err) {
+			console.error("Sign in exception:", err);
+			Alert.alert(
+				"Sign In Failed",
+				err instanceof Error ? err.message : "Unexpected error"
+			);
 		} finally {
 			setLoading(false);
 		}
-	}
+	};
 
-	async function signUpWithEmail() {
+	const signUpWithEmail = async () => {
 		if (!email || !password) {
 			Alert.alert("Error", "Please enter both email and password");
 			return;
 		}
-
 		setLoading(true);
 		try {
 			const {
 				data: { session },
 				error,
 			} = await supabase.auth.signUp({
-				email: email,
-				password: password,
+				email,
+				password,
 				options: {
 					emailRedirectTo: redirectTo,
 				},
@@ -198,57 +201,70 @@ export default function Auth() {
 				console.error("Signup error:", error);
 				Alert.alert("Signup Error", error.message);
 			} else if (!session) {
-				console.log("Signup successful, email verification required");
+				console.log("Signup initiated, check email to verify or reset");
 				Alert.alert(
-					"Account Created!", 
-					"Please check your inbox for email verification. Click the link in your email to complete signup."
+					"Account Created!",
+					"Please check your email for a confirmation / verification link."
 				);
 			} else {
-				console.log("Signup successful with session");
+				console.log("Signup created a session:", session);
 			}
-		} catch (error) {
-			console.error("Signup exception:", error);
+		} catch (err) {
+			console.error("Signup exception:", err);
 			Alert.alert(
-				"Signup Failed", 
-				error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+				"Signup Failed",
+				err instanceof Error ? err.message : "Unexpected error"
 			);
 		} finally {
 			setLoading(false);
 		}
-	}
+	};
 
-	async function resetPassword() {
+	const resetPassword = async () => {
+		// Create the reset password URL
+		const resetPasswordUrl = Linking.createURL("ResetPassword");
+		console.log("🔗 Reset password URL:", resetPasswordUrl);
+		
 		if (!email) {
 			Alert.alert("Error", "Please enter your email address");
 			return;
 		}
-
 		setLoading(true);
 		try {
-			const { error } = await supabase.auth.resetPasswordForEmail(email, {
-				redirectTo: redirectTo,
-			});
+			const { data, error } = await supabase.auth.resetPasswordForEmail(
+				email,
+				{
+					redirectTo: resetPasswordUrl,
+				}
+			);
 
 			if (error) {
-				console.error("Password reset error:", error);
-				Alert.alert("Password Reset Error", error.message);
+				Alert.alert("Reset Password Error", error.message);
 			} else {
-				console.log("Password reset email sent successfully");
+				console.log("📧 Password reset email sent");
 				Alert.alert(
-					"Password Reset Email Sent!", 
-					"Check your email for a password reset link. Click the link to reset your password."
+					"Reset Link Sent",
+					"Please check your email for a password reset link."
 				);
 			}
-		} catch (error) {
-			console.error("Password reset exception:", error);
+		} catch (err) {
 			Alert.alert(
-				"Password Reset Failed", 
-				error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
+				"Reset Password Failed",
+				err instanceof Error ? err.message : "Unexpected error"
 			);
 		} finally {
 			setLoading(false);
 		}
-	}
+	};
+
+	// Test function for ResetPassword screen
+	const testResetPasswordScreen = () => {
+		console.log("🧪 Testing ResetPassword screen navigation");
+		(navigation as any).navigate("ResetPassword", {
+			recovery: true,
+			sessionEstablished: true
+		});
+	};
 
 	return (
 		<KeyboardAvoidingView
@@ -257,7 +273,6 @@ export default function Auth() {
 		>
 			<ScrollView
 				contentContainerStyle={styles.scrollContent}
-				showsVerticalScrollIndicator={false}
 				keyboardShouldPersistTaps="handled"
 			>
 				<View style={styles.header}>
@@ -284,7 +299,7 @@ export default function Auth() {
 							/>
 							<TextInput
 								style={styles.textInput}
-								onChangeText={(text: string) => setEmail(text)}
+								onChangeText={setEmail}
 								value={email}
 								placeholder="Enter your email"
 								placeholderTextColor={theme.colors.textMuted}
@@ -292,6 +307,8 @@ export default function Auth() {
 								keyboardType="email-address"
 								returnKeyType="next"
 								keyboardAppearance="dark"
+								blurOnSubmit={false}
+								selectTextOnFocus={false}
 							/>
 						</View>
 					</View>
@@ -307,9 +324,7 @@ export default function Auth() {
 							/>
 							<TextInput
 								style={styles.textInput}
-								onChangeText={(text: string) =>
-									setPassword(text)
-								}
+								onChangeText={setPassword}
 								value={password}
 								placeholder="Enter your password"
 								placeholderTextColor={theme.colors.textMuted}
@@ -326,7 +341,9 @@ export default function Auth() {
 						onPress={resetPassword}
 						disabled={loading}
 					>
-						<Text style={styles.forgotPasswordText}>Forgot Password?</Text>
+						<Text style={styles.forgotPasswordText}>
+							Forgot Password?
+						</Text>
 					</TouchableOpacity>
 
 					<TouchableOpacity
@@ -348,11 +365,32 @@ export default function Auth() {
 							{loading ? "Creating Account..." : "Sign Up"}
 						</Text>
 					</TouchableOpacity>
+
+					{__DEV__ && (
+						<TouchableOpacity
+							style={[
+								styles.button,
+								{
+									backgroundColor: theme.colors.secondary,
+									marginTop: 10,
+								},
+							]}
+							onPress={testResetPasswordScreen}
+							disabled={loading}
+						>
+							<Text style={styles.buttonText}>
+								🧪 Test Reset Password Screen
+							</Text>
+						</TouchableOpacity>
+					)}
 				</View>
 			</ScrollView>
 		</KeyboardAvoidingView>
 	);
-}
+};
+
+export default Auth;
+
 const styles = StyleSheet.create({
 	container: {
 		flex: 1,

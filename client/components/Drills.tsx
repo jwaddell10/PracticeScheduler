@@ -325,7 +325,6 @@ export default function Drills() {
 				showStarButton={true}
 				showClipboardButton={true}
 				onRefresh={refreshDrills}
-				showAdminActions={true}
 			/>
 		);
 	};

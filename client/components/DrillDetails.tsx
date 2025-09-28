@@ -58,12 +58,12 @@ export default function DrillDetails({ route }: { route: any }) {
 	}, [navigation, currentDrill.id, publicDrills, userDrills]);
 
 	// Helper function to capitalize first letter
-	const capitalize = (str) => {
+	const capitalize = (str: string) => {
 		return str ? str.charAt(0).toUpperCase() + str.slice(1) : "";
 	};
 
 	// Helper function to parse and format array data
-	const formatArrayData = (data) => {
+	const formatArrayData = (data: any) => {
 		if (!data) return "Not specified";
 
 		try {
@@ -81,14 +81,14 @@ export default function DrillDetails({ route }: { route: any }) {
 
 	// Check if user can delete this drill
 	const canDeleteDrill = () => {
-		// User can only delete their own drills (admin functionality removed)
-		return currentDrill.user_id === session?.user?.id;
+		// User can delete their own drills OR admins can delete public drills
+		return currentDrill.user_id === session?.user?.id || (isAdmin && currentDrill.isPublic);
 	};
 
 	// Check if user can edit this drill
 	const canEditDrill = () => {
-		// User can only edit their own drills (admin functionality removed)
-		return currentDrill.user_id === session?.user?.id;
+		// User can edit their own drills OR admins can edit public drills
+		return currentDrill.user_id === session?.user?.id || (isAdmin && currentDrill.isPublic);
 	};
 
 	// Handle delete drill
@@ -109,7 +109,9 @@ export default function DrillDetails({ route }: { route: any }) {
 					onPress: async () => {
 						try {
 							setIsDeleting(true);
-							await deleteDrill(currentDrill.id, isAdmin);
+							// Pass true for admin if it's an admin action on a public drill
+							const isAdminAction = isAdmin && currentDrill.isPublic && currentDrill.user_id !== session?.user?.id;
+							await deleteDrill(currentDrill.id, isAdminAction);
 							Alert.alert("Success", "Drill deleted successfully.");
 							navigation.goBack();
 						} catch (error) {
@@ -240,9 +242,10 @@ export default function DrillDetails({ route }: { route: any }) {
 					{canEditDrill() && (
 						<TouchableOpacity
 							style={styles.editButton}
-							onPress={() => navigation.navigate('CreateDrill', { 
+							onPress={() => (navigation as any).navigate('CreateDrill', { 
 								mode: 'edit', 
 								drill: currentDrill,
+								isAdmin: isAdmin && currentDrill.isPublic && currentDrill.user_id !== session?.user?.id,
 								refreshDrills: () => {
 									// Refresh the drill details
 									navigation.goBack();

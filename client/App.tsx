@@ -154,11 +154,16 @@ export default function App() {
 
 		// Handle deep links for email confirmation
 		const handleDeepLink = (url: string) => {
+			console.log("🔗🔗🔗 DEEP LINK RECEIVED in App.tsx:", url);
+			console.log("🔗🔗🔗 Current app state - session:", session ? "logged in" : "not logged in");
+			
 			// Check if this is an auth callback
 			if (url.includes("auth/callback")) {
 				// Supabase will automatically handle the auth callback
 				// and trigger the onAuthStateChange listener above
 				console.log("Auth callback received:", url);
+			} else {
+				console.log("Non-auth-callback deep link received:", url);
 			}
 		};
 

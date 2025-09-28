@@ -16,6 +16,7 @@ import Auth from "./components/Auth";
 import Account from "./components/Account";
 import Modal from "./components/Modal";
 import Clipboard from "./components/Clipboard";
+import ResetPassword from "./components/ResetPassword";
 
 import { useSession } from "./context/SessionContext";
 import { FavoritesProvider } from "./context/FavoritesContext";
@@ -75,6 +76,15 @@ function HomeStackScreen() {
 			<HomeStack.Screen
 				name="CreateDrill"
 				component={CreateDrill}
+			/>
+			<HomeStack.Screen 
+				name="ResetPassword" 
+				component={ResetPassword}
+				options={{ 
+					title: "Reset Password",
+					headerShown: true,
+					presentation: "modal"
+				}}
 			/>
 		</HomeStack.Navigator>
 	);
@@ -159,6 +169,32 @@ function AccountStackScreen({ session }: { session: any }) {
 			<AccountStack.Screen name="Account" component={() => <Account session={session} />} />
 			<AccountStack.Screen name="Premium" component={PremiumScreen} />
 		</AccountStack.Navigator>
+	);
+}
+
+const AuthStack = createNativeStackNavigator();
+function AuthStackScreen() {
+	return (
+		<AuthStack.Navigator
+			screenOptions={{
+				headerStyle: { backgroundColor: theme.colors.surface },
+				headerTintColor: theme.colors.textPrimary,
+			}}
+		>
+			<AuthStack.Screen 
+				name="Auth" 
+				component={Auth}
+				options={{ headerShown: false }}
+			/>
+			<AuthStack.Screen 
+				name="ResetPassword" 
+				component={ResetPassword}
+				options={{ 
+					title: "Reset Password",
+					headerShown: true 
+				}}
+			/>
+		</AuthStack.Navigator>
 	);
 }
 
@@ -249,7 +285,7 @@ export default function Navigation() {
 					) : (
 						<Tab.Screen
 							name="ProfileTab"
-							component={Auth}
+							component={AuthStackScreen}
 							options={{ title: "Profile" }}
 						/>
 					)}

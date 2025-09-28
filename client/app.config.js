@@ -54,6 +54,12 @@ export default () => ({
 			PORT: process.env.PORT,
 			REVENUECAT_API_KEY: process.env.REVENUECAT_API_KEY,
 		},
-		plugins: ["expo-secure-store", "expo-mail-composer", "expo-router"],
+		plugins: [
+			"expo-secure-store",
+			"expo-mail-composer",
+			"expo-router",
+			"expo-font",
+			"expo-web-browser",
+		],
 	},
 });
