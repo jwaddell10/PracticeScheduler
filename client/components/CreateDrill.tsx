@@ -17,7 +17,8 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useSession } from "../context/SessionContext";
 import { decode } from "base64-arraybuffer";
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
+import { File } from "expo-file-system";
 import { supabase } from "../lib/supabase";
 import { useSubscription } from "../context/SubscriptionContext"; // ⬅️ import our hook
 import { useDrills } from "../context/DrillsContext";
@@ -219,7 +220,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 
 			if (!result.canceled && result.assets?.length > 0) {
 				const uri = result.assets[0].uri;
-				const fileInfo = await FileSystem.getInfoAsync(uri);
+				const file = new File(uri);
+				const fileInfo = await file.info();
 				if (!fileInfo.exists) {
 					Alert.alert("Error", "Selected file does not exist.");
 					return;
@@ -237,7 +239,8 @@ export default function CreateDrill(props?: CreateDrillProps) {
 			throw new Error("Unable to get authenticated user.");
 		}
 
-		const fileInfo = await FileSystem.getInfoAsync(uri);
+		const file = new File(uri);
+		const fileInfo = await file.info();
 		if (!fileInfo.exists) {
 			throw new Error("Image file not found.");
 		}

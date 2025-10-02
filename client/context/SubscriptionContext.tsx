@@ -22,7 +22,7 @@ export function SubscriptionProvider({
 	children: React.ReactNode;
 }) {
 	const session = useSession();
-	const [isSubscriber, setIsSubscriber] = useState(false);
+	const [isSubscriber, setIsSubscriber] = useState(true);
 	const [isAdmin, setIsAdmin] = useState(false);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -86,7 +86,7 @@ export function SubscriptionProvider({
 				isAdmin: adminStatus,
 			});
 
-			setIsSubscriber(subscriberStatus);
+			setIsSubscriber(true);
 			setIsAdmin(adminStatus);
 		} catch (error) {
 			console.error(
@@ -98,7 +98,7 @@ export function SubscriptionProvider({
 					? error.message
 					: "Failed to check subscription"
 			);
-			setIsSubscriber(false);
+			setIsSubscriber(true);
 			setIsAdmin(false);
 		} finally {
 			setLoading(false);
@@ -122,7 +122,7 @@ export function SubscriptionProvider({
 			console.log(
 				"🔄 SubscriptionContext: No session, setting isSubscriber and isAdmin to false"
 			);
-			setIsSubscriber(false);
+			setIsSubscriber(true);
 			setIsAdmin(false);
 		}
 	}, [session?.user?.id]);

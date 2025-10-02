@@ -13,7 +13,7 @@ interface StarButtonProps {
 const StarButton: React.FC<StarButtonProps> = ({
 	drillId,
 	initialIsFavorited = false,
-	size = 24,
+	size = 28,
 	onToggle = async () => {},
 	style = {},
 }) => {
