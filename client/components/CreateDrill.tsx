@@ -249,7 +249,7 @@ export default function CreateDrill(props?: CreateDrillProps) {
 		const filePath = `${userId}/${fileName}`;
 
 		const base64 = await FileSystem.readAsStringAsync(uri, {
-			encoding: FileSystem.EncodingType.Base64,
+			encoding: 'base64' as any,
 		});
 		const arrayBuffer = decode(base64);
 
@@ -517,7 +517,10 @@ export default function CreateDrill(props?: CreateDrillProps) {
 							<Text style={styles.label}>
 								Upload Image (optional)
 							</Text>
-							<UpgradeToPremiumBanner role="free" />
+							<UpgradeToPremiumBanner 
+								role="free" 
+								onBeforeNavigate={isModal ? onClose : undefined}
+							/>
 						</>
 					)}
 				</ScrollView>

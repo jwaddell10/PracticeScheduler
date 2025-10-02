@@ -12,9 +12,10 @@ type RootStackParamList = {
 
 interface UpgradeToPremiumBannerProps {
 	role?: string | null;
+	onBeforeNavigate?: () => void; // Callback to execute before navigation (e.g., close modal)
 }
 
-export default function UpgradeToPremiumBanner({ role }: UpgradeToPremiumBannerProps) {
+export default function UpgradeToPremiumBanner({ role, onBeforeNavigate }: UpgradeToPremiumBannerProps) {
 	// Hide banner for premium and admin users
 	if (role === "Premium" || role === "premium" || role === "admin") {
 		return null;
@@ -27,6 +28,10 @@ export default function UpgradeToPremiumBanner({ role }: UpgradeToPremiumBannerP
 	const isTablet = screenWidth >= 700; // iPad starts at 768px width
 
 	const handleUpgrade = () => {
+		// If there's a callback to execute before navigation (e.g., close modal), call it first
+		if (onBeforeNavigate) {
+			onBeforeNavigate();
+		}
 		navigation.navigate("Premium");
 	};
 
