@@ -6,7 +6,7 @@ export default () => ({
 		scheme: "practicepro",
 		name: "PracticePro",
 		slug: "PracticeScheduler",
-		version: "1.0.1",
+		version: "1.0.2",
 		orientation: "portrait",
 		icon: "./assets/PPlogo.png",
 		userInterfaceStyle: "dark",
