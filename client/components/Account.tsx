@@ -112,7 +112,15 @@ export default function Account({ session }: { session: Session | null }) {
 								throw authError;
 							}
 
-							Alert.alert("Account Deleted", "Your account has been successfully deleted.");
+							Alert.alert("Account Deleted", "Your account has been successfully deleted.", [
+								{
+									text: "OK",
+									onPress: () => {
+										// Sign out the user after account deletion
+										supabase.auth.signOut();
+									}
+								}
+							]);
 						} catch (error) {
 							if (error instanceof Error) {
 								Alert.alert("Error", `Failed to delete account: ${error.message}`);
