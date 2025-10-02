@@ -1,6 +1,6 @@
 import React, { useState, useRef } from "react";
 import { TouchableOpacity, StyleSheet } from "react-native";
-import { AntDesign } from "@expo/vector-icons";
+import { MaterialIcons } from "@expo/vector-icons";
 
 interface StarButtonProps {
 	drillId: string;
@@ -57,8 +57,8 @@ const StarButton: React.FC<StarButtonProps> = ({
 			disabled={isLoading}
 			activeOpacity={0.7}
 		>
-			<AntDesign
-				name={initialIsFavorited ? "star" : "staro"}
+			<MaterialIcons
+				name={initialIsFavorited ? "star" : "star-border"}
 				size={size}
 				color={initialIsFavorited ? "#FFD700" : "#999"}
 				style={[styles.starIcon, isLoading && styles.loadingIcon]}

@@ -30,6 +30,8 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 	const [loading, setLoading] = useState(false);
 	const [sessionReady, setSessionReady] = useState(false);
 	const [userEmail, setUserEmail] = useState<string | null>(null);
+	const [passwordVisible, setPasswordVisible] = useState(false);
+	const [confirmPasswordVisible, setConfirmPasswordVisible] = useState(false);
 	const navigation = useNavigation();
 
 	const { recovery, sessionEstablished } = route?.params || {};
@@ -61,18 +63,25 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 					return;
 				}
 
-				if (session && session.user) {
+				if (session?.user) {
 					console.log(
 						"✅ Valid session found for user:",
 						session.user.email
 					);
 					setUserEmail(session.user.email || null);
 					setSessionReady(true);
+				} else if (__DEV__ && sessionEstablished) {
+					// Development mode: allow testing without real session
+					console.log(
+						"🧪 Development mode: simulating session for testing"
+					);
+					setUserEmail("test@example.com");
+					setSessionReady(true);
 				} else {
 					console.error("❌ No valid session found");
 					Alert.alert(
-						"Session Error",
-						"No valid session found. Please try clicking the password reset link in your email again.",
+						"Session Expired",
+						"Your password reset session has expired. Please request a new password reset link.",
 						[
 							{
 								text: "OK",
@@ -96,13 +105,40 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 			}
 		};
 
-		// Small delay to ensure the session is properly set
+		// Small delay to ensure the session is properly established
 		const timer = setTimeout(() => {
 			checkSession();
-		}, 1000);
+		}, 500);
 
 		return () => clearTimeout(timer);
 	}, [route?.params, navigation]);
+
+	const validatePassword = (
+		password: string
+	): { isValid: boolean; message?: string } => {
+		if (!password) {
+			return { isValid: false, message: "Password is required" };
+		}
+		if (password.length < 6) {
+			return {
+				isValid: false,
+				message: "Password must be at least 6 characters long",
+			};
+		}
+		if (password.length > 72) {
+			return {
+				isValid: false,
+				message: "Password must be less than 72 characters long",
+			};
+		}
+		// Add more password strength requirements if needed
+		// const hasUpperCase = /[A-Z]/.test(password);
+		// const hasLowerCase = /[a-z]/.test(password);
+		// const hasNumbers = /\d/.test(password);
+		// const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+		return { isValid: true };
+	};
 
 	const updatePassword = async () => {
 		console.log("🔄 Attempting to update password...");
@@ -112,21 +148,23 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 			return;
 		}
 
-		if (!newPassword || !confirmPassword) {
-			Alert.alert(
-				"Error",
-				"Please enter both new password and confirmation"
-			);
+		// Validate inputs
+		const passwordValidation = validatePassword(newPassword);
+		if (!passwordValidation.isValid) {
+			Alert.alert("Invalid Password", passwordValidation.message);
+			return;
+		}
+
+		if (!confirmPassword) {
+			Alert.alert("Error", "Please confirm your new password");
 			return;
 		}
 
 		if (newPassword !== confirmPassword) {
-			Alert.alert("Error", "Passwords do not match");
-			return;
-		}
-
-		if (newPassword.length < 6) {
-			Alert.alert("Error", "Password must be at least 6 characters");
+			Alert.alert(
+				"Password Mismatch",
+				"The passwords you entered do not match"
+			);
 			return;
 		}
 
@@ -135,24 +173,54 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 		try {
 			console.log("🔄 Updating password for user:", userEmail);
 
+			// Handle test case in development mode
+			if (__DEV__ && userEmail === "test@example.com") {
+				console.log("🧪 Development mode: simulating password update");
+				await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate network delay
+				Alert.alert(
+					"Test Success",
+					"Password update simulated successfully! (This is a test)",
+					[
+						{
+							text: "OK",
+							onPress: () => navigation.goBack(),
+						},
+					]
+				);
+				return;
+			}
+
 			// Update the password using the current session
-			const { data, error } = await supabase.auth.updateUser({
+			const { error } = await supabase.auth.updateUser({
 				password: newPassword,
 			});
 
 			if (error) {
 				console.error("❌ Password update error:", error);
-				Alert.alert("Password Update Error", error.message);
+
+				// Handle specific error cases
+				if (error.message.includes("session_not_found")) {
+					Alert.alert(
+						"Session Expired",
+						"Your password reset session has expired. Please request a new password reset link.",
+						[{ text: "OK", onPress: () => navigation.goBack() }]
+					);
+				} else {
+					Alert.alert("Password Update Error", error.message);
+				}
 			} else {
 				console.log("✅ Password updated successfully");
 
-				// Important: Sign out the user after password reset
-				// This prevents them from being automatically logged in
+				// Clear the form
+				setNewPassword("");
+				setConfirmPassword("");
+
+				// Sign out the user after password reset to ensure security
 				await supabase.auth.signOut();
 				console.log("🚪 User signed out after password reset");
 
 				Alert.alert(
-					"Success",
+					"Password Updated!",
 					"Your password has been updated successfully! Please sign in with your new password.",
 					[
 						{
@@ -168,8 +236,10 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 		} catch (err) {
 			console.error("❌ Password update exception:", err);
 			Alert.alert(
-				"Password Update Failed",
-				err instanceof Error ? err.message : "Unexpected error occurred"
+				"Update Failed",
+				err instanceof Error
+					? err.message
+					: "An unexpected error occurred. Please try again."
 			);
 		} finally {
 			setLoading(false);
@@ -205,8 +275,8 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 					<Text style={styles.title}>Reset Your Password</Text>
 					<Text style={styles.subtitle}>
 						{sessionReady
-							? "Enter your new password below"
-							: "Verifying recovery link..."}
+							? `Create a new password for ${userEmail}`
+							: "Verifying your identity..."}
 					</Text>
 				</View>
 
@@ -225,22 +295,40 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 									style={styles.textInput}
 									onChangeText={setNewPassword}
 									value={newPassword}
-									placeholder="Enter new password"
+									placeholder="Enter new password (min 6 characters)"
 									placeholderTextColor={
 										theme.colors.textMuted
 									}
-									secureTextEntry={true}
+									secureTextEntry={!passwordVisible}
 									autoCapitalize="none"
 									returnKeyType="next"
 									keyboardAppearance="dark"
 									autoFocus={true}
+									autoComplete="new-password"
+									textContentType="newPassword"
 								/>
+								<TouchableOpacity
+									onPress={() =>
+										setPasswordVisible(!passwordVisible)
+									}
+									style={styles.eyeIcon}
+								>
+									<MaterialIcons
+										name={
+											passwordVisible
+												? "visibility-off"
+												: "visibility"
+										}
+										size={20}
+										color={theme.colors.textMuted}
+									/>
+								</TouchableOpacity>
 							</View>
 						</View>
 
 						<View style={styles.inputContainer}>
 							<Text style={styles.inputLabel}>
-								Confirm Password
+								Confirm New Password
 							</Text>
 							<View style={styles.inputWrapper}>
 								<MaterialIcons
@@ -253,26 +341,81 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 									style={styles.textInput}
 									onChangeText={setConfirmPassword}
 									value={confirmPassword}
-									placeholder="Confirm new password"
+									placeholder="Confirm your new password"
 									placeholderTextColor={
 										theme.colors.textMuted
 									}
-									secureTextEntry={true}
+									secureTextEntry={!confirmPasswordVisible}
 									autoCapitalize="none"
 									returnKeyType="done"
 									keyboardAppearance="dark"
 									onSubmitEditing={updatePassword}
+									autoComplete="new-password"
+									textContentType="newPassword"
 								/>
+								<TouchableOpacity
+									onPress={() =>
+										setConfirmPasswordVisible(
+											!confirmPasswordVisible
+										)
+									}
+									style={styles.eyeIcon}
+								>
+									<MaterialIcons
+										name={
+											confirmPasswordVisible
+												? "visibility-off"
+												: "visibility"
+										}
+										size={20}
+										color={theme.colors.textMuted}
+									/>
+								</TouchableOpacity>
 							</View>
 						</View>
 
+						{/* Password requirements info */}
+						<View style={styles.passwordRequirements}>
+							<Text style={styles.requirementsTitle}>
+								Password Requirements:
+							</Text>
+							<Text style={styles.requirementText}>
+								• At least 6 characters long
+							</Text>
+							<Text style={styles.requirementText}>
+								• Less than 72 characters
+							</Text>
+						</View>
+
 						<TouchableOpacity
-							style={[styles.button, styles.updatePasswordButton]}
+							style={[
+								styles.button,
+								styles.updatePasswordButton,
+								(!newPassword ||
+									!confirmPassword ||
+									newPassword !== confirmPassword) &&
+									styles.disabledButton,
+							]}
 							onPress={updatePassword}
-							disabled={loading}
+							disabled={
+								loading ||
+								!newPassword ||
+								!confirmPassword ||
+								newPassword !== confirmPassword
+							}
 						>
-							<Text style={styles.buttonText}>
-								{loading ? "Updating..." : "Update Password"}
+							<Text
+								style={[
+									styles.buttonText,
+									(!newPassword ||
+										!confirmPassword ||
+										newPassword !== confirmPassword) &&
+										styles.disabledButtonText,
+								]}
+							>
+								{loading
+									? "Updating Password..."
+									: "Update Password"}
 							</Text>
 						</TouchableOpacity>
 
@@ -288,8 +431,17 @@ const ResetPassword: React.FC<ResetPasswordProps> = ({ route }) => {
 
 				{!sessionReady && (
 					<View style={styles.loadingContainer}>
+						<MaterialIcons
+							name="hourglass-empty"
+							size={32}
+							color={theme.colors.textMuted}
+							style={styles.loadingIcon}
+						/>
 						<Text style={styles.loadingText}>
-							Verifying recovery link...
+							Verifying your password reset link...
+						</Text>
+						<Text style={styles.loadingSubtext}>
+							This may take a few moments
 						</Text>
 					</View>
 				)}
@@ -355,6 +507,26 @@ const styles = StyleSheet.create({
 		fontSize: 16,
 		color: theme.colors.textPrimary,
 	},
+	eyeIcon: {
+		padding: 4,
+	},
+	passwordRequirements: {
+		backgroundColor: theme.colors.surface,
+		borderRadius: 8,
+		padding: 12,
+		marginBottom: 20,
+	},
+	requirementsTitle: {
+		fontSize: 14,
+		fontWeight: "600",
+		color: theme.colors.textPrimary,
+		marginBottom: 6,
+	},
+	requirementText: {
+		fontSize: 13,
+		color: theme.colors.textMuted,
+		lineHeight: 18,
+	},
 	button: {
 		paddingVertical: 16,
 		paddingHorizontal: 24,
@@ -366,10 +538,17 @@ const styles = StyleSheet.create({
 		backgroundColor: theme.colors.primary,
 		marginTop: 10,
 	},
+	disabledButton: {
+		backgroundColor: theme.colors.textMuted,
+		opacity: 0.6,
+	},
 	buttonText: {
 		fontSize: 16,
 		fontWeight: "600",
 		color: theme.colors.white,
+	},
+	disabledButtonText: {
+		color: theme.colors.background,
 	},
 	cancelButton: {
 		alignItems: "center",
@@ -386,10 +565,20 @@ const styles = StyleSheet.create({
 		alignItems: "center",
 		padding: 20,
 	},
+	loadingIcon: {
+		marginBottom: 16,
+	},
 	loadingText: {
 		color: theme.colors.textMuted,
 		fontSize: 16,
 		textAlign: "center",
+		marginBottom: 8,
+	},
+	loadingSubtext: {
+		color: theme.colors.textMuted,
+		fontSize: 14,
+		textAlign: "center",
+		opacity: 0.7,
 	},
 });
 

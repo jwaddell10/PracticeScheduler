@@ -77,15 +77,6 @@ function HomeStackScreen() {
 				name="CreateDrill"
 				component={CreateDrill}
 			/>
-			<HomeStack.Screen 
-				name="ResetPassword" 
-				component={ResetPassword}
-				options={{ 
-					title: "Reset Password",
-					headerShown: true,
-					presentation: "modal"
-				}}
-			/>
 		</HomeStack.Navigator>
 	);
 }
@@ -191,7 +182,8 @@ function AuthStackScreen() {
 				component={ResetPassword}
 				options={{ 
 					title: "Reset Password",
-					headerShown: true 
+					headerShown: true,
+					presentation: "modal"
 				}}
 			/>
 		</AuthStack.Navigator>

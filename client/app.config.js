@@ -29,6 +29,10 @@ export default () => ({
 					"We need access to your photo library so you can upload an image for your drill.",
 				NSCameraUsageDescription:
 					"We need camera access to take photos for your drill.",
+				// Force WKWebView usage
+				NSAppTransportSecurity: {
+					NSAllowsArbitraryLoads: true,
+				},
 			},
 		},
 
@@ -57,9 +61,16 @@ export default () => ({
 		plugins: [
 			"expo-secure-store",
 			"expo-mail-composer",
-			"expo-router",
 			"expo-font",
-			"expo-web-browser",
+			[
+				"expo-build-properties",
+				{
+					ios: {
+						useFrameworks: "static", // Required by some native modules (like RevenueCat)
+						webView: "wkwebview", // ✅ Ensures deprecated UIWebView isn't used
+					},
+				},
+			],
 		],
 	},
 });
