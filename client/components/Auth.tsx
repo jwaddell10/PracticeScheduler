@@ -16,7 +16,6 @@ import { useNavigation } from "@react-navigation/native";
 import theme from "./styles/theme";
 import { supabase } from "../lib/supabase";
 import Purchases from "react-native-purchases";
-import { makeRedirectUri } from "expo-auth-session";
 
 // Add Buffer shim for query parameter parsing
 global.Buffer = global.Buffer || require("buffer").Buffer;
@@ -27,8 +26,8 @@ const Auth = () => {
 	const [loading, setLoading] = useState(false);
 	const navigation = useNavigation();
 
-	// Compute redirect URI (must match scheme / whitelisted in Supabase)
-	const redirectTo = makeRedirectUri();
+	// Use consistent redirect URI that matches Supabase configuration
+	const redirectTo = 'practicepro://';
 	console.log("Using redirect URI:", redirectTo);
 
 	// Deep link / incoming URL handler
